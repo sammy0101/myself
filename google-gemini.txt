@@ -1,3 +1,2 @@
-# This list is for backward compatibility
-
-include:google-deepmind
+# Main domain
+gemini.google.com
