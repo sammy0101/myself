@@ -1,2 +1,0 @@
-# Main domain
-gemini.google.com
