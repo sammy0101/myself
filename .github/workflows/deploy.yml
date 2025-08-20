@@ -1,0 +1,24 @@
+name: Deploy to OCI
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.0  # 調整版本
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Plan
+      run: terraform plan -var "tenancy_ocid=${{ secrets.TENANCY_OCID }}" -var "user_ocid=${{ secrets.USER_OCID }}" ...  # 傳入所有 secrets
+
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main'
+      run: terraform apply -auto-approve -var "tenancy_ocid=${{ secrets.TENANCY_OCID }}" ...
