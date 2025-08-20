@@ -44,15 +44,17 @@ resource "oci_core_instance" "ubuntu_instance" {
     subnet_id        = var.subnet_id
   }
   metadata = {
-    ssh_authorized_keys = var.ssh_public_key  # 可選，如果有 SSH key
+    ssh_authorized_keys = var.ssh_public_key  # 可選，如果有 SSH key 給 root
     user_data           = base64encode(<<EOF
 #cloud-config
-users:
-  - name: ubuntu
-    passwd: $${random_password.ssh_password.result}
-    lock_passwd: false
-ssh_pwauth: true
+chpasswd:
+  list: |
+    root:${random_password.ssh_password.result}
+  expire: false
 runcmd:
+  - passwd -u root  # 解鎖 root (如果預設鎖定)
+  - sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+  - sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
   - systemctl restart ssh
 EOF
     )
