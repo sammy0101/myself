@@ -1,8 +1,7 @@
 name: Deploy to OCI
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -59,7 +58,6 @@ jobs:
           -var "ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"  # 可選 secret
 
     - name: Terraform Apply
-      if: github.ref == 'refs/heads/main'
       run: |
         terraform apply -auto-approve \
           -var "tenancy_ocid=${{ secrets.TENANCY_OCID }}" \
