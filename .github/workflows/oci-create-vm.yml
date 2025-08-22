@@ -1,9 +1,20 @@
-name: Create OCI VM
+name: '[Manual] Create OCI VM'
 
 on:
-  workflow_dispatch:  # 手动触发
-  push:
-    branches: [main]
+  # 移除了 push: 触发器，只保留 workflow_dispatch
+  workflow_dispatch:
+    # 可选：定义输入参数，让手动触发时可以动态配置
+    inputs:
+      vm-name:
+        description: 'Name of the VM instance'
+        required: true
+        default: 'github-actions-vm'
+        type: string
+      vm-shape:
+        description: 'Compute shape (e.g., VM.Standard.E2.1.Micro)'
+        required: true
+        default: 'VM.Standard.E2.1.Micro'
+        type: string
 
 jobs:
   create-vm:
@@ -22,19 +33,40 @@ jobs:
           OCI_REGION: ${{ secrets.OCI_REGION }}
           OCI_API_KEY: ${{ secrets.OCI_API_KEY }}
           OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
+          OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
         run: |
-          # 使用 OCI CLI 创建虚拟机
+          # 使用 workflow_dispatch 的输入参数
           oci compute instance launch \
-            --compartment-id ${{ secrets.OCI_COMPARTMENT_ID }} \
-            --availability-domain "xxxx:PHX-AD-1" \  # 替换为你的 AD
-            --display-name "github-actions-vm" \
-            --shape "VM.Standard.E2.1.Micro" \
-            --image-id "ocid1.image.oc1.ap-osaka-1.aaaaaaaaglaxxdyc7fwf77e4lq26h2nhik52d2bmxjuiqe5mzndw3zpmj4hq" \  # 替换为镜像 OCID
-            --subnet-id ${{ secrets.OCI_SUBNET_ID }} \
+            --compartment-id $OCI_COMPARTMENT_ID \
+            --availability-domain "Pllz:PHX-AD-1" \  # 请替换为你的可用性域（Availability Domain）
+            --display-name "${{ github.event.inputs.vm-name }}" \
+            --shape "${{ github.event.inputs.vm-shape }}" \
+            --image-id "ocid1.image.oc1.ap-osaka-1.aaaaaaaaglaxxdyc7fwf77e4lq26h2nhik52d2bmxjuiqe5mzndw3zpmj4hq" \  # 请替换为你的镜像 OCID（例如 Oracle Linux 的 OCID）
+            --subnet-id $OCI_SUBNET_ID \
             --assign-public-ip true \
-            --ssh-authorized-keys-file ./public-key.txt  # 提前准备公钥文件
+            --ssh-authorized-keys-file ./public-key.txt  # 确保你的公钥文件在此路径
 
-      - name: Save IP Address
+      - name: Get VM Public IP
+        id: get-ip
+        env:
+          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
         run: |
-          # 提取虚拟机公网 IP 并保存（可选）
-          echo "VM_IP=$(oci compute instance list --compartment-id $OCI_COMPARTMENT_ID --display-name github-actions-vm --query 'data[0].public-ip' --raw-output)" >> $GITHUB_ENV
+          # 稍等一会儿，让VM获取IP地址
+          sleep 15
+          # 查询实例的公网IP，并设置为输出变量
+          PUBLIC_IP=$(oci compute instance list \
+            --compartment-id $OCI_COMPARTMENT_ID \
+            --display-name "${{ github.event.inputs.vm-name }}" \
+            --lifecycle-state RUNNING \
+            --query 'data[0]."public-ip"' \
+            --raw-output)
+          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+          echo "VM Public IP: $PUBLIC_IP"
+
+      - name: Print Connection Info
+        run: |
+          echo "🎉 VM instance '${{ github.event.inputs.vm-name }}' has been created successfully!"
+          echo "🌐 You can connect to it using: ssh opc@${{ steps.get-ip.outputs.public_ip }}"
+          # 假设你使用的是 Oracle Linux 或 CentOS，默认用户是 'opc'
+          # 如果是 Ubuntu，默认用户是 'ubuntu'
