@@ -18,14 +18,48 @@ jobs:
 
       - name: Install OCI CLI
         run: |
-          # 安装 OCI CLI
           pip install oci-cli
-          # 验证安装
           oci --version
+
+      - name: Configure OCI CLI
+        run: |
+          mkdir -p ~/.oci
+          cat > ~/.oci/config << EOF
+          [DEFAULT]
+          user=${{ secrets.OCI_USER_ID }}
+          fingerprint=${{ secrets.OCI_FINGERPRINT }}
+          key_file=~/.oci/oci_api_key.pem
+          tenancy=${{ secrets.OCI_TENANCY }}
+          region=${{ secrets.OCI_REGION }}
+          EOF
+          
+          cat > ~/.oci/oci_api_key.pem << EOF
+          ${{ secrets.OCI_API_KEY }}
+          EOF
+          
+          chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
+
+      - name: Validate OCI Configuration
+        run: |
+          # 测试OCI配置是否正确
+          echo "Testing OCI configuration..."
+          oci iam compartment get --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}"
+          echo "✅ Compartment access verified"
+          
+          # 检查可用性域
+          echo "Listing availability domains..."
+          oci iam availability-domain list --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}"
+          
+          # 检查子网
+          echo "Checking subnet..."
+          oci network subnet get --subnet-id "${{ secrets.OCI_SUBNET_ID }}"
+          
+          # 检查镜像
+          echo "Checking image..."
+          oci compute image get --image-id "${{ secrets.OCI_IMAGE_OCID }}"
 
       - name: Generate cloud-init script for root login
         run: |
-          # 创建 cloud-init 配置脚本，允许 root 密码登录
           cat > cloud-init.txt << 'EOF'
           #cloud-config
           users:
@@ -42,29 +76,7 @@ jobs:
             - systemctl restart sshd
           EOF
           
-          # 替换密码占位符为实际密码
           sed -i "s/\$ROOT_PASSWORD/${{ secrets.ROOT_PASSWORD }}/g" cloud-init.txt
-
-      - name: Configure OCI CLI
-        run: |
-          # 创建 OCI 配置
-          mkdir -p ~/.oci
-          cat > ~/.oci/config << EOF
-          [DEFAULT]
-          user=${{ secrets.OCI_USER_ID }}
-          fingerprint=${{ secrets.OCI_FINGERPRINT }}
-          key_file=~/.oci/oci_api_key.pem
-          tenancy=${{ secrets.OCI_TENANCY }}
-          region=${{ secrets.OCI_REGION }}
-          EOF
-          
-          # 创建 API 密钥文件
-          cat > ~/.oci/oci_api_key.pem << EOF
-          ${{ secrets.OCI_API_KEY }}
-          EOF
-          
-          # 设置文件权限
-          chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
 
       - name: Create A1 Flex VM Instance
         run: |
@@ -88,7 +100,6 @@ jobs:
       - name: Get VM Public IP
         id: get-ip
         run: |
-          # 获取虚拟机公网IP
           PUBLIC_IP=$(oci compute instance list \
             --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
             --display-name "${{ github.event.inputs.vm-name }}" \
