@@ -1,6 +1,10 @@
-name: '[Manual] Create OCI A1 Flex VM'
+name: '[Scheduled] Create OCI A1 Flex VM'
 
 on:
+  # 每天 UTC 时间 00:30 自动执行
+  schedule:
+    - cron: '30 0 * * *'
+  # 保留手动触发功能
   workflow_dispatch:
     inputs:
       vm-name:
@@ -41,8 +45,9 @@ jobs:
           
           chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
 
-      - name: Show current configuration
+      - name: Show current configuration and time
         run: |
+          echo "当前时间: $(date)"
           echo "当前配置:"
           echo "区域: ${{ secrets.OCI_REGION }}"
           echo "可用性域: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
@@ -76,6 +81,13 @@ jobs:
           max_retries=2
           retry_delay=30
           
+          # 如果是定时任务，使用固定名称；如果是手动触发，使用输入的名称
+          if [ -n "${{ github.event.inputs.vm-name }}" ]; then
+            VM_NAME="${{ github.event.inputs.vm-name }}"
+          else
+            VM_NAME="scheduled-a1-vm-$(date +%Y%m%d)"
+          fi
+          
           for i in $(seq 1 $max_retries); do
             echo "Attempt $i of $max_retries"
             
@@ -83,7 +95,7 @@ jobs:
             output=$(oci compute instance launch \
               --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
               --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
-              --display-name "${{ github.event.inputs.vm-name }}" \
+              --display-name "$VM_NAME" \
               --shape "VM.Standard.A1.Flex" \
               --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
               --image-id "${{ secrets.OCI_IMAGE_OCID }}" \
@@ -96,6 +108,7 @@ jobs:
             if [ $exit_code -eq 0 ]; then
               echo "✅ VM creation successful"
               echo "success=true" >> $GITHUB_OUTPUT
+              echo "vm_name=$VM_NAME" >> $GITHUB_OUTPUT
               break
             else
               echo "❌ Attempt $i failed with exit code: $exit_code"
@@ -136,6 +149,7 @@ jobs:
           # 检查上一步的结果
           if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
             echo "🎉 虚拟机创建成功!"
+            echo "虚拟机名称: ${{ steps.create-vm.outputs.vm_name }}"
             echo "正在等待虚拟机初始化..."
           else
             echo "❌ 虚拟机创建失败"
@@ -183,7 +197,7 @@ jobs:
         run: |
           PUBLIC_IP=$(oci compute instance list \
             --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
-            --display-name "${{ github.event.inputs.vm-name }}" \
+            --display-name "${{ steps.create-vm.outputs.vm_name }}" \
             --lifecycle-state RUNNING \
             --query 'data[0]."public-ip"' \
             --raw-output)
@@ -202,7 +216,7 @@ jobs:
       - name: Print Success Message
         if: steps.create-vm.outputs.success == 'true'
         run: |
-          echo "🎉 VM instance '${{ github.event.inputs.vm-name }}' 创建成功!"
+          echo "🎉 VM instance '${{ steps.create-vm.outputs.vm_name }}' 创建成功!"
           echo "📊 配置: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
           echo "🔑 登录用户: root"
           echo "🔒 密码: 使用您在 Secrets 中设置的 ROOT_PASSWORD"
@@ -213,9 +227,14 @@ jobs:
       - name: Print Final Result
         if: always()
         run: |
+          echo "=== 执行结果汇总 ==="
+          echo "执行时间: $(date)"
           if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
             echo "✅ 工作流执行成功: 虚拟机已创建并配置完成"
+            echo "虚拟机名称: ${{ steps.create-vm.outputs.vm_name }}"
+            echo "公网 IP: ${{ steps.get-ip.outputs.public_ip }}"
           else
             echo "❌ 工作流执行失败: 虚拟机创建未成功"
+            echo "错误类型: ${{ steps.create-vm.outputs.error_type }}"
             echo "请查看上述错误信息和建议"
           fi
