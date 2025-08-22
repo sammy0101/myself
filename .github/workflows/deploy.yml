@@ -10,32 +10,24 @@ jobs:
       OCI_CLI_USER: ${{ secrets.USER_OCID }}
       OCI_CLI_TENANCY: ${{ secrets.TENANCY_OCID }}
       OCI_CLI_FINGERPRINT: ${{ secrets.FINGERPRINT }}
-      OCI_CLI_REGION: ${{ vars.REGION }}  # 在 repo Settings > Variables 中設定你的 region，如 us-ashburn-1
-      OCI_CLI_KEY_FILE: private_key.pem
+      OCI_CLI_KEY_CONTENT: ${{ secrets.PRIVATE_KEY }}  # 改為 KEY_CONTENT
+      OCI_CLI_REGION: ${{ vars.REGION }}
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install OCI CLI
-      run: |
-        curl -L -O https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.py
-        python3 install.py --accept-all-defaults
-        export PATH=$HOME/bin:$PATH
-        oci --version
-
-    - name: Setup OCI CLI Config
-      run: |
-        echo "${{ secrets.PRIVATE_KEY }}" > ${{ env.OCI_CLI_KEY_FILE }}
-        chmod 600 ${{ env.OCI_CLI_KEY_FILE }}
-
     - name: Get Image OCID
+      uses: oracle-actions/run-oci-cli-command@v1.3.2
       id: get-image
+      with:
+        command: 'compute image list --compartment-id ${{ secrets.COMPARTMENT_ID }} --operating-system "Canonical Ubuntu" --operating-system-version "24.04" --shape "VM.Standard.A1.Flex"'
+        query: "data[? \"display-name\" == 'Canonical-Ubuntu-24.04-aarch64-2025.07.23-0'].id | [0]"
+
+    - name: Check Image ID
       run: |
-        IMAGE_ID=$(oci compute image list --compartment-id ${{ secrets.COMPARTMENT_ID }} --operating-system "Canonical Ubuntu" --operating-system-version "24.04" --shape "VM.Standard.A1.Flex" --query "data[? \"display-name\" == 'Canonical-Ubuntu-24.04-aarch64-2025.07.23-0'].id | [0]" --raw-output)
-        if [ -z "$IMAGE_ID" ]; then
+        if [ -z "${{ steps.get-image.outputs.raw_output }}" ]; then
           echo "Error: Image not found for build 2025.07.23-0"
           exit 1
         fi
-        echo "image_id=$IMAGE_ID" >> $GITHUB_OUTPUT
 
     - uses: hashicorp/setup-terraform@v2
       with:
@@ -50,12 +42,12 @@ jobs:
           -var "tenancy_ocid=${{ secrets.TENANCY_OCID }}" \
           -var "user_ocid=${{ secrets.USER_OCID }}" \
           -var "fingerprint=${{ secrets.FINGERPRINT }}" \
-          -var "private_key_path=${{ env.OCI_CLI_KEY_FILE }}" \
+          -var "private_key=${{ secrets.PRIVATE_KEY }}" \  # 改為 private_key
           -var "region=${{ vars.REGION }}" \
           -var "compartment_id=${{ secrets.COMPARTMENT_ID }}" \
           -var "subnet_id=${{ secrets.SUBNET_ID }}" \
-          -var "image_id=${{ steps.get-image.outputs.image_id }}" \
-          -var "ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"  # 可選 secret
+          -var "image_id=${{ steps.get-image.outputs.raw_output }}" \
+          -var "ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"  # 可選
 
     - name: Terraform Apply
       run: |
@@ -63,11 +55,11 @@ jobs:
           -var "tenancy_ocid=${{ secrets.TENANCY_OCID }}" \
           -var "user_ocid=${{ secrets.USER_OCID }}" \
           -var "fingerprint=${{ secrets.FINGERPRINT }}" \
-          -var "private_key_path=${{ env.OCI_CLI_KEY_FILE }}" \
+          -var "private_key=${{ secrets.PRIVATE_KEY }}" \  # 改為 private_key
           -var "region=${{ vars.REGION }}" \
           -var "compartment_id=${{ secrets.COMPARTMENT_ID }}" \
           -var "subnet_id=${{ secrets.SUBNET_ID }}" \
-          -var "image_id=${{ steps.get-image.outputs.image_id }}" \
+          -var "image_id=${{ steps.get-image.outputs.raw_output }}" \
           -var "ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"
 
     - name: Output Results
