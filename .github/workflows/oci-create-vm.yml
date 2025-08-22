@@ -1,0 +1,40 @@
+name: Create OCI VM
+
+on:
+  workflow_dispatch:  # 手动触发
+  push:
+    branches: [main]
+
+jobs:
+  create-vm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup OCI CLI
+        uses: oracle-actions/setup-oci-cli@v1
+
+      - name: Create VM Instance
+        env:
+          OCI_TENANCY: ${{ secrets.OCI_TENANCY }}
+          OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
+          OCI_REGION: ${{ secrets.OCI_REGION }}
+          OCI_API_KEY: ${{ secrets.OCI_API_KEY }}
+          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+        run: |
+          # 使用 OCI CLI 创建虚拟机
+          oci compute instance launch \
+            --compartment-id ${{ secrets.OCI_COMPARTMENT_ID }} \
+            --availability-domain "xxxx:PHX-AD-1" \  # 替换为你的 AD
+            --display-name "github-actions-vm" \
+            --shape "VM.Standard.E2.1.Micro" \
+            --image-id "ocid1.image.oc1.ap-osaka-1.aaaaaaaaglaxxdyc7fwf77e4lq26h2nhik52d2bmxjuiqe5mzndw3zpmj4hq" \  # 替换为镜像 OCID
+            --subnet-id ${{ secrets.OCI_SUBNET_ID }} \
+            --assign-public-ip true \
+            --ssh-authorized-keys-file ./public-key.txt  # 提前准备公钥文件
+
+      - name: Save IP Address
+        run: |
+          # 提取虚拟机公网 IP 并保存（可选）
+          echo "VM_IP=$(oci compute instance list --compartment-id $OCI_COMPARTMENT_ID --display-name github-actions-vm --query 'data[0].public-ip' --raw-output)" >> $GITHUB_ENV
