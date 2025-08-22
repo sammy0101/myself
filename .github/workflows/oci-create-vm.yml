@@ -1,19 +1,12 @@
-name: '[Manual] Create OCI VM'
+name: '[Manual] Create OCI A1 Flex VM'
 
 on:
-  # 移除了 push: 触发器，只保留 workflow_dispatch
   workflow_dispatch:
-    # 可选：定义输入参数，让手动触发时可以动态配置
     inputs:
       vm-name:
         description: 'Name of the VM instance'
         required: true
-        default: 'github-actions-vm'
-        type: string
-      vm-shape:
-        description: 'Compute shape (e.g., VM.Standard.E2.1.Micro)'
-        required: true
-        default: 'VM.Standard.E2.1.Micro'
+        default: 'a1-flex-vm'
         type: string
 
 jobs:
@@ -26,7 +19,24 @@ jobs:
       - name: Setup OCI CLI
         uses: oracle-actions/setup-oci-cli@v1
 
-      - name: Create VM Instance
+      - name: Generate cloud-init script for root login
+        run: |
+          cat > cloud-init.txt << EOF
+          #cloud-config
+          users:
+            - name: root
+              password: ${{ secrets.ROOT_PASSWORD }}
+              lock_passwd: false
+          chpasswd:
+            list: |
+              root:${{ secrets.ROOT_PASSWORD }}
+            expire: false
+          runcmd:
+            - sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config
+            - systemctl restart sshd
+          EOF
+
+      - name: Create A1 Flex VM Instance
         env:
           OCI_TENANCY: ${{ secrets.OCI_TENANCY }}
           OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
@@ -36,25 +46,29 @@ jobs:
           OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
           OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
         run: |
-          # 使用 workflow_dispatch 的输入参数
+          # 创建 A1 Flex 规格的虚拟机
           oci compute instance launch \
             --compartment-id $OCI_COMPARTMENT_ID \
-            --availability-domain "Pllz:PHX-AD-1" \  # 请替换为你的可用性域（Availability Domain）
+            --availability-domain "Pllz:PHX-AD-1" \  # 请替换为你的可用性域
             --display-name "${{ github.event.inputs.vm-name }}" \
-            --shape "${{ github.event.inputs.vm-shape }}" \
-            --image-id "ocid1.image.oc1.ap-osaka-1.aaaaaaaaglaxxdyc7fwf77e4lq26h2nhik52d2bmxjuiqe5mzndw3zpmj4hq" \  # 请替换为你的镜像 OCID（例如 Oracle Linux 的 OCID）
+            --shape "VM.Standard.A1.Flex" \
+            --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
+            --image-id "ocid1.image.oc1.ap-osaka-1.aaaaaaaaglaxxdyc7fwf77e4lq26h2nhik52d2bmxjuiqe5mzndw3zpmj4hq" \  # 请替换为ARM兼容的镜像OCID
             --subnet-id $OCI_SUBNET_ID \
             --assign-public-ip true \
-            --ssh-authorized-keys-file ./public-key.txt  # 确保你的公钥文件在此路径
+            --user-data-file ./cloud-init.txt \
+            --boot-volume-size-in-gbs 50  # 可选的启动卷大小（GB）
+
+      - name: Wait for VM to initialize
+        run: |
+          echo "等待虚拟机初始化完成..."
+          sleep 60
 
       - name: Get VM Public IP
         id: get-ip
         env:
           OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
         run: |
-          # 稍等一会儿，让VM获取IP地址
-          sleep 15
-          # 查询实例的公网IP，并设置为输出变量
           PUBLIC_IP=$(oci compute instance list \
             --compartment-id $OCI_COMPARTMENT_ID \
             --display-name "${{ github.event.inputs.vm-name }}" \
@@ -67,6 +81,7 @@ jobs:
       - name: Print Connection Info
         run: |
           echo "🎉 VM instance '${{ github.event.inputs.vm-name }}' has been created successfully!"
-          echo "🌐 You can connect to it using: ssh opc@${{ steps.get-ip.outputs.public_ip }}"
-          # 假设你使用的是 Oracle Linux 或 CentOS，默认用户是 'opc'
-          # 如果是 Ubuntu，默认用户是 'ubuntu'
+          echo "📊 配置: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
+          echo "🔑 登录用户: root"
+          echo "🌐 连接方式: ssh root@${{ steps.get-ip.outputs.public_ip }}"
+          echo "💡 密码使用您在 Secrets 中设置的 ROOT_PASSWORD"
