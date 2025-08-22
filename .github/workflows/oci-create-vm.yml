@@ -19,7 +19,7 @@ jobs:
       - name: Install OCI CLI and network tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl dnsutils jq  # 添加 jq 用于 JSON 解析
+          sudo apt-get install -y curl dnsutils jq
           pip install oci-cli
           oci --version
 
@@ -41,11 +41,12 @@ jobs:
           
           chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
 
-      - name: Validate OCI Configuration
+      - name: Show current configuration
         run: |
-          echo "Testing OCI configuration..."
-          oci iam compartment get --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}"
-          echo "✅ Compartment access verified"
+          echo "当前配置:"
+          echo "区域: ${{ secrets.OCI_REGION }}"
+          echo "可用性域: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
+          echo "实例形状: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
 
       - name: Generate cloud-init script for root login
         run: |
@@ -100,8 +101,12 @@ jobs:
               echo "❌ Attempt $i failed with exit code: $exit_code"
               echo "Error output: $output"
               
-              # 检查是否是免费账户限制
-              if echo "$output" | grep -i "quota\|limit\|outofcapacity\|notavailable\|free tier\|insufficient"; then
+              # 检查是否是免费账户资源不足
+              if echo "$output" | grep -i "out of host capacity\|insufficientcapacity\|outofcapacity"; then
+                echo "free_tier_limit=true" >> $GITHUB_OUTPUT
+                echo "error_type=free_tier_limit" >> $GITHUB_OUTPUT
+                echo "error_message=免费账户资源限制: 当前区域或可用性域中没有足够的资源来创建虚拟机" >> $GITHUB_OUTPUT
+              elif echo "$output" | grep -i "quota\|limit\|notavailable\|free tier\|insufficient"; then
                 echo "free_tier_limit=true" >> $GITHUB_OUTPUT
                 echo "error_type=free_tier_limit" >> $GITHUB_OUTPUT
                 echo "error_message=免费账户资源限制，可能区域资源不足或已达免费额度上限" >> $GITHUB_OUTPUT
@@ -137,15 +142,21 @@ jobs:
             echo "错误类型: ${{ steps.create-vm.outputs.error_type }}"
             echo "错误信息: ${{ steps.create-vm.outputs.error_message }}"
             
-            # 如果是免费账户限制，提供更多建议
+            # 如果是免费账户资源不足，提供更多建议
             if [[ "${{ steps.create-vm.outputs.free_tier_limit }}" == "true" ]]; then
               echo ""
-              echo "💡 免费账户创建虚拟机失败建议:"
+              echo "💡 Oracle Cloud 免费账户创建虚拟机失败建议:"
               echo "1. 尝试使用不同的可用性域 (Availability Domain)"
-              echo "2. 稍后重试，资源可能随时间释放"
+              echo "   - 当前可用性域: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
+              echo "   - 您可以在 OCI 控制台中查看其他可用性域"
+              echo "2. 稍后重试 (几小时或第二天)，免费层资源可能会随时间释放"
               echo "3. 考虑使用不同的区域 (Region)"
-              echo "4. 检查您的免费账户资源使用情况"
-              echo "5. 确保您没有超过免费套餐的限额"
+              echo "   - 当前区域: ${{ secrets.OCI_REGION }}"
+              echo "   - 一些较少人使用的区域可能有更多可用资源"
+              echo "4. 尝试创建较小配置的实例 (如 1 OCPU, 6GB RAM)"
+              echo "5. 免费账户有时在某些区域/时间段的资源确实很紧张，需要耐心尝试"
+              echo ""
+              echo "ℹ️  这是一个常见的免费账户问题，不是您的配置错误。"
             fi
             
             # 如果不是免费账户限制，可能是其他错误
