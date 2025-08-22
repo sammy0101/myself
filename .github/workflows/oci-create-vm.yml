@@ -11,13 +11,15 @@ on:
 
 jobs:
   create-vm:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install OCI CLI
+      - name: Install OCI CLI and network tools
         run: |
+          sudo apt-get update
+          sudo apt-get install -y curl dnsutils jq  # 添加 jq 用于 JSON 解析
           pip install oci-cli
           oci --version
 
@@ -41,22 +43,9 @@ jobs:
 
       - name: Validate OCI Configuration
         run: |
-          # 测试OCI配置是否正确
           echo "Testing OCI configuration..."
           oci iam compartment get --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}"
           echo "✅ Compartment access verified"
-          
-          # 检查可用性域
-          echo "Listing availability domains..."
-          oci iam availability-domain list --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}"
-          
-          # 检查子网
-          echo "Checking subnet..."
-          oci network subnet get --subnet-id "${{ secrets.OCI_SUBNET_ID }}"
-          
-          # 检查镜像
-          echo "Checking image..."
-          oci compute image get --image-id "${{ secrets.OCI_IMAGE_OCID }}"
 
       - name: Generate cloud-init script for root login
         run: |
@@ -78,26 +67,107 @@ jobs:
           
           sed -i "s/\$ROOT_PASSWORD/${{ secrets.ROOT_PASSWORD }}/g" cloud-init.txt
 
-      - name: Create A1 Flex VM Instance
+      - name: Create A1 Flex VM Instance with error handling
+        id: create-vm
         run: |
-          # 创建 A1 Flex 规格的虚拟机
-          oci compute instance launch \
-            --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
-            --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
-            --display-name "${{ github.event.inputs.vm-name }}" \
-            --shape "VM.Standard.A1.Flex" \
-            --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
-            --image-id "${{ secrets.OCI_IMAGE_OCID }}" \
-            --subnet-id "${{ secrets.OCI_SUBNET_ID }}" \
-            --assign-public-ip true \
-            --user-data-file ./cloud-init.txt
+          set +e  # 允许命令失败而不立即退出
+          
+          max_retries=2
+          retry_delay=30
+          
+          for i in $(seq 1 $max_retries); do
+            echo "Attempt $i of $max_retries"
+            
+            # 运行 OCI 命令并捕获输出
+            output=$(oci compute instance launch \
+              --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
+              --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
+              --display-name "${{ github.event.inputs.vm-name }}" \
+              --shape "VM.Standard.A1.Flex" \
+              --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
+              --image-id "${{ secrets.OCI_IMAGE_OCID }}" \
+              --subnet-id "${{ secrets.OCI_SUBNET_ID }}" \
+              --assign-public-ip true \
+              --user-data-file ./cloud-init.txt 2>&1)
+            
+            exit_code=$?
+            
+            if [ $exit_code -eq 0 ]; then
+              echo "✅ VM creation successful"
+              echo "success=true" >> $GITHUB_OUTPUT
+              break
+            else
+              echo "❌ Attempt $i failed with exit code: $exit_code"
+              echo "Error output: $output"
+              
+              # 检查是否是免费账户限制
+              if echo "$output" | grep -i "quota\|limit\|outofcapacity\|notavailable\|free tier\|insufficient"; then
+                echo "free_tier_limit=true" >> $GITHUB_OUTPUT
+                echo "error_type=free_tier_limit" >> $GITHUB_OUTPUT
+                echo "error_message=免费账户资源限制，可能区域资源不足或已达免费额度上限" >> $GITHUB_OUTPUT
+              elif echo "$output" | grep -i "timeout\|connection"; then
+                echo "error_type=network_timeout" >> $GITHUB_OUTPUT
+                echo "error_message=网络连接超时，请稍后重试" >> $GITHUB_OUTPUT
+              else
+                echo "error_type=other" >> $GITHUB_OUTPUT
+                echo "error_message=其他错误，请检查配置和权限" >> $GITHUB_OUTPUT
+              fi
+              
+              if [ $i -eq $max_retries ]; then
+                echo "All attempts failed."
+                break
+              fi
+              
+              echo "Waiting $retry_delay seconds before retry..."
+              sleep $retry_delay
+            fi
+          done
+          
+          set -e  # 恢复错误退出
 
-      - name: Wait for VM initialization (60 seconds)
+      - name: Handle VM creation result
+        if: always()
+        run: |
+          # 检查上一步的结果
+          if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
+            echo "🎉 虚拟机创建成功!"
+            echo "正在等待虚拟机初始化..."
+          else
+            echo "❌ 虚拟机创建失败"
+            echo "错误类型: ${{ steps.create-vm.outputs.error_type }}"
+            echo "错误信息: ${{ steps.create-vm.outputs.error_message }}"
+            
+            # 如果是免费账户限制，提供更多建议
+            if [[ "${{ steps.create-vm.outputs.free_tier_limit }}" == "true" ]]; then
+              echo ""
+              echo "💡 免费账户创建虚拟机失败建议:"
+              echo "1. 尝试使用不同的可用性域 (Availability Domain)"
+              echo "2. 稍后重试，资源可能随时间释放"
+              echo "3. 考虑使用不同的区域 (Region)"
+              echo "4. 检查您的免费账户资源使用情况"
+              echo "5. 确保您没有超过免费套餐的限额"
+            fi
+            
+            # 如果不是免费账户限制，可能是其他错误
+            if [[ "${{ steps.create-vm.outputs.error_type }}" == "network_timeout" ]]; then
+              echo ""
+              echo "💡 网络超时建议:"
+              echo "1. 稍后重试，可能是临时网络问题"
+              echo "2. 检查您的网络连接"
+            fi
+            
+            # 退出工作流并标记为失败
+            exit 1
+          fi
+
+      - name: Wait for VM initialization
+        if: steps.create-vm.outputs.success == 'true'
         run: |
           echo "等待虚拟机初始化完成..."
           sleep 60
 
       - name: Get VM Public IP
+        if: steps.create-vm.outputs.success == 'true'
         id: get-ip
         run: |
           PUBLIC_IP=$(oci compute instance list \
@@ -107,10 +177,19 @@ jobs:
             --query 'data[0]."public-ip"' \
             --raw-output)
           
+          if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" == "null" ]; then
+            echo "❌ 无法获取虚拟机公网IP"
+            echo "这可能是因为:"
+            echo "1. 虚拟机没有分配公网IP"
+            echo "2. 虚拟机没有成功启动"
+            exit 1
+          fi
+          
           echo "public_ip=${PUBLIC_IP}" >> $GITHUB_OUTPUT
           echo "VM Public IP: ${PUBLIC_IP}"
 
-      - name: Print Connection Info
+      - name: Print Success Message
+        if: steps.create-vm.outputs.success == 'true'
         run: |
           echo "🎉 VM instance '${{ github.event.inputs.vm-name }}' 创建成功!"
           echo "📊 配置: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
@@ -119,3 +198,13 @@ jobs:
           echo "🌐 连接方式: ssh root@${{ steps.get-ip.outputs.public_ip }}"
           echo ""
           echo "⚠️  安全提示: 密码认证和 root 登录在生产环境中不推荐使用"
+
+      - name: Print Final Result
+        if: always()
+        run: |
+          if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
+            echo "✅ 工作流执行成功: 虚拟机已创建并配置完成"
+          else
+            echo "❌ 工作流执行失败: 虚拟机创建未成功"
+            echo "请查看上述错误信息和建议"
+          fi
