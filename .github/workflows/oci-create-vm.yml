@@ -16,72 +16,95 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup OCI CLI
-        uses: oracle-actions/setup-oci-cli@v1
+      - name: Install OCI CLI
+        run: |
+          # 安装 OCI CLI
+          pip install oci-cli
+          # 验证安装
+          oci --version
 
       - name: Generate cloud-init script for root login
         run: |
-          cat > cloud-init.txt << EOF
+          # 创建 cloud-init 配置脚本，允许 root 密码登录
+          cat > cloud-init.txt << 'EOF'
           #cloud-config
           users:
             - name: root
-              password: ${{ secrets.ROOT_PASSWORD }}
+              password: $ROOT_PASSWORD
               lock_passwd: false
           chpasswd:
             list: |
-              root:${{ secrets.ROOT_PASSWORD }}
+              root:$ROOT_PASSWORD
             expire: false
           runcmd:
             - sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config
+            - sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
             - systemctl restart sshd
           EOF
+          
+          # 替换密码占位符为实际密码
+          sed -i "s/\$ROOT_PASSWORD/${{ secrets.ROOT_PASSWORD }}/g" cloud-init.txt
+
+      - name: Configure OCI CLI
+        run: |
+          # 创建 OCI 配置
+          mkdir -p ~/.oci
+          cat > ~/.oci/config << EOF
+          [DEFAULT]
+          user=${{ secrets.OCI_USER_ID }}
+          fingerprint=${{ secrets.OCI_FINGERPRINT }}
+          key_file=~/.oci/oci_api_key.pem
+          tenancy=${{ secrets.OCI_TENANCY }}
+          region=${{ secrets.OCI_REGION }}
+          EOF
+          
+          # 创建 API 密钥文件
+          cat > ~/.oci/oci_api_key.pem << EOF
+          ${{ secrets.OCI_API_KEY }}
+          EOF
+          
+          # 设置文件权限
+          chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
 
       - name: Create A1 Flex VM Instance
-        env:
-          OCI_TENANCY: ${{ secrets.OCI_TENANCY }}
-          OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
-          OCI_REGION: ${{ secrets.OCI_REGION }}
-          OCI_API_KEY: ${{ secrets.OCI_API_KEY }}
-          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
-          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
-          OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
         run: |
           # 创建 A1 Flex 规格的虚拟机
           oci compute instance launch \
-            --compartment-id $OCI_COMPARTMENT_ID \
-            --availability-domain "ucIn:AP-OSAKA-1-AD-1" \  # 请替换为你的可用性域
+            --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
+            --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
             --display-name "${{ github.event.inputs.vm-name }}" \
             --shape "VM.Standard.A1.Flex" \
             --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
-            --image-id "ocid1.image.oc1.ap-osaka-1.aaaaaaaaglaxxdyc7fwf77e4lq26h2nhik52d2bmxjuiqe5mzndw3zpmj4hq" \  # 请替换为ARM兼容的镜像OCID
-            --subnet-id $OCI_SUBNET_ID \
+            --image-id "${{ secrets.OCI_IMAGE_OCID }}" \
+            --subnet-id "${{ secrets.OCI_SUBNET_ID }}" \
             --assign-public-ip true \
-            --user-data-file ./cloud-init.txt \
-            --boot-volume-size-in-gbs 50  # 可选的启动卷大小（GB）
+            --user-data-file ./cloud-init.txt
 
-      - name: Wait for VM to initialize
+      - name: Wait for VM initialization (60 seconds)
         run: |
           echo "等待虚拟机初始化完成..."
           sleep 60
 
       - name: Get VM Public IP
         id: get-ip
-        env:
-          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
         run: |
+          # 获取虚拟机公网IP
           PUBLIC_IP=$(oci compute instance list \
-            --compartment-id $OCI_COMPARTMENT_ID \
+            --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
             --display-name "${{ github.event.inputs.vm-name }}" \
             --lifecycle-state RUNNING \
             --query 'data[0]."public-ip"' \
             --raw-output)
-          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
-          echo "VM Public IP: $PUBLIC_IP"
+          
+          echo "public_ip=${PUBLIC_IP}" >> $GITHUB_OUTPUT
+          echo "VM Public IP: ${PUBLIC_IP}"
 
       - name: Print Connection Info
         run: |
-          echo "🎉 VM instance '${{ github.event.inputs.vm-name }}' has been created successfully!"
+          echo "🎉 VM instance '${{ github.event.inputs.vm-name }}' 创建成功!"
           echo "📊 配置: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
           echo "🔑 登录用户: root"
+          echo "🔒 密码: 使用您在 Secrets 中设置的 ROOT_PASSWORD"
           echo "🌐 连接方式: ssh root@${{ steps.get-ip.outputs.public_ip }}"
-          echo "💡 密码使用您在 Secrets 中设置的 ROOT_PASSWORD"
+          echo ""
+          echo "⚠️  安全提示: 密码认证和 root 登录在生产环境中不推荐使用"
