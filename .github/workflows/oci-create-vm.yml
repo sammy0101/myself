@@ -49,7 +49,7 @@ jobs:
           # 创建 A1 Flex 规格的虚拟机
           oci compute instance launch \
             --compartment-id $OCI_COMPARTMENT_ID \
-            --availability-domain "Pllz:PHX-AD-1" \  # 请替换为你的可用性域
+            --availability-domain "ucIn:AP-OSAKA-1-AD-1" \  # 请替换为你的可用性域
             --display-name "${{ github.event.inputs.vm-name }}" \
             --shape "VM.Standard.A1.Flex" \
             --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
