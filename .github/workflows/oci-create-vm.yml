@@ -143,48 +143,6 @@ jobs:
           
           set -e  # 恢复错误退出
 
-      - name: Handle VM creation result
-        if: always()
-        run: |
-          # 检查上一步的结果
-          if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
-            echo "🎉 虚拟机创建成功!"
-            echo "虚拟机名称: ${{ steps.create-vm.outputs.vm_name }}"
-            echo "正在等待虚拟机初始化..."
-          else
-            echo "❌ 虚拟机创建失败"
-            echo "错误类型: ${{ steps.create-vm.outputs.error_type }}"
-            echo "错误信息: ${{ steps.create-vm.outputs.error_message }}"
-            
-            # 如果是免费账户资源不足，提供更多建议
-            if [[ "${{ steps.create-vm.outputs.free_tier_limit }}" == "true" ]]; then
-              echo ""
-              echo "💡 Oracle Cloud 免费账户创建虚拟机失败建议:"
-              echo "1. 尝试使用不同的可用性域 (Availability Domain)"
-              echo "   - 当前可用性域: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
-              echo "   - 您可以在 OCI 控制台中查看其他可用性域"
-              echo "2. 稍后重试 (几小时或第二天)，免费层资源可能会随时间释放"
-              echo "3. 考虑使用不同的区域 (Region)"
-              echo "   - 当前区域: ${{ secrets.OCI_REGION }}"
-              echo "   - 一些较少人使用的区域可能有更多可用资源"
-              echo "4. 尝试创建较小配置的实例 (如 1 OCPU, 6GB RAM)"
-              echo "5. 免费账户有时在某些区域/时间段的资源确实很紧张，需要耐心尝试"
-              echo ""
-              echo "ℹ️  这是一个常见的免费账户问题，不是您的配置错误。"
-            fi
-            
-            # 如果不是免费账户限制，可能是其他错误
-            if [[ "${{ steps.create-vm.outputs.error_type }}" == "network_timeout" ]]; then
-              echo ""
-              echo "💡 网络超时建议:"
-              echo "1. 稍后重试，可能是临时网络问题"
-              echo "2. 检查您的网络连接"
-            fi
-            
-            # 退出工作流并标记为失败
-            exit 1
-          fi
-
       - name: Wait for VM initialization
         if: steps.create-vm.outputs.success == 'true'
         run: |
@@ -207,22 +165,43 @@ jobs:
             echo "这可能是因为:"
             echo "1. 虚拟机没有分配公网IP"
             echo "2. 虚拟机没有成功启动"
-            exit 1
+            echo "public_ip=unknown" >> $GITHUB_OUTPUT
+          else
+            echo "public_ip=${PUBLIC_IP}" >> $GITHUB_OUTPUT
+            echo "VM Public IP: ${PUBLIC_IP}"
+          fi
+
+      - name: Prepare Telegram notification message
+        id: prepare-telegram-message
+        run: |
+          # 准备 Telegram 消息内容
+          if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
+            MESSAGE="✅ OCI 虚拟机创建成功
+            • 名称: ${{ steps.create-vm.outputs.vm_name }}
+            • IP: ${{ steps.get-ip.outputs.public_ip }}
+            • 配置: A1.Flex (4 OCPU, 24GB RAM)
+            • 时间: $(date +'%Y-%m-%d %H:%M:%S UTC')
+            • 登录: ssh root@${{ steps.get-ip.outputs.public_ip }}"
+          else
+            MESSAGE="❌ OCI 虚拟机创建失败
+            • 错误: ${{ steps.create-vm.outputs.error_message }}
+            • 时间: $(date +'%Y-%m-%d %H:%M:%S UTC')
+            • 区域: ${{ secrets.OCI_REGION }}
+            • 详情: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
           
-          echo "public_ip=${PUBLIC_IP}" >> $GITHUB_OUTPUT
-          echo "VM Public IP: ${PUBLIC_IP}"
+          # 移除多余缩进并存储消息
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$MESSAGE" | sed 's/^            //g' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Print Success Message
-        if: steps.create-vm.outputs.success == 'true'
-        run: |
-          echo "🎉 VM instance '${{ steps.create-vm.outputs.vm_name }}' 创建成功!"
-          echo "📊 配置: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
-          echo "🔑 登录用户: root"
-          echo "🔒 密码: 使用您在 Secrets 中设置的 ROOT_PASSWORD"
-          echo "🌐 连接方式: ssh root@${{ steps.get-ip.outputs.public_ip }}"
-          echo ""
-          echo "⚠️  安全提示: 密码认证和 root 登录在生产环境中不推荐使用"
+      - name: Send Telegram notification
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: ${{ steps.prepare-telegram-message.outputs.message }}
+          format: html
 
       - name: Print Final Result
         if: always()
