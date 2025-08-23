@@ -12,19 +12,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 277
-    },
-    {
-      "name": "[HD]cctv-5 体育赛事",
-      "url": "https://stream1.freetv.fun/4c70e5a36b0c609adc5099606066b5a9133c68018d3ff242eeef1ffcccd46026.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "体育",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 280
+      "response_time": 299
     },
     {
       "name": "[HD]cctv-5 体育赛事",
@@ -36,43 +24,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 283
-    },
-    {
-      "name": "[HD]cctv-5 体育赛事",
-      "url": "https://stream1.freetv.fun/6931221aac3c94379c14c9fc03aa4df78795f7c813fb831632f72e8515b175ae.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "体育",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 285
-    },
-    {
-      "name": "[HD]cctv-5 体育赛事",
-      "url": "https://stream1.freetv.fun/54d49cdebe67aac321212f07cd63f353fc6fb23eae7927a3df2222540f56313b.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "体育",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 289
-    },
-    {
-      "name": "[VGA]cctv-5 体育赛事",
-      "url": "https://stream1.freetv.fun/2fd64060f939d7fc9e270d7ed01b7312ce9c3121ac244a3279b8a1eb13815bca.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "体育",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 296
+      "response_time": 292
     },
     {
       "name": "[HD]cctv-5 体育赛事",
@@ -84,11 +36,11 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 297
+      "response_time": 293
     },
     {
       "name": "[HD]cctv-5 体育赛事",
-      "url": "https://stream1.freetv.fun/37a33bb573ad9e2c6859edaa317905d11dab53d4362196d398a3e335349128ee.m3u8",
+      "url": "https://stream1.freetv.fun/4c70e5a36b0c609adc5099606066b5a9133c68018d3ff242eeef1ffcccd46026.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "体育",
@@ -96,11 +48,11 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 315
+      "response_time": 293
     },
     {
       "name": "[HD]cctv-5 体育赛事",
-      "url": "https://stream1.freetv.fun/7e297faa33b2e88c7674ab003364c5d1ae846f9d7fbfd095d908a42a8a6d9aa1.m3u8",
+      "url": "https://stream1.freetv.fun/54d49cdebe67aac321212f07cd63f353fc6fb23eae7927a3df2222540f56313b.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "体育",
@@ -108,7 +60,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 318
+      "response_time": 291
     },
     {
       "name": "[HD]cctv-5 体育赛事",
@@ -120,7 +72,43 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 382
+      "response_time": 310
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/7e297faa33b2e88c7674ab003364c5d1ae846f9d7fbfd095d908a42a8a6d9aa1.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "体育",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 290
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/37a33bb573ad9e2c6859edaa317905d11dab53d4362196d398a3e335349128ee.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "体育",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 302
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/6931221aac3c94379c14c9fc03aa4df78795f7c813fb831632f72e8515b175ae.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "体育",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 341
     },
     {
       "name": "[HD]w-sports *p[geo-blocked]",
@@ -132,7 +120,19 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 1234
+      "response_time": 242
+    },
+    {
+      "name": "[VGA]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/2fd64060f939d7fc9e270d7ed01b7312ce9c3121ac244a3279b8a1eb13815bca.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "体育",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 282
     }
   ]
 }

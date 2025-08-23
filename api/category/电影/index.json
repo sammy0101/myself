@@ -3,16 +3,16 @@
   "count": 17,
   "channels": [
     {
-      "name": "美亞電影台(HK)",
-      "url": "http://s1.an94tv.cfd/aktv/hk/AKTV.m3u8",
-      "group": "AKTV",
-      "source": "AKTV",
+      "name": "[BD]movie sphere",
+      "url": "https://stream1.freetv.fun/141f07133aa4803196087b63fd11e88d843351405878057911f08d686ee5a654.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
       "category": "电影",
       "language": "未知",
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 29
+      "response_time": 385
     },
     {
       "name": "[BD]mytime movie network",
@@ -24,67 +24,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 156
-    },
-    {
-      "name": "[BD]美亞電影台 *a",
-      "url": "https://stream1.freetv.fun/4cb55d1a0cd0148ed2aa550000fb523f7af41914d46d291e30b476acfb6c6d64.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 158
-    },
-    {
-      "name": "[BD]movie sphere",
-      "url": "https://stream1.freetv.fun/141f07133aa4803196087b63fd11e88d843351405878057911f08d686ee5a654.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 251
-    },
-    {
-      "name": "[HD]mytime movie network",
-      "url": "https://stream1.freetv.fun/fd70eb95cd85dcdbca37276d748b27e62558b30068263b66d59e1b49299cf2ff.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 252
-    },
-    {
-      "name": "[SD]paramount movie channel",
-      "url": "https://stream1.freetv.fun/f8c094c073007a655bcbce95b57d395085bc049e719d350446fc2d4efc9c0753.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "480p",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 264
-    },
-    {
-      "name": "[BD]mytime movie network",
-      "url": "https://stream1.freetv.fun/c8e95c800f2f34c6c707f8b240a88dc0e87c3f28b17754b0922b48d5cde7bb7a.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 286
+      "response_time": 276
     },
     {
       "name": "[BD]mytime movie network",
@@ -96,11 +36,11 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 293
+      "response_time": 254
     },
     {
-      "name": "[VGA]tvs drive in movie",
-      "url": "https://stream1.freetv.fun/436cbc179ba091f343261a83fbb9814174fffdb20016f78bcef09e9f52187884.m3u8",
+      "name": "[BD]mytime movie network",
+      "url": "https://stream1.freetv.fun/c8e95c800f2f34c6c707f8b240a88dc0e87c3f28b17754b0922b48d5cde7bb7a.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "电影",
@@ -108,67 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 300
-    },
-    {
-      "name": "[HD]功夫电影",
-      "url": "https://stream1.freetv.fun/ed04d98db945d570c677a330af78f245bd38c2ab085e655b26b123a42ea11a10.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 333
-    },
-    {
-      "name": "[SD]paramount movie channel",
-      "url": "https://stream1.freetv.fun/deadac9145fbbc28b65e5896455938a10b0cafee4da64196f21b2bb7d0601b7d.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "480p",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 366
-    },
-    {
-      "name": "[VGA]movies!",
-      "url": "https://stream1.freetv.fun/c9c0ae927ecbeb4d1e241daade733ac04f296ddfc089329f5897c6d6ccb03961.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 375
-    },
-    {
-      "name": "[SD]凤凰电影",
-      "url": "https://stream1.freetv.fun/75cf3fd3b2e39cb22ee433381aeafdfabd12682b75b524b21992dc0b7284fcaa.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "480p",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 384
-    },
-    {
-      "name": "[VGA]tvs western movie",
-      "url": "https://stream1.freetv.fun/0a35241f57340b522c261c98c4b5f2fb21eea1c06ed8001c1797a53a3bd3a776.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 394
+      "response_time": 266
     },
     {
       "name": "[BD]popc电影",
@@ -180,7 +60,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 449
+      "response_time": 425
     },
     {
       "name": "[BD]美亞電影 *wj",
@@ -192,7 +72,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 736
+      "response_time": 740
+    },
+    {
+      "name": "[BD]美亞電影台 *a",
+      "url": "https://stream1.freetv.fun/4cb55d1a0cd0148ed2aa550000fb523f7af41914d46d291e30b476acfb6c6d64.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 398
     },
     {
       "name": "[HD]hits movie *p[geo-blocked]",
@@ -204,7 +96,115 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 1098
+      "response_time": 622
+    },
+    {
+      "name": "[HD]mytime movie network",
+      "url": "https://stream1.freetv.fun/fd70eb95cd85dcdbca37276d748b27e62558b30068263b66d59e1b49299cf2ff.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 248
+    },
+    {
+      "name": "[HD]功夫电影",
+      "url": "https://stream1.freetv.fun/ed04d98db945d570c677a330af78f245bd38c2ab085e655b26b123a42ea11a10.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 301
+    },
+    {
+      "name": "[SD]paramount movie channel",
+      "url": "https://stream1.freetv.fun/f8c094c073007a655bcbce95b57d395085bc049e719d350446fc2d4efc9c0753.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "480p",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 260
+    },
+    {
+      "name": "[SD]paramount movie channel",
+      "url": "https://stream1.freetv.fun/deadac9145fbbc28b65e5896455938a10b0cafee4da64196f21b2bb7d0601b7d.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "480p",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 379
+    },
+    {
+      "name": "[SD]凤凰电影",
+      "url": "https://stream1.freetv.fun/75cf3fd3b2e39cb22ee433381aeafdfabd12682b75b524b21992dc0b7284fcaa.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "480p",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 284
+    },
+    {
+      "name": "[VGA]movies!",
+      "url": "https://stream1.freetv.fun/c9c0ae927ecbeb4d1e241daade733ac04f296ddfc089329f5897c6d6ccb03961.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 393
+    },
+    {
+      "name": "[VGA]tvs drive in movie",
+      "url": "https://stream1.freetv.fun/436cbc179ba091f343261a83fbb9814174fffdb20016f78bcef09e9f52187884.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 492
+    },
+    {
+      "name": "[VGA]tvs western movie",
+      "url": "https://stream1.freetv.fun/0a35241f57340b522c261c98c4b5f2fb21eea1c06ed8001c1797a53a3bd3a776.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 289
+    },
+    {
+      "name": "美亞電影台(HK)",
+      "url": "http://s1.an94tv.cfd/aktv/hk/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 31
     }
   ]
 }

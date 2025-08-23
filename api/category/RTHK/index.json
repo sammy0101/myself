@@ -1,55 +1,7 @@
 {
   "category": "RTHK",
-  "count": 7,
+  "count": 6,
   "channels": [
-    {
-      "name": "鳳凰衛視香港台",
-      "url": "http://s1.an94tv.cfd/aktv/CH-5/AKTV.m3u8",
-      "group": "AKTV",
-      "source": "AKTV",
-      "category": "RTHK",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 27
-    },
-    {
-      "name": "[HD]rthk31[geo-blocked]",
-      "url": "https://stream1.freetv.fun/d2d9be54e9a344d02bfd52f958931c55dedf913747bb8f038ad754c7dbad6250.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "RTHK",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 158
-    },
-    {
-      "name": "[VGA]rthk31[geo-blocked]",
-      "url": "https://stream1.freetv.fun/bcd3e759b0c9f8807280e9cb8fc50c6919ffad577b1d5d21f392f601d93301bc.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "RTHK",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 379
-    },
-    {
-      "name": "[HD]rthk32[geo-blocked]",
-      "url": "https://stream1.freetv.fun/e42fb110283fcb1befbda834ed93046b948ab8ecf4fa35c482c0296e220b7fc0.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "RTHK",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 384
-    },
     {
       "name": "[BD]rthk32",
       "url": "https://stream1.freetv.fun/4e2f5ecdf24236f647b765089947b507cb0191011759d44788ee936dd194add6.m3u8",
@@ -60,19 +12,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 406
-    },
-    {
-      "name": "RTHK TV 31 (港台電視31) (1080p) [Geo-blocked]",
-      "url": "https://rthktv31-live.akamaized.net/hls/live/2036818/RTHKTV31/master.m3u8",
-      "group": "iptv-org",
-      "source": "iptv-org",
-      "category": "RTHK",
-      "language": "未知",
-      "resolution": "1080p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 438
+      "response_time": 380
     },
     {
       "name": "[HD]rthk31 *wj",
@@ -84,7 +24,55 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 754
+      "response_time": 795
+    },
+    {
+      "name": "[HD]rthk31[geo-blocked]",
+      "url": "https://stream1.freetv.fun/d2d9be54e9a344d02bfd52f958931c55dedf913747bb8f038ad754c7dbad6250.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 222
+    },
+    {
+      "name": "[HD]rthk32[geo-blocked]",
+      "url": "https://stream1.freetv.fun/e42fb110283fcb1befbda834ed93046b948ab8ecf4fa35c482c0296e220b7fc0.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 285
+    },
+    {
+      "name": "[VGA]rthk31[geo-blocked]",
+      "url": "https://stream1.freetv.fun/bcd3e759b0c9f8807280e9cb8fc50c6919ffad577b1d5d21f392f601d93301bc.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 378
+    },
+    {
+      "name": "鳳凰衛視香港台",
+      "url": "http://s1.an94tv.cfd/aktv/CH-5/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 28
     }
   ]
 }

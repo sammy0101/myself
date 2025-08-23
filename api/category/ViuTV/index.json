@@ -3,6 +3,18 @@
   "count": 13,
   "channels": [
     {
+      "name": "[BD]-viutv",
+      "url": "https://stream1.freetv.fun/f48bb6051a7feba9cc3412b4572f97f3631057c172f27b6fc620d6dc63317f6d.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 152
+    },
+    {
       "name": "[BD]viutv",
       "url": "https://stream1.freetv.fun/566447a554a11bb540e5e37ea32162caa2959fefd3707625f70de6ac96255364.m3u8",
       "group": "epg.pw",
@@ -12,31 +24,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 162
-    },
-    {
-      "name": "[HD]viutv1[geo-blocked]",
-      "url": "https://stream1.freetv.fun/a63d933d56f703f97a8e8e772f3fe853821b0fb5993e4c79dec30ebf954fb5b4.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 250
-    },
-    {
-      "name": "[HD]viutv6",
-      "url": "https://stream1.freetv.fun/baea0cb1546ef2b13375157ebf43a939a4faa4305cf4b3f8f967a13627e57cbb.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 291
+      "response_time": 346
     },
     {
       "name": "[BD]viutv",
@@ -48,31 +36,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 368
-    },
-    {
-      "name": "[BD]-viutv",
-      "url": "https://stream1.freetv.fun/f48bb6051a7feba9cc3412b4572f97f3631057c172f27b6fc620d6dc63317f6d.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 374
-    },
-    {
-      "name": "[BD]viutv[geo-blocked]",
-      "url": "https://stream1.freetv.fun/24011fe722dc3f5e8fc2c34317c9d94ebd36a707dbd89426eb1072fea51f5b25.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 379
+      "response_time": 266
     },
     {
       "name": "[BD]viutv",
@@ -84,7 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 393
+      "response_time": 371
     },
     {
       "name": "[BD]viutv",
@@ -96,55 +60,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 394
-    },
-    {
-      "name": "[HD]viutv1[geo-blocked]",
-      "url": "https://stream1.freetv.fun/627716b0d37b80e77aab34fc2860e50929ed1a7c05181198d38dbcac83796070.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 511
-    },
-    {
-      "name": "[HD]viutvsix",
-      "url": "https://stream1.freetv.fun/df53d054294bb3499e8c5897908dd1e7a190e2505b2f45abd837a8bc405771fb.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 607
-    },
-    {
-      "name": "[HD]viutvsix *wj",
-      "url": "https://stream1.freetv.fun/3c7f6189e6af606db8d8010d65da76951eab8869eb33c6b1b715e64f0cea7946.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 783
-    },
-    {
-      "name": "「HK」VIU TV",
-      "url": "http://r.jdshipin.com/vSJvl",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 2783
+      "response_time": 239
     },
     {
       "name": "[BD]viutv1 *wj",
@@ -156,7 +72,91 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 3080
+      "response_time": 741
+    },
+    {
+      "name": "[BD]viutv[geo-blocked]",
+      "url": "https://stream1.freetv.fun/24011fe722dc3f5e8fc2c34317c9d94ebd36a707dbd89426eb1072fea51f5b25.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 151
+    },
+    {
+      "name": "[HD]viutv1[geo-blocked]",
+      "url": "https://stream1.freetv.fun/a63d933d56f703f97a8e8e772f3fe853821b0fb5993e4c79dec30ebf954fb5b4.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 151
+    },
+    {
+      "name": "[HD]viutv1[geo-blocked]",
+      "url": "https://stream1.freetv.fun/627716b0d37b80e77aab34fc2860e50929ed1a7c05181198d38dbcac83796070.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 320
+    },
+    {
+      "name": "[HD]viutv6",
+      "url": "https://stream1.freetv.fun/baea0cb1546ef2b13375157ebf43a939a4faa4305cf4b3f8f967a13627e57cbb.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 288
+    },
+    {
+      "name": "[HD]viutvsix",
+      "url": "https://stream1.freetv.fun/df53d054294bb3499e8c5897908dd1e7a190e2505b2f45abd837a8bc405771fb.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 546
+    },
+    {
+      "name": "[HD]viutvsix *wj",
+      "url": "https://stream1.freetv.fun/3c7f6189e6af606db8d8010d65da76951eab8869eb33c6b1b715e64f0cea7946.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 862
+    },
+    {
+      "name": "「HK」VIU TV",
+      "url": "http://r.jdshipin.com/vSJvl",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 2734
     }
   ]
 }

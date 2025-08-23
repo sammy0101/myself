@@ -3,30 +3,6 @@
   "count": 4,
   "channels": [
     {
-      "name": "[BD]鳳凰衛視資訊",
-      "url": "https://stream1.freetv.fun/c3ea4ea86c58594aa80ca15cbc03968e7481243ea39ad553e617442c6017362a.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "新闻",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 157
-    },
-    {
-      "name": "鳳凰衛視資訊台",
-      "url": "http://s1.an94tv.cfd/aktv/CH-4/AKTV.m3u8",
-      "group": "AKTV",
-      "source": "AKTV",
-      "category": "新闻",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 250
-    },
-    {
       "name": "[BD]無線新聞[geo-blocked]",
       "url": "https://stream1.freetv.fun/e1197be826728274665ea76c587129b5e539d04d03e1f6ead9cf530ef31c1983.m3u8",
       "group": "epg.pw",
@@ -36,7 +12,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 292
+      "response_time": 162
+    },
+    {
+      "name": "[BD]鳳凰衛視資訊",
+      "url": "https://stream1.freetv.fun/c3ea4ea86c58594aa80ca15cbc03968e7481243ea39ad553e617442c6017362a.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 284
     },
     {
       "name": "[HD]鳳凰資訊 *wj",
@@ -48,7 +36,19 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 582
+      "response_time": 869
+    },
+    {
+      "name": "鳳凰衛視資訊台",
+      "url": "http://s1.an94tv.cfd/aktv/CH-4/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 40
     }
   ]
 }
