@@ -1,0 +1,215 @@
+{
+  "category": "新闻",
+  "count": 19,
+  "channels": [
+    {
+      "name": "耀才財經台 (576p)",
+      "url": "http://202.69.67.66:443/webcast/bshdlive-pc/playlist.m3u8",
+      "group": "iptv-org",
+      "source": "iptv-org",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "鳳凰衛視資訊台",
+      "url": "http://s1.an94tv.cfd/aktv/CH-4/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "TVBS网路新闻",
+      "url": "https://raw.githubusercontent.com/ChiSheng9/iptv/master/TV31.m3u8",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "「HK」无线新闻",
+      "url": "https://tv.iill.top/tvb/4",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "「HK」无线财经体育资讯台",
+      "url": "https://tv.iill.top/tvb/6",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "TVBS新闻",
+      "url": "http://38.64.72.148:80/hls/modn/list/4006/chunklist0.m3u8",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]now新闻",
+      "url": "https://stream1.freetv.fun/c50436b4b66ade6d8f8e2106ca97460d5686f06615911ee7b513b0f8b73f7b01.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]now新闻",
+      "url": "https://stream1.freetv.fun/9dec549cbac511cacca85d2e5738d965955eadcb5b4fe5974ae97fdf4733ae72.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[HD]tvb娱乐新闻",
+      "url": "https://stream1.freetv.fun/9f3cc38c6035c8df21a7055aca8d449b14238eb1d6d3a5fb1d41cc47e2f4785f.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]tvb无线新闻",
+      "url": "https://stream1.freetv.fun/f6a7be3b501de81700985baf8b050d094ecf90bc3c6a7c6b21369ea870ac5a23.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]tvb无线新闻",
+      "url": "https://stream1.freetv.fun/abe9f22cc083f86b487dac803a836acfed1499b1f1cad57696c277b6c1aa3974.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[VGA]now财经",
+      "url": "https://stream1.freetv.fun/d12db5a58083348e01e0c006fc7fd0ecb6aefceddcca592ae5a4578ac405009e.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[VGA]now财经",
+      "url": "https://stream1.freetv.fun/c55e54fb974932614f58638a26549f8d4a3605072fe1568ca4fedd96af5a64f9.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]无线新闻",
+      "url": "https://stream1.freetv.fun/b9fc79702a33d75d0fa4c22a19341be1a7120d111c47d9e109566b9d42020383.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[HD]无线新闻[geo-blocked]",
+      "url": "https://stream1.freetv.fun/4290011e1af62ee2c9dea7a9015fec85668584edfd3a58caa60cee5a8684e6fa.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]香港有线新闻",
+      "url": "https://stream1.freetv.fun/becf9a78d5be5a31016da97c31df2b591a47ce1cfe0add948357afdce3d6ec31.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]香港有线新闻",
+      "url": "https://stream1.freetv.fun/8ed977ee3837996b089be9d2fd242fb26c880bc339d032764cb462ebfece913a.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]鳳凰衛視資訊",
+      "url": "https://stream1.freetv.fun/c3ea4ea86c58594aa80ca15cbc03968e7481243ea39ad553e617442c6017362a.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[HD]鳳凰資訊 *wj",
+      "url": "https://stream1.freetv.fun/c4e309c82790a356e06057e06f2e180585fb5c2c56c211372df0d85e7621433d.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null
+    }
+  ]
+}

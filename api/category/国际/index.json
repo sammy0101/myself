@@ -1,0 +1,50 @@
+{
+  "category": "国际",
+  "count": 4,
+  "channels": [
+    {
+      "name": "NHK World Japan",
+      "url": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_4M.m3u8",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "NHK BS1",
+      "url": "https://stream01.willfonk.com/live_playlist.m3u8?cid=BS101&r=FHD&ccode=JP&m=d0:20:20:04:35:cc&t=0d6938cb3dcf4b79848bc1753a59daf1",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]tvri world",
+      "url": "https://stream1.freetv.fun/7c6af57352a56300dd0394302b53823afb5d69c4b3a44fd4fb1eadeaa1d13b3e.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    },
+    {
+      "name": "[BD]星空国际[geo-blocked]",
+      "url": "https://stream1.freetv.fun/75e262d43778a32cb887d4ede15dc972143a0522e4d89a81f45b7307f6fedd61.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null
+    }
+  ]
+}
