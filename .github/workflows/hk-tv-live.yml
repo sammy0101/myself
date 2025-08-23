@@ -5,9 +5,7 @@ on:
   schedule:
     - cron: '0 0 */2 * *'  # 每2天运行一次
   workflow_dispatch:  # 允许手动触发
-  push:
-    paths:
-      - 'scripts/fetch_hk_tv_sources.py'
+  # 移除了 push 触发条件，这样代码修改不会自动运行
 
 jobs:
   fetch-and-update:
