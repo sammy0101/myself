@@ -3,6 +3,7 @@ import requests
 import re
 import time
 import json
+import os  # 添加这行导入
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs
@@ -422,6 +423,9 @@ class HKTVSourceFetcher:
     
     def generate_api_files(self, sources):
         """生成API文件，支持分类筛选"""
+        # 创建API目录
+        os.makedirs("api", exist_ok=True)
+        
         # 生成完整的频道列表JSON
         api_data = {
             "last_updated": datetime.now().isoformat(),
@@ -492,9 +496,6 @@ class HKTVSourceFetcher:
 
 def main():
     """主函数"""
-    # 创建API目录
-    os.makedirs("api", exist_ok=True)
-    
     fetcher = HKTVSourceFetcher()
     sources = fetcher.fetch_all_sources()
     
