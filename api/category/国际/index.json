@@ -1,28 +1,114 @@
 {
   "category": "国际",
-  "count": 4,
+  "count": 11,
   "channels": [
     {
-      "name": "NHK World Japan",
-      "url": "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_4M.m3u8",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
+      "name": "鳳凰衛視中文台",
+      "url": "http://s1.an94tv.cfd/aktv/CH-3/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
       "category": "国际",
       "language": "未知",
       "resolution": "未知",
       "hd": false,
-      "channel_id": null
+      "channel_id": null,
+      "response_time": 27
     },
     {
-      "name": "NHK BS1",
-      "url": "https://stream01.willfonk.com/live_playlist.m3u8?cid=BS101&r=FHD&ccode=JP&m=d0:20:20:04:35:cc&t=0d6938cb3dcf4b79848bc1753a59daf1",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
+      "name": "[BD]鳳凰衛視香港[geo-blocked]",
+      "url": "https://stream1.freetv.fun/b9f0de655b9503e058eee63c9df9f1520f0e95826667d01742f6e7a91d33d39f.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
       "category": "国际",
       "language": "未知",
       "resolution": "未知",
       "hd": false,
-      "channel_id": null
+      "channel_id": null,
+      "response_time": 151
+    },
+    {
+      "name": "[HD]凤凰卫视",
+      "url": "https://stream1.freetv.fun/d3c92459e8f551fb9d596197050f5caa3441cc4b4300514833d9bcfe23aeddb8.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 152
+    },
+    {
+      "name": "[BD]鳳凰衛視香港",
+      "url": "https://stream1.freetv.fun/5b951aef4004fe76a28e3cbe7fed668e433317b747c28c5ff7d437ba4d97c4d1.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 153
+    },
+    {
+      "name": "[BD]鳳凰衛視中文",
+      "url": "https://stream1.freetv.fun/daeb9e15e92a937b5997e93493291a0f77778084da1e26df1a0c79d869766fb6.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 249
+    },
+    {
+      "name": "[HD]凤凰卫视香港[geo-blocked]",
+      "url": "https://stream1.freetv.fun/7013161292a63b3a988b5c0bf9f7498081c3281a387fac9a0585fa9638dd4887.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 253
+    },
+    {
+      "name": "[BD]凤凰卫视资讯",
+      "url": "https://stream1.freetv.fun/775da45dedb5d0e2186c592c1a582aabe6893f527089d022ba7104e2471c96cf.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 283
+    },
+    {
+      "name": "[HD]凤凰卫视[geo-blocked]",
+      "url": "https://stream1.freetv.fun/e6886dbde2158fbb51da8cd6db21e2bb5fb68f4e5aa4db51e3589f30c20a13d8.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 328
+    },
+    {
+      "name": "[BD]凤凰卫视中文",
+      "url": "https://stream1.freetv.fun/2d974525773570a12819a6597a3b0349bd9856ea05c91633862035caed14376d.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 414
     },
     {
       "name": "[BD]tvri world",
@@ -33,7 +119,8 @@
       "language": "未知",
       "resolution": "未知",
       "hd": false,
-      "channel_id": null
+      "channel_id": null,
+      "response_time": 465
     },
     {
       "name": "[BD]星空国际[geo-blocked]",
@@ -44,7 +131,8 @@
       "language": "未知",
       "resolution": "未知",
       "hd": false,
-      "channel_id": null
+      "channel_id": null,
+      "response_time": 2030
     }
   ]
 }

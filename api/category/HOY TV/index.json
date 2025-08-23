@@ -1,0 +1,18 @@
+{
+  "category": "HOY TV",
+  "count": 1,
+  "channels": [
+    {
+      "name": "[HD]hoy资讯[geo-blocked]",
+      "url": "https://stream1.freetv.fun/b24a7d739a39cf40d6bf27b97c643af4f960493a5ee642d73eaca825b40d2823.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "HOY TV",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 447
+    }
+  ]
+}
