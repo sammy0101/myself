@@ -1,0 +1,36 @@
+# .github/workflows/hk-tv-live.yml
+name: HK TV Live Sources Updater
+
+on:
+  schedule:
+    - cron: '0 0 */2 * *'  # 每2天运行一次
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  fetch-and-update:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4
+
+    - name: Run HK TV sources fetcher
+      run: python scripts/fetch_hk_tv_sources.py
+
+    - name: Commit and push if changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        git commit -m "Auto-update HK TV sources" || echo "No changes to commit"
+        git push
