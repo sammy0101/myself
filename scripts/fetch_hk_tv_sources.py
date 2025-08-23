@@ -16,6 +16,10 @@ class HKTVSourceFetcher:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
+        # 定义分类优先级顺序
+        self.category_order = [
+            'TVB', 'ViuTV', 'HOY TV', 'RTHK', '新闻', '体育', '电影', '国际', '儿童', '其他'
+        ]
         # 更精确的频道分类映射
         self.channel_categories = {
             # TVB频道
@@ -123,9 +127,6 @@ class HKTVSourceFetcher:
                 # 每测试10个源显示一次进度
                 if (i + 1) % 10 == 0:
                     print(f"已测试 {i + 1}/{len(sources)} 个频道")
-        
-        # 按响应时间排序
-        valid_sources.sort(key=lambda x: x.get('response_time', 9999))
         
         return valid_sources
     
@@ -422,11 +423,26 @@ class HKTVSourceFetcher:
             print(f"从BigBigGrandG获取到 {len(sources)} 个香港频道")
         return len(sources) if content else 0
     
+    def sort_sources(self, sources):
+        """按照分类优先级和频道名称排序"""
+        # 创建分类索引映射
+        category_index = {category: idx for idx, category in enumerate(self.category_order)}
+        
+        # 对不在预定义分类中的频道，给一个很大的索引值，使其排在最后
+        def get_category_index(category):
+            return category_index.get(category, len(self.category_order))
+        
+        # 按分类优先级和频道名称排序
+        return sorted(sources, key=lambda x: (get_category_index(x['category']), x['name']))
+    
     def generate_output_files(self, sources):
         """生成输出文件"""
+        # 按照分类优先级和频道名称排序
+        sorted_sources = self.sort_sources(sources)
+        
         # 生成M3U文件
         m3u_content = "#EXTM3U\n"
-        for source in sources:
+        for source in sorted_sources:
             m3u_content += f'#EXTINF:-1 tvg-id="{source.get("channel_id", "")}" tvg-name="{source["name"]}" tvg-logo="" group-title="{source["category"]}",{source["name"]}\n'
             m3u_content += f'{source["url"]}\n'
         
@@ -442,14 +458,17 @@ class HKTVSourceFetcher:
         
         # 按分类组织频道
         categories = {}
-        for source in sources:
+        for source in sorted_sources:
             category = source["category"]
             if category not in categories:
                 categories[category] = []
             categories[category].append(source)
         
+        # 按分类优先级排序
+        sorted_categories = sorted(categories.items(), key=lambda x: self.category_order.index(x[0]) if x[0] in self.category_order else len(self.category_order))
+        
         # 按分类输出
-        for category, channels in categories.items():
+        for category, channels in sorted_categories:
             txt_content += f"\n# {category}\n"
             for channel in channels:
                 hd_flag = "[HD]" if channel.get('hd') else ""
@@ -468,11 +487,14 @@ class HKTVSourceFetcher:
         # 创建API目录
         os.makedirs("api", exist_ok=True)
         
+        # 按照分类优先级和频道名称排序
+        sorted_sources = self.sort_sources(sources)
+        
         # 生成完整的频道列表JSON
         api_data = {
             "last_updated": datetime.now().isoformat(),
-            "total_channels": len(sources),
-            "channels": sources
+            "total_channels": len(sorted_sources),
+            "channels": sorted_sources
         }
         
         with open("api/all.json", "w", encoding="utf-8") as f:
@@ -480,13 +502,16 @@ class HKTVSourceFetcher:
         
         # 按分类生成API文件
         categories = {}
-        for source in sources:
+        for source in sorted_sources:
             category = source["category"]
             if category not in categories:
                 categories[category] = []
             categories[category].append(source)
         
-        for category, channels in categories.items():
+        # 按分类优先级排序
+        sorted_categories = sorted(categories.items(), key=lambda x: self.category_order.index(x[0]) if x[0] in self.category_order else len(self.category_order))
+        
+        for category, channels in sorted_categories:
             category_data = {
                 "category": category,
                 "count": len(channels),
@@ -502,7 +527,7 @@ class HKTVSourceFetcher:
         
         # 按语言生成API文件
         languages = {}
-        for source in sources:
+        for source in sorted_sources:
             language = source["language"]
             if language not in languages:
                 languages[language] = []
@@ -523,7 +548,7 @@ class HKTVSourceFetcher:
                 json.dump(language_data, f, ensure_ascii=False, indent=2)
         
         # 生成高清频道API
-        hd_channels = [s for s in sources if s.get('hd')]
+        hd_channels = [s for s in sorted_sources if s.get('hd')]
         hd_data = {
             "hd_channels": True,
             "count": len(hd_channels),
@@ -535,7 +560,7 @@ class HKTVSourceFetcher:
             json.dump(hd_data, f, ensure_ascii=False, indent=2)
         
         # 生成快速响应频道API
-        fast_channels = [s for s in sources if s.get('response_time', 9999) < 1000]
+        fast_channels = [s for s in sorted_sources if s.get('response_time', 9999) < 1000]
         fast_data = {
             "fast_channels": True,
             "count": len(fast_channels),
