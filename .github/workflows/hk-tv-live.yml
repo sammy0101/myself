@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: '0 0 */2 * *'  # 每2天运行一次
   workflow_dispatch:  # 允许手动触发
+  push:
+    paths:
+      - 'scripts/fetch_hk_tv_sources.py'
 
 jobs:
   fetch-and-update:
@@ -13,6 +16,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -32,5 +37,5 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add -A
-        git commit -m "Auto-update HK TV sources" || echo "No changes to commit"
+        git diff --staged --quiet || git commit -m "Auto-update HK TV sources"
         git push
