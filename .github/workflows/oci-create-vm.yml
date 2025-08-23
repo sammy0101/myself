@@ -1,11 +1,14 @@
 name: '[Scheduled] Create OCI A1 Flex VM'
 
 on:
-  # 每天 UTC 時間 00:30 自動執行
   schedule:
-    - cron: '30 0 * * *'
-  # 保留手動觸發功能
-  workflow_dispatch:
+    # 方案一 (穩健型)：每天 UTC 時間早上 6 點運行一次
+    #- cron: '0 6 * * *'
+    
+    # 方案二 (積極型)：每天 UTC 時間 0 點和 12 點各運行一次
+    - cron: '0 0,12 * * *'
+
+  workflow_dispatch: {} # 保留手動觸發功能
     inputs:
       vm-name:
         description: '虛擬機器的名稱'
