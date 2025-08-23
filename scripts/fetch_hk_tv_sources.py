@@ -3,7 +3,8 @@ import requests
 import re
 import time
 import json
-import os  # 添加这行导入
+import os
+import socket
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs
@@ -11,24 +12,30 @@ from urllib.parse import urlparse, parse_qs
 class HKTVSourceFetcher:
     def __init__(self):
         self.sources = []
-        self.timeout = 15
+        self.timeout = 10
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
-        # 频道分类映射
+        # 更精确的频道分类映射
         self.channel_categories = {
+            # TVB频道
+            'TVB': ['TVB', '無綫', '无线', '翡翠', '明珠', 'J2', 'J5', '無綫新聞', '無綫財經', '無綫綜藝'],
+            # ViuTV频道
+            'ViuTV': ['ViuTV', 'Viu', 'VIU'],
+            # HOY TV频道 (前开电视)
+            'HOY TV': ['HOY', '開電視', '开电视', '有線', '有线', '奇妙', '77台', '78台', '79台'],
+            # RTHK频道
+            'RTHK': ['RTHK', '香港电台', '港台'],
             # 新闻频道
-            '新闻': ['新闻', 'NEWS', '資訊', '財經', '财经', 'NEWS', 'INFO'],
-            # 综合频道
-            '综合': ['綜合', '综合', '翡翠', '明珠', 'J2', 'ViuTV', '開電視', '开电视', 'RTHK', '鳳凰', '凤凰'],
+            '新闻': ['新聞', '新闻', 'NEWS', '資訊', '財經', '财经', 'INFO', '財經資訊', '财经资讯'],
             # 体育频道
-            '体育': ['體育', '体育', 'SPORTS', '賽馬', '赛马', '足球', '籃球', '篮球'],
+            '体育': ['體育', '体育', 'SPORTS', '賽馬', '赛马', '足球', '籃球', '篮球', '運動', '运动'],
             # 电影频道
-            '电影': ['電影', '电影', 'MOVIE', '影院', '戲劇', '戏剧'],
+            '电影': ['電影', '电影', 'MOVIE', '影院', '戲劇', '戏剧', 'CINEMA'],
+            # 国际频道
+            '国际': ['國際', '国际', 'WORLD', 'BBC', 'CNN', 'NHK', 'DW', '凤凰卫视', '鳳凰衛視'],
             # 儿童频道
             '儿童': ['兒童', '儿童', 'KIDS', '卡通', '動畫', '动画'],
-            # 国际频道
-            '国际': ['國際', '国际', 'WORLD', 'BBC', 'CNN', 'NHK', 'DW'],
         }
         # 语言映射
         self.language_map = {
@@ -49,11 +56,8 @@ class HKTVSourceFetcher:
             self.fetch_iptv_org_hk,
             self.fetch_epg_pw_hk,
             self.fetch_aktv,
-            self.fetch_ftindy_sources,
             self.fetch_yuechan,
             self.fetch_bigbiggrandg,
-            self.fetch_yang1989,
-            self.fetch_zhanghongguang
         ]
         
         # 使用多线程并行获取
@@ -74,23 +78,105 @@ class HKTVSourceFetcher:
         # 分类和增强元数据
         enhanced_sources = self.enhance_metadata(unique_sources)
         
-        print(f"总共获取到 {len(enhanced_sources)} 个唯一香港频道")
+        print(f"总共获取到 {len(enhanced_sources)} 个香港频道")
+        
+        # 测试连接并过滤无效源
+        tested_sources = self.test_sources_connectivity(enhanced_sources)
+        
+        print(f"连接测试后剩余 {len(tested_sources)} 个有效频道")
         
         # 生成输出文件
-        self.generate_output_files(enhanced_sources)
+        self.generate_output_files(tested_sources)
         
         # 生成API文件
-        self.generate_api_files(enhanced_sources)
+        self.generate_api_files(tested_sources)
         
-        return enhanced_sources
+        return tested_sources
+    
+    def test_sources_connectivity(self, sources):
+        """测试源的连接性并过滤无效源"""
+        print("开始测试频道连接性...")
+        
+        valid_sources = []
+        
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            # 创建测试任务
+            future_to_source = {
+                executor.submit(self.test_source_connectivity, source): source 
+                for source in sources
+            }
+            
+            # 处理结果
+            for i, future in enumerate(as_completed(future_to_source)):
+                source = future_to_source[future]
+                try:
+                    is_valid, response_time = future.result()
+                    if is_valid:
+                        source['response_time'] = response_time
+                        valid_sources.append(source)
+                        print(f"✓ {source['name']} - {response_time}ms")
+                    else:
+                        print(f"✗ {source['name']} - 无效")
+                except Exception as e:
+                    print(f"✗ {source['name']} - 测试错误: {e}")
+                
+                # 每测试10个源显示一次进度
+                if (i + 1) % 10 == 0:
+                    print(f"已测试 {i + 1}/{len(sources)} 个频道")
+        
+        # 按响应时间排序
+        valid_sources.sort(key=lambda x: x.get('response_time', 9999))
+        
+        return valid_sources
+    
+    def test_source_connectivity(self, source):
+        """测试单个源的连接性"""
+        url = source['url']
+        
+        # 跳过明显无效的URL
+        if not url or url.startswith('http://example.com'):
+            return False, 9999
+        
+        try:
+            # 解析主机名和端口
+            parsed_url = urlparse(url)
+            hostname = parsed_url.hostname
+            port = parsed_url.port or (443 if parsed_url.scheme == 'https' else 80)
+            
+            # 首先测试TCP连接
+            start_time = time.time()
+            with socket.create_connection((hostname, port), timeout=5):
+                tcp_time = int((time.time() - start_time) * 1000)
+            
+            # 然后测试HTTP请求
+            start_time = time.time()
+            response = requests.head(
+                url, 
+                timeout=5, 
+                headers=self.headers,
+                allow_redirects=True
+            )
+            http_time = int((time.time() - start_time) * 1000)
+            
+            # 计算总时间
+            total_time = (tcp_time + http_time) // 2
+            
+            # 检查响应状态
+            if response.status_code < 400:
+                return True, total_time
+            else:
+                return False, total_time
+                
+        except (requests.RequestException, socket.timeout, socket.gaierror, OSError):
+            return False, 9999
     
     def enhance_metadata(self, sources):
         """增强频道元数据：分类、语言、清晰度等"""
         enhanced_sources = []
         
         for source in sources:
-            # 确定频道分类
-            category = self.determine_category(source['name'], source.get('group', ''))
+            # 确定频道分类 - 使用更精确的分类方法
+            category = self.determine_category_precise(source['name'], source.get('group', ''))
             source['category'] = category
             
             # 确定语言
@@ -112,11 +198,22 @@ class HKTVSourceFetcher:
         
         return enhanced_sources
     
-    def determine_category(self, name, group):
-        """确定频道分类"""
+    def determine_category_precise(self, name, group):
+        """更精确地确定频道分类"""
         name_upper = name.upper()
         group_upper = group.upper()
         
+        # 首先检查特定频道
+        if any(keyword in name_upper for keyword in ['TVB', '無綫', '无线', '翡翠', '明珠', 'J2']):
+            return 'TVB'
+        elif any(keyword in name_upper for keyword in ['VIUTV', 'VIU TV']):
+            return 'ViuTV'
+        elif any(keyword in name_upper for keyword in ['HOY', '開電視', '开电视', '有線', '有线', '奇妙', '77台', '78台', '79台']):
+            return 'HOY TV'
+        elif any(keyword in name_upper for keyword in ['RTHK', '香港电台', '港台']):
+            return 'RTHK'
+        
+        # 然后检查频道类型
         for category, keywords in self.channel_categories.items():
             for keyword in keywords:
                 if keyword.upper() in name_upper or keyword.upper() in group_upper:
@@ -149,24 +246,6 @@ class HKTVSourceFetcher:
             return '720p'
         elif '480' in name_upper or 'SD' in name_upper:
             return '480p'
-        
-        # 从URL参数中判断
-        try:
-            parsed_url = urlparse(url)
-            query_params = parse_qs(parsed_url.query)
-            
-            if 'bitrate' in query_params:
-                bitrate = int(query_params['bitrate'][0])
-                if bitrate > 8000:
-                    return '4K'
-                elif bitrate > 4000:
-                    return '1080p'
-                elif bitrate > 2000:
-                    return '720p'
-                else:
-                    return '480p'
-        except:
-            pass
         
         return '未知'
     
@@ -259,7 +338,7 @@ class HKTVSourceFetcher:
     
     def is_hk_channel(self, name, group):
         """判断是否为香港频道"""
-        hk_keywords = ['香港', 'HK', 'TVB', '翡翠', '明珠', 'ViuTV', 'RTHK', '鳳凰', '凤凰', '香港开电视', 'J2', '無綫', '无线']
+        hk_keywords = ['香港', 'HK', 'TVB', '翡翠', '明珠', 'ViuTV', 'RTHK', '鳳凰', '凤凰', '香港开电视', 'J2', '無綫', '无线', 'HOY']
         name_upper = name.upper()
         group_upper = group.upper()
         
@@ -323,26 +402,6 @@ class HKTVSourceFetcher:
             print(f"从AKTV获取到 {len(sources)} 个香港频道")
         return len(sources) if content else 0
     
-    def fetch_ftindy_sources(self):
-        """获取Ftindy多个直播源"""
-        ftindy_urls = [
-            ("https://raw.githubusercontent.com/Ftindy/IPTV-URL/main/bestv.m3u", "Ftindy百视通"),
-            ("https://raw.githubusercontent.com/Ftindy/IPTV-URL/main/cqyx.m3u", "Ftindy重庆广电"),
-            ("https://raw.githubusercontent.com/Ftindy/IPTV-URL/main/IPTV.m3u", "Ftindy国内4K")
-        ]
-        
-        total_sources = 0
-        for url, name in ftindy_urls:
-            content = self.make_request(url)
-            if content:
-                sources = self.parse_m3u_content(content, name)
-                self.add_sources(sources)
-                total_sources += len(sources)
-                print(f"从{name}获取到 {len(sources)} 个香港频道")
-            time.sleep(1)  # 避免请求过快
-        
-        return total_sources
-    
     def fetch_yuechan(self):
         """获取YueChan直播源"""
         url = "https://raw.githubusercontent.com/YueChan/Live/main/IPTV.m3u"
@@ -363,26 +422,6 @@ class HKTVSourceFetcher:
             print(f"从BigBigGrandG获取到 {len(sources)} 个香港频道")
         return len(sources) if content else 0
     
-    def fetch_yang1989(self):
-        """获取YanG-1989直播源"""
-        url = "https://raw.githubusercontent.com/YanG-1989/m3u/main/Gather.m3u"
-        content = self.make_request(url)
-        if content:
-            sources = self.parse_m3u_content(content, "YanG-1989")
-            self.add_sources(sources)
-            print(f"从YanG-1989获取到 {len(sources)} 个香港频道")
-        return len(sources) if content else 0
-    
-    def fetch_zhanghongguang(self):
-        """获取ZhangHongGuang直播源"""
-        url = "https://raw.githubusercontent.com/zhanghongguang/zhanghongguang.github.io/main/IPV6_IPTV.m3u"
-        content = self.make_request(url)
-        if content:
-            sources = self.parse_m3u_content(content, "ZhangHongGuang")
-            self.add_sources(sources)
-            print(f"从ZhangHongGuang获取到 {len(sources)} 个香港频道")
-        return len(sources) if content else 0
-    
     def generate_output_files(self, sources):
         """生成输出文件"""
         # 生成M3U文件
@@ -398,7 +437,8 @@ class HKTVSourceFetcher:
         txt_content = "# 香港电视直播源\n"
         txt_content += f"# 更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         txt_content += "# 来源: 多个公开直播源仓库\n"
-        txt_content += "# 此文件由GitHub Actions自动生成，每2天更新一次\n\n"
+        txt_content += "# 此文件由GitHub Actions自动生成，每2天更新一次\n"
+        txt_content += "# 已通过连接测试，响应时间越短的源越稳定\n\n"
         
         # 按分类组织频道
         categories = {}
@@ -413,7 +453,9 @@ class HKTVSourceFetcher:
             txt_content += f"\n# {category}\n"
             for channel in channels:
                 hd_flag = "[HD]" if channel.get('hd') else ""
-                txt_content += f"{channel['name']}{hd_flag},{channel['url']}\n"
+                response_time = channel.get('response_time', 9999)
+                time_info = f"[{response_time}ms]" if response_time < 9999 else "[超时]"
+                txt_content += f"{channel['name']}{hd_flag}{time_info},{channel['url']}\n"
         
         with open("hk_tv_sources.txt", "w", encoding="utf-8") as f:
             f.write(txt_content)
@@ -492,6 +534,17 @@ class HKTVSourceFetcher:
         with open("api/filters/hd.json", "w", encoding="utf-8") as f:
             json.dump(hd_data, f, ensure_ascii=False, indent=2)
         
+        # 生成快速响应频道API
+        fast_channels = [s for s in sources if s.get('response_time', 9999) < 1000]
+        fast_data = {
+            "fast_channels": True,
+            "count": len(fast_channels),
+            "channels": fast_channels
+        }
+        
+        with open("api/filters/fast.json", "w", encoding="utf-8") as f:
+            json.dump(fast_data, f, ensure_ascii=False, indent=2)
+        
         print("已生成API文件")
 
 def main():
@@ -504,17 +557,17 @@ def main():
         print("使用备用直播源...")
         backup_sources = [
             {"name": "TVB翡翠台", "url": "http://example.com/tvb1.m3u8", "group": "香港", "source": "备用", 
-             "category": "综合", "language": "粤语", "resolution": "1080p", "hd": True, "channel_id": "81"},
+             "category": "TVB", "language": "粤语", "resolution": "1080p", "hd": True, "channel_id": "81", "response_time": 100},
             {"name": "TVB明珠台", "url": "http://example.com/tvb2.m3u8", "group": "香港", "source": "备用",
-             "category": "综合", "language": "英语", "resolution": "1080p", "hd": True, "channel_id": "84"},
+             "category": "TVB", "language": "英语", "resolution": "1080p", "hd": True, "channel_id": "84", "response_time": 100},
             {"name": "ViuTV", "url": "http://example.com/viutv.m3u8", "group": "香港", "source": "备用",
-             "category": "综合", "language": "粤语", "resolution": "1080p", "hd": True, "channel_id": "99"},
-            {"name": "香港开电视", "url": "http://example.com/hkotv.m3u8", "group": "香港", "source": "备用",
-             "category": "综合", "language": "粤语", "resolution": "720p", "hd": False, "channel_id": "77"},
+             "category": "ViuTV", "language": "粤语", "resolution": "1080p", "hd": True, "channel_id": "99", "response_time": 100},
+            {"name": "HOY TV", "url": "http://example.com/hoytv.m3u8", "group": "香港", "source": "备用",
+             "category": "HOY TV", "language": "粤语", "resolution": "720p", "hd": False, "channel_id": "77", "response_time": 100},
             {"name": "RTHK31", "url": "http://example.com/rthk31.m3u8", "group": "香港", "source": "备用",
-             "category": "综合", "language": "粤语", "resolution": "720p", "hd": False, "channel_id": "31"},
+             "category": "RTHK", "language": "粤语", "resolution": "720p", "hd": False, "channel_id": "31", "response_time": 100},
             {"name": "RTHK32", "url": "http://example.com/rthk32.m3u8", "group": "香港", "source": "备用",
-             "category": "综合", "language": "普通话", "resolution": "720p", "hd": False, "channel_id": "32"}
+             "category": "RTHK", "language": "普通话", "resolution": "720p", "hd": False, "channel_id": "32", "response_time": 100}
         ]
         fetcher.generate_output_files(backup_sources)
         fetcher.generate_api_files(backup_sources)
