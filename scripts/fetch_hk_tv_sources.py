@@ -92,9 +92,6 @@ class HKTVSourceFetcher:
         # 生成输出文件
         self.generate_output_files(tested_sources)
         
-        # 生成API文件
-        self.generate_api_files(tested_sources)
-        
         return tested_sources
     
     def test_sources_connectivity(self, sources):
@@ -481,96 +478,6 @@ class HKTVSourceFetcher:
         
         print(f"已生成 hk_tv_sources.m3u 和 hk_tv_sources.txt")
         print(f"M3U文件包含 {len(sources)} 个频道")
-    
-    def generate_api_files(self, sources):
-        """生成API文件，支持分类筛选"""
-        # 创建API目录
-        os.makedirs("api", exist_ok=True)
-        
-        # 按照分类优先级和频道名称排序
-        sorted_sources = self.sort_sources(sources)
-        
-        # 生成完整的频道列表JSON
-        api_data = {
-            "last_updated": datetime.now().isoformat(),
-            "total_channels": len(sorted_sources),
-            "channels": sorted_sources
-        }
-        
-        with open("api/all.json", "w", encoding="utf-8") as f:
-            json.dump(api_data, f, ensure_ascii=False, indent=2)
-        
-        # 按分类生成API文件
-        categories = {}
-        for source in sorted_sources:
-            category = source["category"]
-            if category not in categories:
-                categories[category] = []
-            categories[category].append(source)
-        
-        # 按分类优先级排序
-        sorted_categories = sorted(categories.items(), key=lambda x: self.category_order.index(x[0]) if x[0] in self.category_order else len(self.category_order))
-        
-        for category, channels in sorted_categories:
-            category_data = {
-                "category": category,
-                "count": len(channels),
-                "channels": channels
-            }
-            
-            # 创建分类目录
-            category_dir = f"api/category/{category}"
-            os.makedirs(category_dir, exist_ok=True)
-            
-            with open(f"{category_dir}/index.json", "w", encoding="utf-8") as f:
-                json.dump(category_data, f, ensure_ascii=False, indent=2)
-        
-        # 按语言生成API文件
-        languages = {}
-        for source in sorted_sources:
-            language = source["language"]
-            if language not in languages:
-                languages[language] = []
-            languages[language].append(source)
-        
-        for language, channels in languages.items():
-            language_data = {
-                "language": language,
-                "count": len(channels),
-                "channels": channels
-            }
-            
-            # 创建语言目录
-            language_dir = f"api/language/{language}"
-            os.makedirs(language_dir, exist_ok=True)
-            
-            with open(f"{language_dir}/index.json", "w", encoding="utf-8") as f:
-                json.dump(language_data, f, ensure_ascii=False, indent=2)
-        
-        # 生成高清频道API
-        hd_channels = [s for s in sorted_sources if s.get('hd')]
-        hd_data = {
-            "hd_channels": True,
-            "count": len(hd_channels),
-            "channels": hd_channels
-        }
-        
-        os.makedirs("api/filters", exist_ok=True)
-        with open("api/filters/hd.json", "w", encoding="utf-8") as f:
-            json.dump(hd_data, f, ensure_ascii=False, indent=2)
-        
-        # 生成快速响应频道API
-        fast_channels = [s for s in sorted_sources if s.get('response_time', 9999) < 1000]
-        fast_data = {
-            "fast_channels": True,
-            "count": len(fast_channels),
-            "channels": fast_channels
-        }
-        
-        with open("api/filters/fast.json", "w", encoding="utf-8") as f:
-            json.dump(fast_data, f, ensure_ascii=False, indent=2)
-        
-        print("已生成API文件")
 
 def main():
     """主函数"""
@@ -595,7 +502,6 @@ def main():
              "category": "RTHK", "language": "普通话", "resolution": "720p", "hd": False, "channel_id": "32", "response_time": 100}
         ]
         fetcher.generate_output_files(backup_sources)
-        fetcher.generate_api_files(backup_sources)
 
 if __name__ == "__main__":
     main()
