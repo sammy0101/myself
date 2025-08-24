@@ -1,18 +1,18 @@
 {
   "category": "RTHK",
-  "count": 9,
+  "count": 8,
   "channels": [
     {
       "name": "RTHK 31",
-      "url": "https://rthktv31-live.akamaized.net/hls/live/2036818/RTHKTV31/master.m3u8",
-      "group": "iptv-org",
-      "source": "iptv-org",
+      "url": "https://stream1.freetv.fun/bcd3e759b0c9f8807280e9cb8fc50c6919ffad577b1d5d21f392f601d93301bc.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
       "category": "RTHK",
       "language": "未知",
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 456
+      "response_time": 140
     },
     {
       "name": "RTHK 31",
@@ -24,19 +24,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 179
-    },
-    {
-      "name": "RTHK 31",
-      "url": "https://stream1.freetv.fun/bcd3e759b0c9f8807280e9cb8fc50c6919ffad577b1d5d21f392f601d93301bc.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "RTHK",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 301
+      "response_time": 287
     },
     {
       "name": "RTHK 31",
@@ -48,7 +36,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 649
+      "response_time": 896
     },
     {
       "name": "RTHK 32",
@@ -60,7 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 493
+      "response_time": 407
     },
     {
       "name": "RTHK 32",
@@ -72,7 +60,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 291
+      "response_time": 147
     },
     {
       "name": "RTHK 32",
@@ -84,7 +72,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 402
+      "response_time": 377
     },
     {
       "name": "RTHK 32",
@@ -96,7 +84,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 776
+      "response_time": 807
     },
     {
       "name": "鳳凰衛視香港台",
@@ -108,7 +96,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 40
+      "response_time": 55
     }
   ]
 }
