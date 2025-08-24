@@ -1,6 +1,6 @@
 {
   "category": "ViuTV",
-  "count": 13,
+  "count": 14,
   "channels": [
     {
       "name": "ViuTV",
@@ -12,7 +12,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 281
+      "response_time": 228
     },
     {
       "name": "ViuTV",
@@ -24,7 +24,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 274
+      "response_time": 223
     },
     {
       "name": "ViuTV",
@@ -40,6 +40,18 @@
     },
     {
       "name": "ViuTV",
+      "url": "https://stream1.freetv.fun/0347ee59bb56a5ce70fbee03ba8e68f7af58119c22a19bd9db2c566f97ff892e.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 271
+    },
+    {
+      "name": "ViuTV",
       "url": "https://stream1.freetv.fun/f48bb6051a7feba9cc3412b4572f97f3631057c172f27b6fc620d6dc63317f6d.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
@@ -48,19 +60,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 282
-    },
-    {
-      "name": "ViuTV",
-      "url": "https://stream1.freetv.fun/a63d933d56f703f97a8e8e772f3fe853821b0fb5993e4c79dec30ebf954fb5b4.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 284
+      "response_time": 308
     },
     {
       "name": "ViuTV",
@@ -72,11 +72,11 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 393
+      "response_time": 217
     },
     {
       "name": "ViuTV",
-      "url": "https://stream1.freetv.fun/0347ee59bb56a5ce70fbee03ba8e68f7af58119c22a19bd9db2c566f97ff892e.ctv",
+      "url": "https://stream1.freetv.fun/a63d933d56f703f97a8e8e772f3fe853821b0fb5993e4c79dec30ebf954fb5b4.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "ViuTV",
@@ -84,7 +84,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 530
+      "response_time": 229
     },
     {
       "name": "ViuTV",
@@ -96,11 +96,11 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 410
+      "response_time": 298
     },
     {
       "name": "ViuTV",
-      "url": "https://stream1.freetv.fun/df53d054294bb3499e8c5897908dd1e7a190e2505b2f45abd837a8bc405771fb.ctv",
+      "url": "https://stream1.freetv.fun/4b1a401b0a28174a645749406d87be9f140f3b3112128ffb51a42d0607c84433.ctv",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "ViuTV",
@@ -108,19 +108,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 270
-    },
-    {
-      "name": "ViuTV",
-      "url": "https://stream1.freetv.fun/3bd41e8da03a9c14a5b193d19804fb32cfbbcc232b6d90a0dc3d6cb0af63aa47.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "ViuTV",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 766
+      "response_time": 538
     },
     {
       "name": "ViuTV",
@@ -132,7 +120,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 585
+      "response_time": 409
+    },
+    {
+      "name": "ViuTV",
+      "url": "https://stream1.freetv.fun/df53d054294bb3499e8c5897908dd1e7a190e2505b2f45abd837a8bc405771fb.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 343
     },
     {
       "name": "ViuTV",
@@ -144,7 +144,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 846
+      "response_time": 551
+    },
+    {
+      "name": "ViuTV",
+      "url": "https://stream1.freetv.fun/3bd41e8da03a9c14a5b193d19804fb32cfbbcc232b6d90a0dc3d6cb0af63aa47.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "ViuTV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 871
     },
     {
       "name": "ViuTV",
@@ -156,7 +168,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 2649
+      "response_time": 1946
     }
   ]
 }

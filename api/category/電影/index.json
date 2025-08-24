@@ -1,6 +1,6 @@
 {
   "category": "電影",
-  "count": 17,
+  "count": 14,
   "channels": [
     {
       "name": "[BD]movie sphere",
@@ -12,7 +12,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 245
+      "response_time": 143
     },
     {
       "name": "[BD]mytime movie network",
@@ -24,7 +24,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 376
+      "response_time": 314
     },
     {
       "name": "[BD]mytime movie network",
@@ -36,7 +36,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 251
+      "response_time": 310
     },
     {
       "name": "[BD]mytime movie network",
@@ -48,19 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 365
-    },
-    {
-      "name": "[BD]popc电影",
-      "url": "https://stream1.freetv.fun/464e43fff89d0caa900172937c2f1d2dad1ffc2d17e91c903dae42f3b8673975.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "電影",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 603
+      "response_time": 229
     },
     {
       "name": "[BD]美亞電影 *wj",
@@ -72,7 +60,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 752
+      "response_time": 554
     },
     {
       "name": "[BD]美亞電影台 *a",
@@ -84,7 +72,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 334
+      "response_time": 125
     },
     {
       "name": "[HD]hits movie *p[geo-blocked]",
@@ -96,7 +84,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 695
+      "response_time": 452
     },
     {
       "name": "[HD]mytime movie network",
@@ -108,7 +96,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 250
+      "response_time": 218
     },
     {
       "name": "[HD]paramount movie channel",
@@ -120,19 +108,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 393
-    },
-    {
-      "name": "[HD]功夫电影[geo-blocked]",
-      "url": "https://stream1.freetv.fun/ed04d98db945d570c677a330af78f245bd38c2ab085e655b26b123a42ea11a10.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "電影",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 274
+      "response_time": 210
     },
     {
       "name": "[SD]paramount movie channel",
@@ -144,19 +120,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 378
-    },
-    {
-      "name": "[SD]凤凰电影",
-      "url": "https://stream1.freetv.fun/75cf3fd3b2e39cb22ee433381aeafdfabd12682b75b524b21992dc0b7284fcaa.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "電影",
-      "language": "未知",
-      "resolution": "480p",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 374
+      "response_time": 220
     },
     {
       "name": "[VGA]movies!",
@@ -168,7 +132,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 381
+      "response_time": 213
     },
     {
       "name": "[VGA]tvs drive in movie",
@@ -180,7 +144,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 368
+      "response_time": 393
     },
     {
       "name": "[VGA]tvs western movie",
@@ -192,7 +156,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 378
+      "response_time": 207
     },
     {
       "name": "美亞電影台(HK)",
@@ -204,7 +168,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 50
+      "response_time": 55
     }
   ]
 }

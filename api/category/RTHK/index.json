@@ -1,6 +1,6 @@
 {
   "category": "RTHK",
-  "count": 8,
+  "count": 10,
   "channels": [
     {
       "name": "RTHK 31",
@@ -12,7 +12,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 140
+      "response_time": 212
     },
     {
       "name": "RTHK 31",
@@ -24,7 +24,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 287
+      "response_time": 315
     },
     {
       "name": "RTHK 31",
@@ -36,11 +36,11 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 896
+      "response_time": 703
     },
     {
-      "name": "RTHK 32",
-      "url": "https://rthktv32-live.akamaized.net/hls/live/2036819/RTHKTV32/master.m3u8",
+      "name": "RTHK 31",
+      "url": "https://rthktv31-live.akamaized.net/hls/live/2036818/RTHKTV31/master.m3u8",
       "group": "iptv-org",
       "source": "iptv-org",
       "category": "RTHK",
@@ -48,7 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 407
+      "response_time": 466
     },
     {
       "name": "RTHK 32",
@@ -60,7 +60,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 147
+      "response_time": 226
     },
     {
       "name": "RTHK 32",
@@ -72,7 +72,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 377
+      "response_time": 320
     },
     {
       "name": "RTHK 32",
@@ -84,7 +84,31 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 807
+      "response_time": 950
+    },
+    {
+      "name": "[HD]港台电视31",
+      "url": "https://stream1.freetv.fun/0944303b14a2d9fe9751c01ff6489d423d7af691892bafdd8bb2f150cf97726c.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 542
+    },
+    {
+      "name": "[HD]港台电视32",
+      "url": "https://stream1.freetv.fun/7a4d3ced7d681dde0512fb80035b22d745757d20e51fe7729e5acbcc3890de0b.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 319
     },
     {
       "name": "鳳凰衛視香港台",
@@ -96,7 +120,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 55
+      "response_time": 59
     }
   ]
 }

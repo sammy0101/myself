@@ -1,6 +1,6 @@
 {
   "category": "其他",
-  "count": 85,
+  "count": 115,
   "channels": [
     {
       "name": "Animax (HK)",
@@ -12,7 +12,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 68
+      "response_time": 46
     },
     {
       "name": "Creation TV (720p)",
@@ -24,7 +24,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 4476
+      "response_time": 455
     },
     {
       "name": "Pet Club TV",
@@ -36,7 +36,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 628
+      "response_time": 396
     },
     {
       "name": "[BD]Animax *a",
@@ -48,7 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 1433
+      "response_time": 218
     },
     {
       "name": "[BD]POPC *a",
@@ -60,7 +60,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 381
+      "response_time": 215
     },
     {
       "name": "[BD]animax",
@@ -72,19 +72,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 368
-    },
-    {
-      "name": "[BD]axn *wj",
-      "url": "https://stream1.freetv.fun/200e598d83eb4d611ea8a549ccf73918fb092eb57487990bb5dde632fbd37d64.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "其他",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 1040
+      "response_time": 437
     },
     {
       "name": "[BD]axn *wj",
@@ -96,7 +84,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 992
+      "response_time": 957
+    },
+    {
+      "name": "[BD]axn *wj",
+      "url": "https://stream1.freetv.fun/200e598d83eb4d611ea8a549ccf73918fb092eb57487990bb5dde632fbd37d64.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 959
     },
     {
       "name": "[BD]axn hk *p[geo-blocked]",
@@ -108,7 +108,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 3446
+      "response_time": 3198
     },
     {
       "name": "[BD]cctv-1[ipv6]",
@@ -120,19 +120,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 259
-    },
-    {
-      "name": "[BD]cctv1",
-      "url": "https://stream1.freetv.fun/1e233c3fa02ad66a59876f9f9d5500a9b99b490836014ad39c51e69a17b3c563.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "其他",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 1412
+      "response_time": 210
     },
     {
       "name": "[BD]cctv1",
@@ -144,11 +132,11 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 1356
+      "response_time": 1055
     },
     {
       "name": "[BD]cctv1",
-      "url": "https://stream1.freetv.fun/c26bc29b4c23283f729a3b949065d8be4420cd2339ed981b534aa0ac9bcf22dc.ctv",
+      "url": "https://stream1.freetv.fun/1e233c3fa02ad66a59876f9f9d5500a9b99b490836014ad39c51e69a17b3c563.ctv",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "其他",
@@ -156,31 +144,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 1484
-    },
-    {
-      "name": "[BD]cctv1",
-      "url": "https://stream1.freetv.fun/4941f07202e9dfe7dc7779cd16da7c54c98804a8bc7ffd7501b34f92f00e7500.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "其他",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 162
-    },
-    {
-      "name": "[BD]cctv1",
-      "url": "https://stream1.freetv.fun/897b65a4585a5ff67c3c98cb4aa781cd210532066e48b910812f70b1205a8638.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "其他",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 155
+      "response_time": 1132
     },
     {
       "name": "[BD]cctv1",
@@ -192,19 +156,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 240
-    },
-    {
-      "name": "[BD]cctv1",
-      "url": "https://stream1.freetv.fun/54c591d441a3e38fa349334e4e8843501661ce712aa72c0c260ad2dca98c7212.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "其他",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 285
+      "response_time": 219
     },
     {
       "name": "[BD]cctv1",
@@ -216,11 +168,11 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 384
+      "response_time": 214
     },
     {
       "name": "[BD]cctv1",
-      "url": "https://stream1.freetv.fun/7fc5ab48edadd4271d56cf595145826c5c70d157fe205a65b3d2fa95c9b99394.ctv",
+      "url": "https://stream1.freetv.fun/54c591d441a3e38fa349334e4e8843501661ce712aa72c0c260ad2dca98c7212.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "其他",
@@ -228,7 +180,31 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 2634
+      "response_time": 325
+    },
+    {
+      "name": "[BD]cctv1",
+      "url": "https://stream1.freetv.fun/4941f07202e9dfe7dc7779cd16da7c54c98804a8bc7ffd7501b34f92f00e7500.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 329
+    },
+    {
+      "name": "[BD]cctv1",
+      "url": "https://stream1.freetv.fun/897b65a4585a5ff67c3c98cb4aa781cd210532066e48b910812f70b1205a8638.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 312
     },
     {
       "name": "[BD]cctv1[geo-blocked]",
@@ -240,7 +216,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 250
+      "response_time": 304
     },
     {
       "name": "[BD]cctv1[geo-blocked]",
@@ -252,7 +228,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 359
+      "response_time": 221
     },
     {
       "name": "[BD]cctv1[geo-blocked]",
@@ -264,7 +240,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 1289
+      "response_time": 1017
+    },
+    {
+      "name": "[BD]cctv1[geo-blocked]",
+      "url": "https://stream1.freetv.fun/c26bc29b4c23283f729a3b949065d8be4420cd2339ed981b534aa0ac9bcf22dc.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 1102
     },
     {
       "name": "[BD]etv plus[geo-blocked]",
@@ -276,7 +264,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 249
+      "response_time": 318
     },
     {
       "name": "[BD]icc plus",
@@ -288,7 +276,31 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 295
+      "response_time": 326
+    },
+    {
+      "name": "[BD]now新闻",
+      "url": "https://stream1.freetv.fun/c50436b4b66ade6d8f8e2106ca97460d5686f06615911ee7b513b0f8b73f7b01.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 545
+    },
+    {
+      "name": "[BD]now新闻",
+      "url": "https://stream1.freetv.fun/9dec549cbac511cacca85d2e5738d965955eadcb5b4fe5974ae97fdf4733ae72.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 509
     },
     {
       "name": "[BD]popc",
@@ -300,7 +312,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 152
+      "response_time": 117
     },
     {
       "name": "[BD]popc[geo-blocked]",
@@ -312,7 +324,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 373
+      "response_time": 218
+    },
+    {
+      "name": "[BD]popc电影",
+      "url": "https://stream1.freetv.fun/464e43fff89d0caa900172937c2f1d2dad1ffc2d17e91c903dae42f3b8673975.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 342
     },
     {
       "name": "[BD]prime",
@@ -324,7 +348,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 291
+      "response_time": 331
     },
     {
       "name": "[BD]snap",
@@ -336,7 +360,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 147
+      "response_time": 219
     },
     {
       "name": "[BD]凤凰中文",
@@ -348,7 +372,31 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 610
+      "response_time": 426
+    },
+    {
+      "name": "[BD]凤凰卫视资讯[geo-blocked]",
+      "url": "https://stream1.freetv.fun/775da45dedb5d0e2186c592c1a582aabe6893f527089d022ba7104e2471c96cf.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 216
+    },
+    {
+      "name": "[BD]凤凰卫视香港[geo-blocked]",
+      "url": "https://stream1.freetv.fun/7013161292a63b3a988b5c0bf9f7498081c3281a387fac9a0585fa9638dd4887.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 220
     },
     {
       "name": "[BD]凤凰资讯",
@@ -360,7 +408,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 534
+      "response_time": 420
     },
     {
       "name": "[BD]凤凰香港[geo-blocked]",
@@ -372,7 +420,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 661
+      "response_time": 507
     },
     {
       "name": "[BD]周星驰",
@@ -384,7 +432,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 278
+      "response_time": 116
+    },
+    {
+      "name": "[BD]无线新闻",
+      "url": "https://stream1.freetv.fun/b9fc79702a33d75d0fa4c22a19341be1a7120d111c47d9e109566b9d42020383.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 179
     },
     {
       "name": "[BD]星空卫视[geo-blocked]",
@@ -396,7 +456,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 704
+      "response_time": 488
+    },
+    {
+      "name": "[BD]星空国际[geo-blocked]",
+      "url": "https://stream1.freetv.fun/75e262d43778a32cb887d4ede15dc972143a0522e4d89a81f45b7307f6fedd61.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 225
     },
     {
       "name": "[BD]美亚c plus",
@@ -408,7 +480,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 142
+      "response_time": 315
     },
     {
       "name": "[BD]香港c plus",
@@ -420,7 +492,43 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 148
+      "response_time": 315
+    },
+    {
+      "name": "[BD]香港有线18",
+      "url": "https://stream1.freetv.fun/6165212b4daaf807d5260340400124bc863a214cf6f0261366f1376046130f35.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 315
+    },
+    {
+      "name": "[BD]香港有线新闻",
+      "url": "https://stream1.freetv.fun/becf9a78d5be5a31016da97c31df2b591a47ce1cfe0add948357afdce3d6ec31.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 451
+    },
+    {
+      "name": "[BD]香港有线新闻",
+      "url": "https://stream1.freetv.fun/8ed977ee3837996b089be9d2fd242fb26c880bc339d032764cb462ebfece913a.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 450
     },
     {
       "name": "[BD]黄金华剧",
@@ -432,7 +540,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 796
+      "response_time": 586
     },
     {
       "name": "[HD]animax[geo-blocked]",
@@ -444,7 +552,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 740
+      "response_time": 758
     },
     {
       "name": "[HD]c plus",
@@ -456,7 +564,115 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 404
+      "response_time": 220
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/4d42d0ccc8c8a30df1e1c8520ce09a1a3d08d3ba93248f4afa0fbf2afabca80d.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 442
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/71bc1760852d5769d3f438a0175c2e57068f5096d0b95645b81a1441f7dd9721.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 447
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/3619e2c5b1b9619a02f3b9d2fac488263a856a457e042324812e357bd430195d.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 456
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/4c70e5a36b0c609adc5099606066b5a9133c68018d3ff242eeef1ffcccd46026.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 333
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/54d49cdebe67aac321212f07cd63f353fc6fb23eae7927a3df2222540f56313b.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 331
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/4028b322e463e08500f702259ad5862e1dcd1698bd20d36badb4a74a411abb50.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 330
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/7e297faa33b2e88c7674ab003364c5d1ae846f9d7fbfd095d908a42a8a6d9aa1.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 319
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/37a33bb573ad9e2c6859edaa317905d11dab53d4362196d398a3e335349128ee.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 209
+    },
+    {
+      "name": "[HD]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/6931221aac3c94379c14c9fc03aa4df78795f7c813fb831632f72e8515b175ae.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 305
     },
     {
       "name": "[HD]cctv1",
@@ -468,7 +684,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 1075
+      "response_time": 793
     },
     {
       "name": "[HD]cctv1",
@@ -480,7 +696,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 1734
+      "response_time": 2630
     },
     {
       "name": "[HD]cctv1 *n",
@@ -492,7 +708,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 1506
+      "response_time": 2301
     },
     {
       "name": "[HD]cctv1 *wj",
@@ -504,7 +720,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 845
+      "response_time": 737
     },
     {
       "name": "[HD]etv plus",
@@ -516,7 +732,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 374
+      "response_time": 221
     },
     {
       "name": "[HD]mech plus",
@@ -528,7 +744,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 459
+      "response_time": 238
     },
     {
       "name": "[HD]now tv",
@@ -540,7 +756,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 150
+      "response_time": 125
     },
     {
       "name": "[HD]now tv",
@@ -552,7 +768,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 274
+      "response_time": 225
     },
     {
       "name": "[HD]now星影[geo-blocked]",
@@ -564,7 +780,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 717
+      "response_time": 304
     },
     {
       "name": "[HD]now爆谷",
@@ -576,7 +792,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 634
+      "response_time": 254
     },
     {
       "name": "[HD]popc[geo-blocked]",
@@ -588,7 +804,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 251
+      "response_time": 221
     },
     {
       "name": "[HD]rhk 31[geo-blocked]",
@@ -600,7 +816,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 493
+      "response_time": 381
     },
     {
       "name": "[HD]rhk 32[geo-blocked]",
@@ -612,7 +828,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 434
+      "response_time": 256
     },
     {
       "name": "[HD]凤凰中文",
@@ -624,7 +840,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 151
+      "response_time": 227
     },
     {
       "name": "[HD]凤凰中文",
@@ -636,7 +852,103 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 2309
+      "response_time": 2107
+    },
+    {
+      "name": "[HD]凤凰卫视",
+      "url": "https://stream1.freetv.fun/d3c92459e8f551fb9d596197050f5caa3441cc4b4300514833d9bcfe23aeddb8.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 220
+    },
+    {
+      "name": "[HD]凤凰卫视[geo-blocked]",
+      "url": "https://stream1.freetv.fun/e6886dbde2158fbb51da8cd6db21e2bb5fb68f4e5aa4db51e3589f30c20a13d8.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 309
+    },
+    {
+      "name": "[HD]凤凰卫视中文",
+      "url": "https://stream1.freetv.fun/abf0dd89a3d8030e6464e736ad8b2c92c562eee2c9e491fa324de6b5d50b558a.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 549
+    },
+    {
+      "name": "[HD]凤凰卫视中文",
+      "url": "https://stream1.freetv.fun/159cb44597127a9b3cb01b92ac90f5f4405cc45120c67270530040db9737766c.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 689
+    },
+    {
+      "name": "[HD]凤凰卫视中文[geo-blocked]",
+      "url": "https://stream1.freetv.fun/2d974525773570a12819a6597a3b0349bd9856ea05c91633862035caed14376d.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 219
+    },
+    {
+      "name": "[HD]凤凰卫视资讯",
+      "url": "https://stream1.freetv.fun/fe31eaf5bb86cd05e17cde36410d5291e290a6380274cb40313ccf2da19cf6cd.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 544
+    },
+    {
+      "name": "[HD]凤凰卫视香港",
+      "url": "https://stream1.freetv.fun/d600a5fb30dc8fc8d16caa74ecdf2aebdf9448f85a024d7c4cd98d25e530885c.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 501
+    },
+    {
+      "name": "[HD]凤凰卫视香港",
+      "url": "https://stream1.freetv.fun/a5bd1dc50647694f26cd9aa662aff4d180a62ffb171b6a864805072dc54126c7.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 551
     },
     {
       "name": "[HD]凤凰资讯",
@@ -648,7 +960,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 144
+      "response_time": 123
     },
     {
       "name": "[HD]凤凰资讯",
@@ -660,7 +972,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 147
+      "response_time": 236
     },
     {
       "name": "[HD]凤凰资讯",
@@ -672,7 +984,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 416
+      "response_time": 290
     },
     {
       "name": "[HD]凤凰资讯",
@@ -684,7 +996,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 449
+      "response_time": 335
     },
     {
       "name": "[HD]凤凰资讯",
@@ -696,7 +1008,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 1918
+      "response_time": 1745
     },
     {
       "name": "[HD]凤凰资讯[geo-blocked]",
@@ -708,7 +1020,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 255
+      "response_time": 181
     },
     {
       "name": "[HD]凤凰香港",
@@ -720,7 +1032,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 240
+      "response_time": 117
     },
     {
       "name": "[HD]凤凰香港",
@@ -732,7 +1044,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 141
+      "response_time": 119
     },
     {
       "name": "[HD]凤凰香港",
@@ -744,7 +1056,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 1305
+      "response_time": 1253
     },
     {
       "name": "[HD]凤凰香港",
@@ -756,7 +1068,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 1893
+      "response_time": 1768
     },
     {
       "name": "[HD]凤凰香港[geo-blocked]",
@@ -768,7 +1080,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 413
+      "response_time": 161
     },
     {
       "name": "[HD]剧集",
@@ -780,7 +1092,31 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 249
+      "response_time": 306
+    },
+    {
+      "name": "[HD]功夫电影[geo-blocked]",
+      "url": "https://stream1.freetv.fun/ed04d98db945d570c677a330af78f245bd38c2ab085e655b26b123a42ea11a10.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 217
+    },
+    {
+      "name": "[HD]无线新闻[geo-blocked]",
+      "url": "https://stream1.freetv.fun/4290011e1af62ee2c9dea7a9015fec85668584edfd3a58caa60cee5a8684e6fa.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 309
     },
     {
       "name": "[HD]香港卫视",
@@ -792,7 +1128,19 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 238
+      "response_time": 224
+    },
+    {
+      "name": "[HD]香港有线18台",
+      "url": "https://stream1.freetv.fun/9c069df75d8cec203dffd5113d9791e66a91a7880f1f7cb4b842166b38cd1575.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 564
     },
     {
       "name": "[HD]鳳凰香港 *wj",
@@ -804,7 +1152,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 737
+      "response_time": 742
     },
     {
       "name": "[SD]animax *p[geo-blocked]",
@@ -816,7 +1164,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 2179
+      "response_time": 2868
     },
     {
       "name": "[SD]animax *wj",
@@ -828,7 +1176,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 2002
+      "response_time": 712
     },
     {
       "name": "[SD]cctv1",
@@ -840,7 +1188,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 957
+      "response_time": 1317
     },
     {
       "name": "[SD]cctv1[geo-blocked]",
@@ -852,7 +1200,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 364
+      "response_time": 324
     },
     {
       "name": "[SD]hse24 trend",
@@ -864,7 +1212,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 376
+      "response_time": 318
     },
     {
       "name": "[SD]popc[geo-blocked]",
@@ -876,7 +1224,19 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 277
+      "response_time": 226
+    },
+    {
+      "name": "[SD]凤凰电影",
+      "url": "https://stream1.freetv.fun/75cf3fd3b2e39cb22ee433381aeafdfabd12682b75b524b21992dc0b7284fcaa.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "480p",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 216
     },
     {
       "name": "[SD]周星驰",
@@ -888,7 +1248,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 147
+      "response_time": 365
     },
     {
       "name": "[SD]周润发",
@@ -900,7 +1260,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 248
+      "response_time": 216
     },
     {
       "name": "[SD]星空卫视",
@@ -912,7 +1272,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 274
+      "response_time": 315
     },
     {
       "name": "[SD]香港卫视文艺",
@@ -924,7 +1284,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 351
+      "response_time": 234
     },
     {
       "name": "[VGA]atv",
@@ -936,7 +1296,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 283
+      "response_time": 334
     },
     {
       "name": "[VGA]atv plus",
@@ -948,7 +1308,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 276
+      "response_time": 322
     },
     {
       "name": "[VGA]atv plus",
@@ -960,7 +1320,43 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 375
+      "response_time": 246
+    },
+    {
+      "name": "[VGA]cctv-5 体育赛事",
+      "url": "https://stream1.freetv.fun/2fd64060f939d7fc9e270d7ed01b7312ce9c3121ac244a3279b8a1eb13815bca.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 324
+    },
+    {
+      "name": "[VGA]now财经",
+      "url": "https://stream1.freetv.fun/d12db5a58083348e01e0c006fc7fd0ecb6aefceddcca592ae5a4578ac405009e.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 455
+    },
+    {
+      "name": "[VGA]now财经",
+      "url": "https://stream1.freetv.fun/c55e54fb974932614f58638a26549f8d4a3605072fe1568ca4fedd96af5a64f9.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "其他",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 614
     },
     {
       "name": "[VGA]ntv plus",
@@ -972,7 +1368,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 145
+      "response_time": 222
     },
     {
       "name": "[VGA]周润发",
@@ -984,43 +1380,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 152
-    },
-    {
-      "name": "「中」凤凰传奇-策马奔腾",
-      "url": "http://antiserver.kuwo.cn/anti.s?rid=MUSIC_24042013&response=res&format=mp4&type=convert_url",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
-      "category": "其他",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 1106
-    },
-    {
-      "name": "凤凰中文",
-      "url": "https://raw.githubusercontent.com/ChiSheng9/iptv/master/TV43.m3u8",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
-      "category": "其他",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 36
-    },
-    {
-      "name": "凤凰资讯",
-      "url": "https://raw.githubusercontent.com/ChiSheng9/iptv/master/TV22.m3u8",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
-      "category": "其他",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 37
+      "response_time": 215
     }
   ]
 }

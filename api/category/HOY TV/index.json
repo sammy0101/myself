@@ -1,7 +1,31 @@
 {
   "category": "HOY TV",
-  "count": 1,
+  "count": 3,
   "channels": [
+    {
+      "name": "HOY TV",
+      "url": "https://stream1.freetv.fun/46e229877cf43dbe3bb518a02d3f4dbd2b2288cf9b54b191145786eebf1a2648.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "HOY TV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 911
+    },
+    {
+      "name": "[BD]hoy资讯",
+      "url": "https://stream1.freetv.fun/e81029945e828c9986196dcf148572343179f5710eb317c7cc3756b90483ec32.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "HOY TV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 871
+    },
     {
       "name": "[HD]hoy资讯[geo-blocked]",
       "url": "https://stream1.freetv.fun/b24a7d739a39cf40d6bf27b97c643af4f960493a5ee642d73eaca825b40d2823.ctv",
@@ -12,7 +36,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 353
+      "response_time": 356
     }
   ]
 }

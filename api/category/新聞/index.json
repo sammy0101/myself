@@ -12,7 +12,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 271
+      "response_time": 122
     },
     {
       "name": "[BD]鳳凰衛視資訊",
@@ -24,7 +24,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 273
+      "response_time": 219
     },
     {
       "name": "[HD]鳳凰資訊 *wj",
@@ -36,7 +36,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 627
+      "response_time": 534
     },
     {
       "name": "鳳凰衛視資訊台",
@@ -48,7 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 50
+      "response_time": 57
     }
   ]
 }
