@@ -1,7 +1,31 @@
 {
   "category": "新闻",
-  "count": 4,
+  "count": 8,
   "channels": [
+    {
+      "name": "[BD]now新闻",
+      "url": "https://stream1.freetv.fun/c50436b4b66ade6d8f8e2106ca97460d5686f06615911ee7b513b0f8b73f7b01.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 538
+    },
+    {
+      "name": "[BD]now新闻",
+      "url": "https://stream1.freetv.fun/9dec549cbac511cacca85d2e5738d965955eadcb5b4fe5974ae97fdf4733ae72.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 505
+    },
     {
       "name": "[BD]無線新聞[geo-blocked]",
       "url": "https://stream1.freetv.fun/e1197be826728274665ea76c587129b5e539d04d03e1f6ead9cf530ef31c1983.m3u8",
@@ -12,7 +36,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 162
+      "response_time": 133
     },
     {
       "name": "[BD]鳳凰衛視資訊",
@@ -24,7 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 284
+      "response_time": 143
     },
     {
       "name": "[HD]鳳凰資訊 *wj",
@@ -36,7 +60,31 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 869
+      "response_time": 485
+    },
+    {
+      "name": "[VGA]now财经",
+      "url": "https://stream1.freetv.fun/d12db5a58083348e01e0c006fc7fd0ecb6aefceddcca592ae5a4578ac405009e.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 579
+    },
+    {
+      "name": "[VGA]now财经",
+      "url": "https://stream1.freetv.fun/c55e54fb974932614f58638a26549f8d4a3605072fe1568ca4fedd96af5a64f9.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "新闻",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 621
     },
     {
       "name": "鳳凰衛視資訊台",
@@ -48,7 +96,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 40
+      "response_time": 51
     }
   ]
 }

@@ -1,9 +1,9 @@
 {
   "category": "HOY TV",
-  "count": 3,
+  "count": 7,
   "channels": [
     {
-      "name": "HOY TV",
+      "name": "[BD]hoy tv",
       "url": "https://stream1.freetv.fun/46e229877cf43dbe3bb518a02d3f4dbd2b2288cf9b54b191145786eebf1a2648.ctv",
       "group": "epg.pw",
       "source": "epg.pw",
@@ -12,7 +12,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 911
+      "response_time": 927
     },
     {
       "name": "[BD]hoy资讯",
@@ -24,7 +24,43 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 871
+      "response_time": 810
+    },
+    {
+      "name": "[BD]香港有线18",
+      "url": "https://stream1.freetv.fun/6165212b4daaf807d5260340400124bc863a214cf6f0261366f1376046130f35.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "HOY TV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 463
+    },
+    {
+      "name": "[BD]香港有线新闻",
+      "url": "https://stream1.freetv.fun/becf9a78d5be5a31016da97c31df2b591a47ce1cfe0add948357afdce3d6ec31.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "HOY TV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 372
+    },
+    {
+      "name": "[BD]香港有线新闻",
+      "url": "https://stream1.freetv.fun/8ed977ee3837996b089be9d2fd242fb26c880bc339d032764cb462ebfece913a.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "HOY TV",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 464
     },
     {
       "name": "[HD]hoy资讯[geo-blocked]",
@@ -36,7 +72,19 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 356
+      "response_time": 409
+    },
+    {
+      "name": "[HD]香港有线18台",
+      "url": "https://stream1.freetv.fun/9c069df75d8cec203dffd5113d9791e66a91a7880f1f7cb4b842166b38cd1575.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "HOY TV",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 441
     }
   ]
 }

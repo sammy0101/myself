@@ -12,7 +12,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 385
+      "response_time": 243
     },
     {
       "name": "[BD]mytime movie network",
@@ -24,7 +24,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 276
+      "response_time": 143
     },
     {
       "name": "[BD]mytime movie network",
@@ -36,7 +36,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 254
+      "response_time": 138
     },
     {
       "name": "[BD]mytime movie network",
@@ -48,7 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 266
+      "response_time": 243
     },
     {
       "name": "[BD]popc电影",
@@ -60,7 +60,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 425
+      "response_time": 270
     },
     {
       "name": "[BD]美亞電影 *wj",
@@ -72,7 +72,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 740
+      "response_time": 806
     },
     {
       "name": "[BD]美亞電影台 *a",
@@ -84,7 +84,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 398
+      "response_time": 232
     },
     {
       "name": "[HD]hits movie *p[geo-blocked]",
@@ -96,7 +96,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 622
+      "response_time": 596
     },
     {
       "name": "[HD]mytime movie network",
@@ -108,10 +108,22 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 248
+      "response_time": 143
     },
     {
-      "name": "[HD]功夫电影",
+      "name": "[HD]paramount movie channel",
+      "url": "https://stream1.freetv.fun/deadac9145fbbc28b65e5896455938a10b0cafee4da64196f21b2bb7d0601b7d.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "电影",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 138
+    },
+    {
+      "name": "[HD]功夫电影[geo-blocked]",
       "url": "https://stream1.freetv.fun/ed04d98db945d570c677a330af78f245bd38c2ab085e655b26b123a42ea11a10.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
@@ -120,7 +132,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 301
+      "response_time": 146
     },
     {
       "name": "[SD]paramount movie channel",
@@ -132,19 +144,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 260
-    },
-    {
-      "name": "[SD]paramount movie channel",
-      "url": "https://stream1.freetv.fun/deadac9145fbbc28b65e5896455938a10b0cafee4da64196f21b2bb7d0601b7d.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "电影",
-      "language": "未知",
-      "resolution": "480p",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 379
+      "response_time": 230
     },
     {
       "name": "[SD]凤凰电影",
@@ -156,7 +156,7 @@
       "resolution": "480p",
       "hd": false,
       "channel_id": null,
-      "response_time": 284
+      "response_time": 229
     },
     {
       "name": "[VGA]movies!",
@@ -168,7 +168,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 393
+      "response_time": 236
     },
     {
       "name": "[VGA]tvs drive in movie",
@@ -180,7 +180,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 492
+      "response_time": 143
     },
     {
       "name": "[VGA]tvs western movie",
@@ -192,7 +192,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 289
+      "response_time": 236
     },
     {
       "name": "美亞電影台(HK)",
@@ -204,7 +204,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 31
+      "response_time": 48
     }
   ]
 }

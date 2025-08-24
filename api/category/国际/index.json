@@ -1,6 +1,6 @@
 {
   "category": "国际",
-  "count": 11,
+  "count": 16,
   "channels": [
     {
       "name": "[BD]tvri world",
@@ -12,22 +12,10 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 302
+      "response_time": 370
     },
     {
-      "name": "[BD]凤凰卫视中文",
-      "url": "https://stream1.freetv.fun/2d974525773570a12819a6597a3b0349bd9856ea05c91633862035caed14376d.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "国际",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 147
-    },
-    {
-      "name": "[BD]凤凰卫视资讯",
+      "name": "[BD]凤凰卫视资讯[geo-blocked]",
       "url": "https://stream1.freetv.fun/775da45dedb5d0e2186c592c1a582aabe6893f527089d022ba7104e2471c96cf.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
@@ -36,7 +24,19 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 201
+      "response_time": 135
+    },
+    {
+      "name": "[BD]凤凰卫视香港[geo-blocked]",
+      "url": "https://stream1.freetv.fun/7013161292a63b3a988b5c0bf9f7498081c3281a387fac9a0585fa9638dd4887.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 140
     },
     {
       "name": "[BD]星空国际[geo-blocked]",
@@ -48,7 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 271
+      "response_time": 238
     },
     {
       "name": "[BD]鳳凰衛視中文",
@@ -60,7 +60,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 253
+      "response_time": 137
     },
     {
       "name": "[BD]鳳凰衛視香港",
@@ -72,7 +72,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 152
+      "response_time": 137
     },
     {
       "name": "[BD]鳳凰衛視香港[geo-blocked]",
@@ -84,7 +84,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 153
+      "response_time": 239
     },
     {
       "name": "[HD]凤凰卫视",
@@ -96,7 +96,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 262
+      "response_time": 145
     },
     {
       "name": "[HD]凤凰卫视[geo-blocked]",
@@ -108,11 +108,11 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 537
+      "response_time": 223
     },
     {
-      "name": "[HD]凤凰卫视香港[geo-blocked]",
-      "url": "https://stream1.freetv.fun/7013161292a63b3a988b5c0bf9f7498081c3281a387fac9a0585fa9638dd4887.m3u8",
+      "name": "[HD]凤凰卫视中文",
+      "url": "https://stream1.freetv.fun/159cb44597127a9b3cb01b92ac90f5f4405cc45120c67270530040db9737766c.ctv",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "国际",
@@ -120,7 +120,67 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 254
+      "response_time": 457
+    },
+    {
+      "name": "[HD]凤凰卫视中文",
+      "url": "https://stream1.freetv.fun/abf0dd89a3d8030e6464e736ad8b2c92c562eee2c9e491fa324de6b5d50b558a.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 556
+    },
+    {
+      "name": "[HD]凤凰卫视中文[geo-blocked]",
+      "url": "https://stream1.freetv.fun/2d974525773570a12819a6597a3b0349bd9856ea05c91633862035caed14376d.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 134
+    },
+    {
+      "name": "[HD]凤凰卫视资讯",
+      "url": "https://stream1.freetv.fun/fe31eaf5bb86cd05e17cde36410d5291e290a6380274cb40313ccf2da19cf6cd.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 848
+    },
+    {
+      "name": "[HD]凤凰卫视香港",
+      "url": "https://stream1.freetv.fun/a5bd1dc50647694f26cd9aa662aff4d180a62ffb171b6a864805072dc54126c7.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 369
+    },
+    {
+      "name": "[HD]凤凰卫视香港",
+      "url": "https://stream1.freetv.fun/d600a5fb30dc8fc8d16caa74ecdf2aebdf9448f85a024d7c4cd98d25e530885c.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "国际",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 441
     },
     {
       "name": "鳳凰衛視中文台",
@@ -132,7 +192,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 41
+      "response_time": 47
     }
   ]
 }
