@@ -1,10 +1,22 @@
 {
   "category": "RTHK",
-  "count": 6,
+  "count": 9,
   "channels": [
     {
-      "name": "[BD]rthk32",
-      "url": "https://stream1.freetv.fun/4e2f5ecdf24236f647b765089947b507cb0191011759d44788ee936dd194add6.m3u8",
+      "name": "RTHK 31",
+      "url": "https://rthktv31-live.akamaized.net/hls/live/2036818/RTHKTV31/master.m3u8",
+      "group": "iptv-org",
+      "source": "iptv-org",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 456
+    },
+    {
+      "name": "RTHK 31",
+      "url": "https://stream1.freetv.fun/d2d9be54e9a344d02bfd52f958931c55dedf913747bb8f038ad754c7dbad6250.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "RTHK",
@@ -12,46 +24,10 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 380
+      "response_time": 179
     },
     {
-      "name": "[HD]rthk31 *wj",
-      "url": "https://stream1.freetv.fun/08d9d32f73d5957454b5d52b96354a999f7283dc675a0863f9addb626f2eb132.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "RTHK",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 795
-    },
-    {
-      "name": "[HD]rthk31[geo-blocked]",
-      "url": "https://stream1.freetv.fun/d2d9be54e9a344d02bfd52f958931c55dedf913747bb8f038ad754c7dbad6250.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "RTHK",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 222
-    },
-    {
-      "name": "[HD]rthk32[geo-blocked]",
-      "url": "https://stream1.freetv.fun/e42fb110283fcb1befbda834ed93046b948ab8ecf4fa35c482c0296e220b7fc0.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "RTHK",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 285
-    },
-    {
-      "name": "[VGA]rthk31[geo-blocked]",
+      "name": "RTHK 31",
       "url": "https://stream1.freetv.fun/bcd3e759b0c9f8807280e9cb8fc50c6919ffad577b1d5d21f392f601d93301bc.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
@@ -60,7 +36,67 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 378
+      "response_time": 301
+    },
+    {
+      "name": "RTHK 31",
+      "url": "https://stream1.freetv.fun/08d9d32f73d5957454b5d52b96354a999f7283dc675a0863f9addb626f2eb132.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 649
+    },
+    {
+      "name": "RTHK 32",
+      "url": "https://rthktv32-live.akamaized.net/hls/live/2036819/RTHKTV32/master.m3u8",
+      "group": "iptv-org",
+      "source": "iptv-org",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 493
+    },
+    {
+      "name": "RTHK 32",
+      "url": "https://stream1.freetv.fun/4e2f5ecdf24236f647b765089947b507cb0191011759d44788ee936dd194add6.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 291
+    },
+    {
+      "name": "RTHK 32",
+      "url": "https://stream1.freetv.fun/e42fb110283fcb1befbda834ed93046b948ab8ecf4fa35c482c0296e220b7fc0.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 402
+    },
+    {
+      "name": "RTHK 32",
+      "url": "https://stream1.freetv.fun/6ad3f75051171f61ac5b85ecc949421a9738278fcb629491789e03cc24a30a20.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "RTHK",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 776
     },
     {
       "name": "鳳凰衛視香港台",
@@ -72,7 +108,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 28
+      "response_time": 40
     }
   ]
 }

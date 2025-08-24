@@ -1,0 +1,18 @@
+{
+  "category": "體育",
+  "count": 1,
+  "channels": [
+    {
+      "name": "[HD]w-sports *p[geo-blocked]",
+      "url": "https://stream1.freetv.fun/37e9209ba9dfc828ec87775cec92a911393f3cd0f4cbae56662d5bbfac5569ee.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "體育",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 598
+    }
+  ]
+}

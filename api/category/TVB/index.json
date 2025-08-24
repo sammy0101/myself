@@ -1,7 +1,31 @@
 {
   "category": "TVB",
-  "count": 51,
+  "count": 50,
   "channels": [
+    {
+      "name": "TVB J2",
+      "url": "http://r.jdshipin.com/Nr5jq",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 201
+    },
+    {
+      "name": "TVB J2",
+      "url": "http://r.jdshipin.com/ndGgS",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 3031
+    },
     {
       "name": "TVB Plus",
       "url": "http://s1.an94tv.cfd/aktv/tvbplus/AKTV.m3u8",
@@ -12,7 +36,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 78
+      "response_time": 135
     },
     {
       "name": "TVBS亚洲",
@@ -24,7 +48,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 75
+      "response_time": 97
     },
     {
       "name": "TVBS网路新闻",
@@ -36,7 +60,127 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 38
+      "response_time": 39
+    },
+    {
+      "name": "TVB明珠台",
+      "url": "http://s1.an94tv.cfd/aktv/CH-2/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 64
+    },
+    {
+      "name": "TVB無綫新聞台",
+      "url": "https://stream1.freetv.fun/d10385fcef54a3202d8f7dfb4ec5efcb3dec413590fa74f2f77d015bc9faab39.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 374
+    },
+    {
+      "name": "TVB翡翠台",
+      "url": "http://s1.an94tv.cfd/aktv/CH-0/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 66
+    },
+    {
+      "name": "TVB翡翠台",
+      "url": "http://s1.an94tv.cfd/aktv/CH-6/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 60
+    },
+    {
+      "name": "TVB翡翠台",
+      "url": "https://stream1.freetv.fun/ccff8c256e53ddaa11bb26e52ca4cda304428519d17ef341aef681d5e551d1ce.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 283
+    },
+    {
+      "name": "TVB翡翠台",
+      "url": "http://r.jdshipin.com/qClQf",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 220
+    },
+    {
+      "name": "TVB翡翠台",
+      "url": "http://r.jdshipin.com/n90gt",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 326
+    },
+    {
+      "name": "TVB翡翠台",
+      "url": "http://r.jdshipin.com/62WM7",
+      "group": "BigBigGrandG",
+      "source": "BigBigGrandG",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 140
+    },
+    {
+      "name": "Tvbs 55頻道",
+      "url": "http://s1.an94tv.cfd/zhongtian/tvbs55/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 53
+    },
+    {
+      "name": "Tvbs 56頻道",
+      "url": "http://s1.an94tv.cfd/zhongtian/tvbs56/AKTV.m3u8",
+      "group": "AKTV",
+      "source": "AKTV",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 65
     },
     {
       "name": "[BD]-明珠",
@@ -48,22 +192,10 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 167
+      "response_time": 387
     },
     {
-      "name": "[BD]-翡翠台",
-      "url": "https://stream1.freetv.fun/ccff8c256e53ddaa11bb26e52ca4cda304428519d17ef341aef681d5e551d1ce.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 274
-    },
-    {
-      "name": "[BD]tvb plus[geo-blocked]",
+      "name": "[BD]tvb plus",
       "url": "https://stream1.freetv.fun/70d6657916cfa5ded14dcf78c81e9a726d3e649581659fd0c6d550ac1f3fe0ee.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
@@ -72,55 +204,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 268
-    },
-    {
-      "name": "[BD]tvb1[geo-blocked]",
-      "url": "https://stream1.freetv.fun/f297c4c2b0129696b30c596fe0741ec59b215c9db789bb10bba601dd3ba5f81e.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 1116
-    },
-    {
-      "name": "[BD]tvbe[geo-blocked]",
-      "url": "https://stream1.freetv.fun/b775f67a6992e86c12b144ba190e88ca4b63216fbbc78e6bf624e1b36b977d8c.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 1743
-    },
-    {
-      "name": "[BD]tvbs亚洲",
-      "url": "https://stream1.freetv.fun/ce8e01cc845634983919a261db9d656ca889917f942f25ef8739ac2a33a07cdc.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 300
-    },
-    {
-      "name": "[BD]tvbs亚洲",
-      "url": "https://stream1.freetv.fun/5d67b3e9131d07f6e7da4e6fafda09cc609ee7fefb2e14ca14cf5bd6da5e4107.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 293
+      "response_time": 248
     },
     {
       "name": "[BD]tvbs亚洲",
@@ -132,7 +216,31 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 360
+      "response_time": 171
+    },
+    {
+      "name": "[BD]tvbs亚洲",
+      "url": "https://stream1.freetv.fun/ce8e01cc845634983919a261db9d656ca889917f942f25ef8739ac2a33a07cdc.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 286
+    },
+    {
+      "name": "[BD]tvbs亚洲",
+      "url": "https://stream1.freetv.fun/5d67b3e9131d07f6e7da4e6fafda09cc609ee7fefb2e14ca14cf5bd6da5e4107.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "未知",
+      "hd": false,
+      "channel_id": null,
+      "response_time": 280
     },
     {
       "name": "[BD]tvbs亞洲",
@@ -144,31 +252,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 347
-    },
-    {
-      "name": "[BD]tvb功夫",
-      "url": "https://stream1.freetv.fun/f57adc05a434c6b088c6a7d582e1962d5a6ff0be62d87f52eddbf953c365b4bc.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 762
-    },
-    {
-      "name": "[BD]无线新闻",
-      "url": "https://stream1.freetv.fun/b9fc79702a33d75d0fa4c22a19341be1a7120d111c47d9e109566b9d42020383.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 277
+      "response_time": 293
     },
     {
       "name": "[BD]明珠",
@@ -180,7 +264,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 411
+      "response_time": 373
     },
     {
       "name": "[BD]明珠[geo-blocked]",
@@ -192,19 +276,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 161
-    },
-    {
-      "name": "[BD]無綫新聞",
-      "url": "https://stream1.freetv.fun/d10385fcef54a3202d8f7dfb4ec5efcb3dec413590fa74f2f77d015bc9faab39.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 273
+      "response_time": 291
     },
     {
       "name": "[BD]翡翠",
@@ -216,7 +288,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 153
+      "response_time": 294
     },
     {
       "name": "[BD]翡翠",
@@ -228,7 +300,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 241
+      "response_time": 571
     },
     {
       "name": "[HD]TVB星河频道[geo-blocked]",
@@ -240,7 +312,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 303
+      "response_time": 155
     },
     {
       "name": "[HD]tvb plus",
@@ -252,7 +324,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 781
+      "response_time": 753
     },
     {
       "name": "[HD]tvb plus[geo-blocked]",
@@ -264,7 +336,19 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 284
+      "response_time": 282
+    },
+    {
+      "name": "[HD]tvbplus[geo-blocked]",
+      "url": "https://stream1.freetv.fun/45b5e3b36b8de2cefeacb68ed46660185a95abb2ad353aaaaef7f7adc7f0f8ad.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 257
     },
     {
       "name": "[HD]tvbplus[geo-blocked]",
@@ -276,7 +360,19 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 511
+      "response_time": 514
+    },
+    {
+      "name": "[HD]tvb功夫",
+      "url": "https://stream1.freetv.fun/f57adc05a434c6b088c6a7d582e1962d5a6ff0be62d87f52eddbf953c365b4bc.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 795
     },
     {
       "name": "[HD]tvb娱乐新闻",
@@ -288,7 +384,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 622
+      "response_time": 268
     },
     {
       "name": "[HD]tvb星河",
@@ -300,7 +396,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 439
+      "response_time": 572
     },
     {
       "name": "[HD]tvb星河",
@@ -312,19 +408,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 663
-    },
-    {
-      "name": "[HD]tvb星河[geo-blocked]",
-      "url": "https://stream1.freetv.fun/f553d3c3c7a25ef17b321d43efcf15bd4e25ac5a18532180f6438672c41d38f2.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 285
+      "response_time": 885
     },
     {
       "name": "[HD]tvb星河[geo-blocked]",
@@ -336,11 +420,11 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 290
+      "response_time": 259
     },
     {
-      "name": "[HD]无线新闻[geo-blocked]",
-      "url": "https://stream1.freetv.fun/4290011e1af62ee2c9dea7a9015fec85668584edfd3a58caa60cee5a8684e6fa.m3u8",
+      "name": "[HD]tvb星河[geo-blocked]",
+      "url": "https://stream1.freetv.fun/f553d3c3c7a25ef17b321d43efcf15bd4e25ac5a18532180f6438672c41d38f2.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
       "category": "TVB",
@@ -348,10 +432,10 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 244
+      "response_time": 379
     },
     {
-      "name": "[HD]明珠[geo-blocked]",
+      "name": "[HD]明珠",
       "url": "https://stream1.freetv.fun/9355776363cced50b636fb90bd1d63ba128a62b87206583d553b215847a74d2d.m3u8",
       "group": "epg.pw",
       "source": "epg.pw",
@@ -360,19 +444,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 213
-    },
-    {
-      "name": "[HD]明珠[geo-blocked]",
-      "url": "https://stream1.freetv.fun/b5aa75db3a810edaa7ec150a9c16452a1590dc403278710c4d6ede50ff2b555c.m3u8",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 258
+      "response_time": 157
     },
     {
       "name": "[HD]明珠[geo-blocked]",
@@ -384,7 +456,19 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 409
+      "response_time": 285
+    },
+    {
+      "name": "[HD]明珠[geo-blocked]",
+      "url": "https://stream1.freetv.fun/b5aa75db3a810edaa7ec150a9c16452a1590dc403278710c4d6ede50ff2b555c.m3u8",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 250
     },
     {
       "name": "[HD]翡翠",
@@ -396,19 +480,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 286
-    },
-    {
-      "name": "[HD]翡翠",
-      "url": "https://stream1.freetv.fun/07b8f89d6c2bf405852bd8eb695e2389afdb45dfaf30d5273f8d2b819720681f.ctv",
-      "group": "epg.pw",
-      "source": "epg.pw",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "720p",
-      "hd": true,
-      "channel_id": null,
-      "response_time": 274
+      "response_time": 248
     },
     {
       "name": "[HD]翡翠",
@@ -420,7 +492,19 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 379
+      "response_time": 396
+    },
+    {
+      "name": "[HD]翡翠",
+      "url": "https://stream1.freetv.fun/07b8f89d6c2bf405852bd8eb695e2389afdb45dfaf30d5273f8d2b819720681f.ctv",
+      "group": "epg.pw",
+      "source": "epg.pw",
+      "category": "TVB",
+      "language": "未知",
+      "resolution": "720p",
+      "hd": true,
+      "channel_id": null,
+      "response_time": 471
     },
     {
       "name": "[HD]翡翠",
@@ -432,7 +516,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 457
+      "response_time": 492
     },
     {
       "name": "[HD]翡翠[geo-blocked]",
@@ -444,7 +528,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": null,
-      "response_time": 160
+      "response_time": 258
     },
     {
       "name": "[HD]翡翠一台",
@@ -456,67 +540,7 @@
       "resolution": "720p",
       "hd": true,
       "channel_id": "1",
-      "response_time": 150
-    },
-    {
-      "name": "「HK」J2",
-      "url": "http://r.jdshipin.com/Nr5jq",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 188
-    },
-    {
-      "name": "「HK」J2",
-      "url": "http://r.jdshipin.com/ndGgS",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 2864
-    },
-    {
-      "name": "「HK」翡翠台",
-      "url": "http://r.jdshipin.com/qClQf",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 154
-    },
-    {
-      "name": "「HK」翡翠台",
-      "url": "http://r.jdshipin.com/n90gt",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 207
-    },
-    {
-      "name": "「HK」翡翠台",
-      "url": "http://r.jdshipin.com/62WM7",
-      "group": "BigBigGrandG",
-      "source": "BigBigGrandG",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 423
+      "response_time": 394
     },
     {
       "name": "明珠剧集台(北美)",
@@ -528,19 +552,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 22
-    },
-    {
-      "name": "明珠台",
-      "url": "http://s1.an94tv.cfd/aktv/CH-2/AKTV.m3u8",
-      "group": "AKTV",
-      "source": "AKTV",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 24
+      "response_time": 59
     },
     {
       "name": "翡翠一台(北美)",
@@ -552,7 +564,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": "1",
-      "response_time": 27
+      "response_time": 58
     },
     {
       "name": "翡翠剧集台(北美)",
@@ -564,19 +576,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 239
-    },
-    {
-      "name": "翡翠台",
-      "url": "http://s1.an94tv.cfd/aktv/CH-0/AKTV.m3u8",
-      "group": "AKTV",
-      "source": "AKTV",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 35
+      "response_time": 55
     },
     {
       "name": "翡翠娛樂台(北美)",
@@ -588,7 +588,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 32
+      "response_time": 57
     },
     {
       "name": "翡翠综合台(北美)",
@@ -600,19 +600,7 @@
       "resolution": "未知",
       "hd": false,
       "channel_id": null,
-      "response_time": 84
-    },
-    {
-      "name": "黃金翡翠台",
-      "url": "http://s1.an94tv.cfd/aktv/CH-6/AKTV.m3u8",
-      "group": "AKTV",
-      "source": "AKTV",
-      "category": "TVB",
-      "language": "未知",
-      "resolution": "未知",
-      "hd": false,
-      "channel_id": null,
-      "response_time": 37
+      "response_time": 64
     }
   ]
 }
