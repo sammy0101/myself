@@ -4,11 +4,11 @@ on:
   # 每天 UTC 時間 0 點和 12 點各運行一次
   schedule:
     - cron: '0 0,12 * * *'
-  # 保留手动触发功能
+  # 保留手動觸發功能
   workflow_dispatch:
     inputs:
       vm-name:
-        description: '虚拟机器的名称'
+        description: '虛擬機器的名稱'
         required: true
         default: 'a1-flex-vm'
         type: string
@@ -22,17 +22,17 @@ jobs:
 
       - name: Setup Python and OCI CLI
         run: |
-          # 检查 Python 版本 (OCI CLI 需要 Python 3.6+)
-          echo "当前 Python 版本: $(python3 --version)"
+          # 檢查 Python 版本 (OCI CLI 需要 Python 3.6+)
+          echo "目前 Python 版本: $(python3 --version)"
           python3 -c "import sys; assert sys.version_info >= (3, 6), 'Python 3.6+ required'; print('✅ Python 版本符合要求')"
           
-          # 安装指定版本的 OCI CLI (使用最新稳定版)
+          # 安裝指定版本的 OCI CLI (使用最新穩定版)
           pip install oci-cli==3.64.1 --user
           
-          # 将用户站点包添加到 PATH
+          # 將使用者站點包添加到 PATH
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           
-          # 验证安装
+          # 驗證安裝
           oci --version
           echo "✅ OCI CLI 版本: $(oci --version)"
 
@@ -61,11 +61,11 @@ jobs:
 
       - name: Show current configuration
         run: |
-          echo "当前时间: $(date)"
-          echo "当前配置:"
-          echo "区域: ${{ secrets.OCI_REGION }}"
-          echo "可用性域: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
-          echo "实例规格: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
+          echo "目前時間: $(date)"
+          echo "目前配置:"
+          echo "區域: ${{ secrets.OCI_REGION }}"
+          echo "可用性網域: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
+          echo "實例規格: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
           echo "OCI CLI 版本: $(oci --version)"
 
       - name: Generate cloud-init script for root login
@@ -92,28 +92,28 @@ jobs:
       - name: Create A1 Flex VM Instance with Retry Mechanism
         id: create-vm
         run: |
-          set +e  # 允许命令失败而不立即退出
+          set +e  # 允許命令失敗而不立即退出
           
-          # 重试参数配置
-          max_retries=4           # 最多重试4次（共5次尝试）
-          retry_delay=300         # 每次重试延迟300秒（5分钟）
+          # 重試參數配置
+          max_retries=4           # 最多重試4次（共5次嘗試）
+          retry_delay=300         # 每次重試延遲300秒（5分鐘）
           total_attempts=0
           
-          # 决定虚拟机名称
+          # 決定虛擬機器名稱
           if [ -n "${{ github.event.inputs.vm-name }}" ]; then
             VM_NAME="${{ github.event.inputs.vm-name }}"
           else
             VM_NAME="scheduled-a1-vm-$(date +%Y%m%d-%H%M)"
           fi
           
-          echo "开始创建虚拟机: $VM_NAME"
-          echo "重试策略: 最多 $max_retries 次重试，每次延迟 $retry_delay 秒"
+          echo "開始建立虛擬機器: $VM_NAME"
+          echo "重試策略: 最多 $max_retries 次重試，每次延遲 $retry_delay 秒"
           
           for attempt in $(seq 0 $max_retries); do
             total_attempts=$((attempt + 1))
-            echo "--- 尝试第 $total_attempts 次创建 ---"
+            echo "--- 嘗試第 $total_attempts 次建立 ---"
             
-            # 执行 OCI 命令创建虚拟机，并捕获 JSON 输出
+            # 執行 OCI 命令建立虛擬機器，並捕獲 JSON 輸出
             output=$(oci compute instance launch \
               --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
               --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
@@ -129,11 +129,11 @@ jobs:
             exit_code=$?
             
             if [ $exit_code -eq 0 ]; then
-              # 从 JSON 输出中提取实例 OCID
+              # 從 JSON 輸出中提取實例 OCID
               INSTANCE_OCID=$(echo "$output" | jq -r '.data.id')
               
               if [ -n "$INSTANCE_OCID" ] && [ "$INSTANCE_OCID" != "null" ]; then
-                echo "✅ 虚拟机创建成功 (第 $total_attempts 次尝试)"
+                echo "✅ 虛擬機器建立成功 (第 $total_attempts 次嘗試)"
                 echo "success=true" >> $GITHUB_OUTPUT
                 echo "vm_name=$VM_NAME" >> $GITHUB_OUTPUT
                 echo "instance_ocid=$INSTANCE_OCID" >> $GITHUB_OUTPUT
@@ -141,47 +141,47 @@ jobs:
                 echo "Instance OCID: $INSTANCE_OCID"
                 break
               else
-                echo "❌ 无法从输出中解析 Instance OCID"
+                echo "❌ 無法從輸出中解析 Instance OCID"
                 echo "output: $output"
               fi
             else
-              echo "❌ 第 $total_attempts 次尝试失败，退出码: $exit_code"
-              echo "错误输出: $output"
+              echo "❌ 第 $total_attempts 次嘗試失敗，退出碼: $exit_code"
+              echo "錯誤輸出: $output"
               
-              # 检查错误类型
+              # 檢查錯誤類型
               if echo "$output" | grep -Ei "out of host capacity|insufficientcapacity|outofcapacity|service limit exceeded|limit exceeded|capacity not available|not available|host capacity"; then
-                echo "检测到容量不足错误，将在延迟后重试..."
+                echo "檢測到容量不足錯誤，將在延遲後重試..."
                 error_type="capacity_error"
               elif echo "$output" | grep -Ei "quota|limit|notavailable|free tier|insufficient|over quota"; then
-                echo "检测到配额限制错误"
+                echo "檢測到配額限制錯誤"
                 error_type="quota_error"
-                break  # 配额错误重试无意义
+                break  # 配額錯誤重試無意義
               elif echo "$output" | grep -Ei "timeout|connection|request timed out"; then
-                echo "检测到网络超时错误，将在延迟后重试..."
+                echo "檢測到網路超時錯誤，將在延遲後重試..."
                 error_type="network_error"
               else
-                echo "检测到其他错误类型"
+                echo "檢測到其他錯誤類型"
                 error_type="other_error"
-                break  # 其他错误可能重试也无意义
+                break  # 其他錯誤可能重試也無意義
               fi
               
-              # 存储错误信息
+              # 儲存錯誤資訊
               echo "free_tier_limit=true" >> $GITHUB_OUTPUT
               echo "error_type=$error_type" >> $GITHUB_OUTPUT
-              echo "error_message=第 $total_attempts 次尝试失败: $(echo "$output" | head -5)" >> $GITHUB_OUTPUT
+              echo "error_message=第 $total_attempts 次嘗試失敗: $(echo "$output" | head -5)" >> $GITHUB_OUTPUT
             fi
             
-            # 如果是最后一次尝试，不再延迟
+            # 如果是最後一次嘗試，不再延遲
             if [ $attempt -eq $max_retries ]; then
-              echo "已达最大重试次数 ($max_retries 次)，停止重试"
+              echo "已達最大重試次數 ($max_retries 次)，停止重試"
               break
             fi
             
-            echo "等待 $retry_delay 秒后重试..."
+            echo "等待 $retry_delay 秒後重試..."
             sleep $retry_delay
           done
           
-          # 恢复错误处理
+          # 恢復錯誤處理
           set -e
 
       - name: Wait for instance to reach RUNNING state
@@ -189,30 +189,30 @@ jobs:
         id: wait-for-running
         run: |
           INSTANCE_OCID="${{ steps.create-vm.outputs.instance_ocid }}"
-          echo "等待实例 $INSTANCE_OCID 进入 RUNNING 状态..."
+          echo "等待實例 $INSTANCE_OCID 進入 RUNNING 狀態..."
           
-          # 设置轮询参数（延长到10分钟）
-          MAX_ATTEMPTS=60  # 最多尝试60次 (10分钟)
-          SLEEP_INTERVAL=10  # 每次间隔10秒
+          # 設置輪詢參數（延長到10分鐘）
+          MAX_ATTEMPTS=60  # 最多嘗試60次 (10分鐘)
+          SLEEP_INTERVAL=10  # 每次間隔10秒
           attempt=1
           
           while [ $attempt -le $MAX_ATTEMPTS ]; do
-            # 使用精确的实例OCID查询当前状态
+            # 使用精確的實例OCID查詢當前狀態
             CURRENT_STATE=$(oci compute instance get \
               --instance-id "$INSTANCE_OCID" \
               --query 'data."lifecycle-state"' \
               --raw-output 2>/dev/null || echo "UNKNOWN")
             
-            echo "状态检查 $attempt/$MAX_ATTEMPTS: 当前状态为 '$CURRENT_STATE'"
+            echo "狀態檢查 $attempt/$MAX_ATTEMPTS: 當前狀態為 '$CURRENT_STATE'"
             
             if [ "$CURRENT_STATE" = "RUNNING" ]; then
-              echo "✅ 实例现在处于 RUNNING 状态"
+              echo "✅ 實例現在處於 RUNNING 狀態"
               echo "running=true" >> $GITHUB_OUTPUT
               break
             fi
             
             if [ $attempt -eq $MAX_ATTEMPTS ]; then
-              echo "❌ 实例未在超时时间内达到 RUNNING 状态"
+              echo "❌ 實例未在超時時間內達到 RUNNING 狀態"
               echo "running=false" >> $GITHUB_OUTPUT
               break
             fi
@@ -226,21 +226,21 @@ jobs:
         id: get-ip
         run: |
           INSTANCE_OCID="${{ steps.create-vm.outputs.instance_ocid }}"
-          echo "获取实例的公网 IP: $INSTANCE_OCID"
+          echo "獲取實例的公網 IP: $INSTANCE_OCID"
           
-          # 使用精确的实例OCID查询公网IP
+          # 使用精確的實例OCID查詢公網IP
           PUBLIC_IP=$(oci compute instance get \
             --instance-id "$INSTANCE_OCID" \
             --query 'data."public-ip"' \
             --raw-output)
           
-          # 检查获取到的IP是否有效
+          # 檢查獲取到的IP是否有效
           if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "null" ]; then
-            echo "❌ 无法获取有效的公网IP地址。可能尚未分配。"
+            echo "❌ 無法獲取有效的公網IP地址。可能尚未分配。"
             echo "public_ip=unknown" >> $GITHUB_OUTPUT
           else
             echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
-            echo "✅ 虚拟机公网 IP: $PUBLIC_IP"
+            echo "✅ 虛擬機器公網 IP: $PUBLIC_IP"
           fi
 
       - name: SSH Health Check
@@ -250,29 +250,29 @@ jobs:
           PUBLIC_IP="${{ steps.get-ip.outputs.public_ip }}"
           ROOT_PASSWORD="${{ secrets.ROOT_PASSWORD }}"
           
-          echo "执行SSH健康检查，目标IP: $PUBLIC_IP"
-          echo "这将尝试通过SSH连接到虚拟机并执行基本检查..."
+          echo "執行SSH健康檢查，目標IP: $PUBLIC_IP"
+          echo "這將嘗試通過SSH連接到虛擬機器並執行基本檢查..."
           
-          # 安装sshpass用于非交互式SSH认证
-          echo "安装sshpass..."
+          # 安裝sshpass用於非互動式SSH認證
+          echo "安裝sshpass..."
           sudo apt-get install -y sshpass
           
-          # 设置最大健康检查尝试次数
+          # 設置最大健康檢查嘗試次數
           MAX_HEALTH_CHECKS=12
           HEALTH_CHECK_INTERVAL=10
           health_attempt=1
           health_success=false
           
           while [ $health_attempt -le $MAX_HEALTH_CHECKS ]; do
-            echo "健康检查尝试 $health_attempt/$MAX_HEALTH_CHECKS..."
+            echo "健康檢查嘗試 $health_attempt/$MAX_HEALTH_CHECKS..."
             
-            # 使用sshpass执行SSH命令（禁用严格主机密钥检查）
-            if sshpass -p "$ROOT_PASSWORD" ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 root@$PUBLIC_IP 'echo "SSH连接成功"; hostname; uptime'; then
-              echo "✅ SSH健康检查成功"
+            # 使用sshpass執行SSH命令（禁用嚴格主機金鑰檢查）
+            if sshpass -p "$ROOT_PASSWORD" ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 root@$PUBLIC_IP 'echo "SSH連接成功"; hostname; uptime'; then
+              echo "✅ SSH健康檢查成功"
               health_success=true
               break
             else
-              echo "❌ SSH健康检查失败 (尝试 $health_attempt)，等待重试..."
+              echo "❌ SSH健康檢查失敗 (嘗試 $health_attempt)，等待重試..."
               sleep $HEALTH_CHECK_INTERVAL
               ((health_attempt++))
             fi
@@ -282,43 +282,43 @@ jobs:
             echo "health_check=passed" >> $GITHUB_OUTPUT
           else
             echo "health_check=failed" >> $GITHUB_OUTPUT
-            echo "❌ 所有SSH健康检查尝试均失败"
+            echo "❌ 所有SSH健康檢查嘗試均失敗"
           fi
 
       - name: Prepare Telegram notification message
         id: prepare-telegram-message
         run: |
-          # 准备 Telegram 消息内容
+          # 準備 Telegram 訊息內容
           if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
             if [[ "${{ steps.ssh-health-check.outputs.health_check }}" == "passed" ]]; then
-              MESSAGE="✅ OCI 虚拟机创建并验证成功
-              • 名称: ${{ steps.create-vm.outputs.vm_name }}
+              MESSAGE="✅ OCI 虛擬機器建立並驗證成功
+              • 名稱: ${{ steps.create-vm.outputs.vm_name }}
               • IP: ${{ steps.get-ip.outputs.public_ip }}
               • 配置: A1.Flex (4 OCPU, 24GB RAM)
-              • 尝试次数: ${{ steps.create-vm.outputs.attempt_count }}
-              • 健康检查: 通过
-              • 时间: $(date +'%Y-%m-%d %H:%M:%S UTC')
-              • 登录: ssh root@${{ steps.get-ip.outputs.public_ip }}"
+              • 嘗試次數: ${{ steps.create-vm.outputs.attempt_count }}
+              • 健康檢查: 通過
+              • 時間: $(date +'%Y-%m-%d %H:%M:%S UTC')
+              • 登入: ssh root@${{ steps.get-ip.outputs.public_ip }}"
             else
-              MESSAGE="⚠️ OCI 虚拟机创建但健康检查失败
-              • 名称: ${{ steps.create-vm.outputs.vm_name }}
+              MESSAGE="⚠️ OCI 虛擬機器建立但健康檢查失敗
+              • 名稱: ${{ steps.create-vm.outputs.vm_name }}
               • IP: ${{ steps.get-ip.outputs.public_ip }}
               • 配置: A1.Flex (4 OCPU, 24GB RAM)
-              • 尝试次数: ${{ steps.create-vm.outputs.attempt_count }}
-              • 健康检查: 失败
-              • 时间: $(date +'%Y-%m-%d %H:%M:%S UTC')
-              • 可能需要手动检查实例状态"
+              • 嘗試次數: ${{ steps.create-vm.outputs.attempt_count }}
+              • 健康檢查: 失敗
+              • 時間: $(date +'%Y-%m-%d %H:%M:%S UTC')
+              • 可能需要手動檢查實例狀態"
             fi
           else
-            MESSAGE="❌ OCI 虚拟机创建失败
-            • 错误: ${{ steps.create-vm.outputs.error_message }}
-            • 尝试次数: ${{ steps.create-vm.outputs.attempt_count }}
-            • 时间: $(date +'%Y-%m-%d %H:%M:%S UTC')
-            • 区域: ${{ secrets.OCI_REGION }}
-            • 详情: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            MESSAGE="❌ OCI 虛擬機器建立失敗
+            • 錯誤: ${{ steps.create-vm.outputs.error_message }}
+            • 嘗試次數: ${{ steps.create-vm.outputs.attempt_count }}
+            • 時間: $(date +'%Y-%m-%d %H:%M:%S UTC')
+            • 區域: ${{ secrets.OCI_REGION }}
+            • 詳情: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
           
-          # 移除多余缩进并存储消息
+          # 移除多餘縮進並儲存訊息
           echo "message<<EOF" >> $GITHUB_OUTPUT
           echo "$MESSAGE" | sed 's/^              //g' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -334,38 +334,38 @@ jobs:
       - name: Handle final result
         if: always()
         run: |
-          echo "=== 执行结果汇总 ==="
-          echo "执行时间: $(date)"
-          echo "执行模式: ${{ github.event_name }}"
+          echo "=== 執行結果彙總 ==="
+          echo "執行時間: $(date)"
+          echo "執行模式: ${{ github.event_name }}"
           
           if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
             if [[ "${{ steps.wait-for-running.outputs.running }}" == "true" ]]; then
               if [[ "${{ steps.ssh-health-check.outputs.health_check }}" == "passed" ]]; then
-                echo "✅ 工作流执行成功: 虚拟机已创建、配置并通过健康检查"
+                echo "✅ 工作流執行成功: 虛擬機器已建立、配置並通過健康檢查"
               else
-                echo "⚠️  虚拟机已创建但健康检查失败"
+                echo "⚠️  虛擬機器已建立但健康檢查失敗"
               fi
-              echo "虚拟机名称: ${{ steps.create-vm.outputs.vm_name }}"
-              echo "公网 IP: ${{ steps.get-ip.outputs.public_ip }}"
-              echo "尝试次数: ${{ steps.create-vm.outputs.attempt_count }}"
+              echo "虛擬機器名稱: ${{ steps.create-vm.outputs.vm_name }}"
+              echo "公網 IP: ${{ steps.get-ip.outputs.public_ip }}"
+              echo "嘗試次數: ${{ steps.create-vm.outputs.attempt_count }}"
             else
-              echo "⚠️  虚拟机已创建但未达到 RUNNING 状态"
-              echo "虚拟机 OCID: ${{ steps.create-vm.outputs.instance_ocid }}"
-              echo "请稍后在 OCI 控制台中检查状态"
+              echo "⚠️  虛擬機器已建立但未達到 RUNNING 狀態"
+              echo "虛擬機器 OCID: ${{ steps.create-vm.outputs.instance_ocid }}"
+              echo "請稍後在 OCI 控制台中檢查狀態"
             fi
           else
-            echo "❌ 工作流执行失败: 虚拟机创建未成功"
-            echo "错误类型: ${{ steps.create-vm.outputs.error_type }}"
-            echo "尝试次数: ${{ steps.create-vm.outputs.attempt_count }}"
-            echo "错误信息: ${{ steps.create-vm.outputs.error_message }}"
+            echo "❌ 工作流執行失敗: 虛擬機器建立未成功"
+            echo "錯誤類型: ${{ steps.create-vm.outputs.error_type }}"
+            echo "嘗試次數: ${{ steps.create-vm.outputs.attempt_count }}"
+            echo "錯誤訊息: ${{ steps.create-vm.outputs.error_message }}"
             
-            # 免费账户资源限制的特殊提示
+            # 免費帳戶資源限制的特殊提示
             if [[ "${{ steps.create-vm.outputs.free_tier_limit }}" == "true" ]]; then
               echo ""
-              echo "💡 Oracle Cloud 免费账户创建虚拟机失败建议:"
-              echo "1. 尝试使用不同的可用性域"
-              echo "2. 稍后重试 (几小时或第二天)"
-              echo "3. 考虑使用不同的区域"
-              echo "4. 尝试创建较小配置的实例"
+              echo "💡 Oracle Cloud 免費帳戶建立虛擬機器失敗建議:"
+              echo "1. 嘗試使用不同的可用性網域"
+              echo "2. 稍後重試 (幾小時或第二天)"
+              echo "3. 考慮使用不同的區域"
+              echo "4. 嘗試建立較小配置的實例"
             fi
           fi
