@@ -1,9 +1,9 @@
+https://live.fanmingming.com/tv/m3u/ipv6.m3u
 https://iptv-search.com
 https://tonkiang.us
 https://iptv-org.github.io/iptv/countries/hk.m3u
 https://epg.pw/test_channels_hong_kong.m3u
 https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u
-https://live.fanmingming.com/tv/m3u/ipv6.m3u
 https://raw.githubusercontent.com/YueChan/Live/main/IPTV.m3u
 https://raw.githubusercontent.com/BigBigGrandG/IPTV-URL/release/Gather.m3u
 https://github.com/sammy0101/iptv-api/raw/refs/heads/master/output/user_result.m3u
