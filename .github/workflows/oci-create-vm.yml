@@ -1,13 +1,9 @@
 name: '[Scheduled] Create OCI A1 Flex VM'
 
 on:
+  # 每天 UTC 時間 0 點和 12 點各運行一次
   schedule:
-    # 方案一 (穩健型)：每天 UTC 時間早上 6 點運行一次
-    # - cron: '0 6 * * *'
-    
-    # 方案二 (積極型)：每天 UTC 時間 0 點和 12 點各運行一次
     - cron: '0 0,12 * * *'
-    
   # 保留手動觸發功能
   workflow_dispatch:
     inputs:
@@ -24,12 +20,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install OCI CLI and network tools
+      - name: Setup Python and OCI CLI
+        run: |
+          # 檢查 Python 版本 (OCI CLI 需要 Python 3.6+)
+          echo "當前 Python 版本: $(python3 --version)"
+          python3 -c "import sys; assert sys.version_info >= (3, 6), 'Python 3.6+ required'; print('✅ Python 版本符合要求')"
+          
+          # 安裝 OCI CLI (使用 --user 避免權限問題)
+          pip install oci-cli --user
+          
+          # 將用戶站點包添加到 PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+          # 驗證安裝
+          oci --version
+
+      - name: Install additional dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y curl dnsutils jq
-          pip install oci-cli
-          oci --version
 
       - name: Configure OCI CLI
         run: |
@@ -49,7 +58,7 @@ jobs:
           
           chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
 
-      - name: Show current configuration and time
+      - name: Show current configuration
         run: |
           echo "目前時間: $(date)"
           echo "目前配置:"
@@ -77,102 +86,136 @@ jobs:
           
           sed -i "s/\$ROOT_PASSWORD/${{ secrets.ROOT_PASSWORD }}/g" cloud-init.txt
 
-      - name: Create A1 Flex VM Instance with error handling
+      - name: Create A1 Flex VM Instance and Capture ID
         id: create-vm
         run: |
-          set +e  # 允許命令失敗而不立即退出
+          # 設定 +e 以允許命令失敗而不立即退出
+          set +e
           
-          max_retries=2
-          retry_delay=30
-          
-          # 如果是定時任務，使用固定名稱；如果是手動觸發，使用輸入的名稱
+          # 決定虛擬機器名稱
           if [ -n "${{ github.event.inputs.vm-name }}" ]; then
             VM_NAME="${{ github.event.inputs.vm-name }}"
           else
-            VM_NAME="scheduled-a1-vm-$(date +%Y%m%d)"
+            VM_NAME="scheduled-a1-vm-$(date +%Y%m%d-%H%M)"
           fi
           
-          for i in $(seq 1 $max_retries); do
-            echo "嘗試 $i of $max_retries"
+          echo "嘗試建立虛擬機器: $VM_NAME"
+          
+          # 執行 OCI 命令建立虛擬機器，並捕獲 JSON 輸出
+          output=$(oci compute instance launch \
+            --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
+            --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
+            --display-name "$VM_NAME" \
+            --shape "VM.Standard.A1.Flex" \
+            --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
+            --image-id "${{ secrets.OCI_IMAGE_OCID }}" \
+            --subnet-id "${{ secrets.OCI_SUBNET_ID }}" \
+            --assign-public-ip true \
+            --user-data-file ./cloud-init.txt \
+            --output json 2>&1)
+          
+          exit_code=$?
+          
+          if [ $exit_code -eq 0 ]; then
+            # 從 JSON 輸出中提取實例 OCID
+            INSTANCE_OCID=$(echo "$output" | jq -r '.data.id')
             
-            # 運行 OCI 命令並捕獲輸出
-            output=$(oci compute instance launch \
-              --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
-              --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
-              --display-name "$VM_NAME" \
-              --shape "VM.Standard.A1.Flex" \
-              --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
-              --image-id "${{ secrets.OCI_IMAGE_OCID }}" \
-              --subnet-id "${{ secrets.OCI_SUBNET_ID }}" \
-              --assign-public-ip true \
-              --user-data-file ./cloud-init.txt 2>&1)
-            
-            exit_code=$?
-            
-            if [ $exit_code -eq 0 ]; then
+            if [ -n "$INSTANCE_OCID" ] && [ "$INSTANCE_OCID" != "null" ]; then
               echo "✅ 虛擬機器建立成功"
               echo "success=true" >> $GITHUB_OUTPUT
               echo "vm_name=$VM_NAME" >> $GITHUB_OUTPUT
-              break
+              echo "instance_ocid=$INSTANCE_OCID" >> $GITHUB_OUTPUT
+              echo "Instance OCID: $INSTANCE_OCID"
             else
-              echo "❌ 嘗試 $i 失敗，退出碼: $exit_code"
-              echo "錯誤輸出: $output"
-              
-              # 檢查是否是免費帳戶資源不足
-              if echo "$output" | grep -i "out of host capacity\|insufficientcapacity\|outofcapacity"; then
-                echo "free_tier_limit=true" >> $GITHUB_OUTPUT
-                echo "error_type=free_tier_limit" >> $GITHUB_OUTPUT
-                echo "error_message=免費帳戶資源限制: 目前區域或可用性網域中沒有足夠的資源來建立虛擬機器" >> $GITHUB_OUTPUT
-              elif echo "$output" | grep -i "quota\|limit\|notavailable\|free tier\|insufficient"; then
-                echo "free_tier_limit=true" >> $GITHUB_OUTPUT
-                echo "error_type=free_tier_limit" >> $GITHUB_OUTPUT
-                echo "error_message=免費帳戶資源限制，可能區域資源不足或已達免費額度上限" >> $GITHUB_OUTPUT
-              elif echo "$output" | grep -i "timeout\|connection"; then
-                echo "error_type=network_timeout" >> $GITHUB_OUTPUT
-                echo "error_message=網路連接超時，請稍後重試" >> $GITHUB_OUTPUT
-              else
-                echo "error_type=other" >> $GITHUB_OUTPUT
-                echo "error_message=其他錯誤，請檢查配置和權限" >> $GITHUB_OUTPUT
-              fi
-              
-              if [ $i -eq $max_retries ]; then
-                echo "所有嘗試都失敗了。"
-                break
-              fi
-              
-              echo "等待 $retry_delay 秒後重試..."
-              sleep $retry_delay
+              echo "❌ 無法從輸出中解析 Instance OCID"
+              echo "error_type=parsing_error" >> $GITHUB_OUTPUT
+              echo "error_message=無法從OCI回應中解析實例ID" >> $GITHUB_OUTPUT
             fi
-          done
+          else
+            echo "❌ 虛擬機器建立失敗，退出碼: $exit_code"
+            echo "錯誤輸出: $output"
+            
+            # 擴展錯誤檢查，包含更多可能的錯誤變體
+            if echo "$output" | grep -Ei "out of host capacity|insufficientcapacity|outofcapacity|service limit exceeded|limit exceeded|capacity not available|not available|host capacity"; then
+              echo "free_tier_limit=true" >> $GITHUB_OUTPUT
+              echo "error_type=free_tier_limit" >> $GITHUB_OUTPUT
+              echo "error_message=免費帳戶資源限制: 目前區域或可用性網域中沒有足夠的資源來建立虛擬機器" >> $GITHUB_OUTPUT
+            elif echo "$output" | grep -Ei "quota|limit|notavailable|free tier|insufficient|over quota"; then
+              echo "free_tier_limit=true" >> $GITHUB_OUTPUT
+              echo "error_type=free_tier_limit" >> $GITHUB_OUTPUT
+              echo "error_message=免費帳戶資源限制，可能區域資源不足或已達免費額度上限" >> $GITHUB_OUTPUT
+            elif echo "$output" | grep -Ei "timeout|connection|request timed out"; then
+              echo "error_type=network_timeout" >> $GITHUB_OUTPUT
+              echo "error_message=網路連接超時，請稍後重試" >> $GITHUB_OUTPUT
+            elif echo "$output" | grep -Ei "not authenticated|not authorized|auth|unauthorized"; then
+              echo "error_type=auth_error" >> $GITHUB_OUTPUT
+              echo "error_message=認證或授權失敗，請檢查OCI配置和權限" >> $GITHUB_OUTPUT
+            else
+              echo "error_type=other" >> $GITHUB_OUTPUT
+              echo "error_message=其他錯誤，請檢查配置和權限。原始錯誤: $(echo "$output" | head -20)" >> $GITHUB_OUTPUT
+            fi
+          fi
           
-          set -e  # 恢復錯誤退出
+          # 恢復錯誤處理
+          set -e
 
-      - name: Wait for VM initialization
+      - name: Wait for instance to reach RUNNING state
         if: steps.create-vm.outputs.success == 'true'
+        id: wait-for-running
         run: |
-          echo "等待虛擬機器初始化完成..."
-          sleep 60
+          INSTANCE_OCID="${{ steps.create-vm.outputs.instance_ocid }}"
+          echo "等待實例 $INSTANCE_OCID 進入 RUNNING 狀態..."
+          
+          # 設置輪詢參數
+          MAX_ATTEMPTS=36  # 最多嘗試36次 (6分鐘)
+          SLEEP_INTERVAL=10  # 每次間隔10秒
+          attempt=1
+          
+          while [ $attempt -le $MAX_ATTEMPTS ]; do
+            # 使用精確的實例OCID查詢當前狀態
+            CURRENT_STATE=$(oci compute instance get \
+              --instance-id "$INSTANCE_OCID" \
+              --query 'data."lifecycle-state"' \
+              --raw-output 2>/dev/null || echo "UNKNOWN")
+            
+            echo "嘗試 $attempt/$MAX_ATTEMPTS: 當前狀態為 '$CURRENT_STATE'"
+            
+            if [ "$CURRENT_STATE" = "RUNNING" ]; then
+              echo "✅ 實例現在處於 RUNNING 狀態"
+              echo "running=true" >> $GITHUB_OUTPUT
+              break
+            fi
+            
+            if [ $attempt -eq $MAX_ATTEMPTS ]; then
+              echo "❌ 實例未在超時時間內達到 RUNNING 狀態"
+              echo "running=false" >> $GITHUB_OUTPUT
+              break
+            fi
+            
+            sleep $SLEEP_INTERVAL
+            ((attempt++))
+          done
 
-      - name: Get VM Public IP
-        if: steps.create-vm.outputs.success == 'true'
+      - name: Get VM Public IP (Precise Query)
+        if: steps.create-vm.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true'
         id: get-ip
         run: |
-          PUBLIC_IP=$(oci compute instance list \
-            --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
-            --display-name "${{ steps.create-vm.outputs.vm_name }}" \
-            --lifecycle-state RUNNING \
-            --query 'data[0]."public-ip"' \
+          INSTANCE_OCID="${{ steps.create-vm.outputs.instance_ocid }}"
+          echo "獲取實例的公網 IP: $INSTANCE_OCID"
+          
+          # 使用精確的實例OCID查詢公網IP
+          PUBLIC_IP=$(oci compute instance get \
+            --instance-id "$INSTANCE_OCID" \
+            --query 'data."public-ip"' \
             --raw-output)
           
-          if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" == "null" ]; then
-            echo "❌ 無法取得虛擬機器公網IP"
-            echo "這可能是因為:"
-            echo "1. 虛擬機器沒有分配公網IP"
-            echo "2. 虛擬機器沒有成功啟動"
+          # 檢查獲取到的IP是否有效
+          if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "null" ]; then
+            echo "❌ 無法獲取有效的公網IP地址。可能尚未分配。"
             echo "public_ip=unknown" >> $GITHUB_OUTPUT
           else
-            echo "public_ip=${PUBLIC_IP}" >> $GITHUB_OUTPUT
-            echo "虛擬機器公網 IP: ${PUBLIC_IP}"
+            echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+            echo "✅ 虛擬機器公網 IP: $PUBLIC_IP"
           fi
 
       - name: Prepare Telegram notification message
@@ -207,70 +250,44 @@ jobs:
           message: ${{ steps.prepare-telegram-message.outputs.message }}
           format: html
 
-      - name: Handle VM creation result
-        if: always()
-        run: |
-          # 檢查上一步的結果
-          if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
-            echo "🎉 虛擬機器建立成功!"
-            echo "虛擬機器名稱: ${{ steps.create-vm.outputs.vm_name }}"
-            echo "正在等待虛擬機器初始化..."
-          else
-            echo "❌ 虛擬機器建立失敗"
-            echo "錯誤類型: ${{ steps.create-vm.outputs.error_type }}"
-            echo "錯誤訊息: ${{ steps.create-vm.outputs.error_message }}"
-            
-            # 如果是免費帳戶資源不足，提供更多建議
-            if [[ "${{ steps.create-vm.outputs.free_tier_limit }}" == "true" ]]; then
-              echo ""
-              echo "💡 Oracle Cloud 免費帳戶建立虛擬機器失敗建議:"
-              echo "1. 嘗試使用不同的可用性網域 (Availability Domain)"
-              echo "   - 目前可用性網域: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
-              echo "   - 您可以在 OCI 控制台中查看其他可用性網域"
-              echo "2. 稍後重試 (幾小時或第二天)，免費層資源可能會隨時間釋放"
-              echo "3. 考慮使用不同的區域 (Region)"
-              echo "   - 目前區域: ${{ secrets.OCI_REGION }}"
-              echo "   - 一些較少人使用的區域可能有更多可用資源"
-              echo "4. 嘗試建立較小配置的實例 (如 1 OCPU, 6GB RAM)"
-              echo "5. 免費帳戶有時在某些區域/時間段的資源確實很緊張，需要耐心嘗試"
-              echo ""
-              echo "ℹ️  這是一個常見的免費帳戶問題，不是您的配置錯誤。"
-            fi
-            
-            # 如果不是免費帳戶限制，可能是其他錯誤
-            if [[ "${{ steps.create-vm.outputs.error_type }}" == "network_timeout" ]]; then
-              echo ""
-              echo "💡 網路超時建議:"
-              echo "1. 稍後重試，可能是臨時網路問題"
-              echo "2. 檢查您的網路連接"
-            fi
-            
-            # 退出工作流並標記為失敗
-            exit 1
-          fi
-
-      - name: Print Success Message
-        if: steps.create-vm.outputs.success == 'true'
-        run: |
-          echo "🎉 虛擬機器 '${{ steps.create-vm.outputs.vm_name }}' 建立成功!"
-          echo "📊 配置: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
-          echo "🔑 登入用戶: root"
-          echo "🔒 密碼: 使用您在 Secrets 中設定的 ROOT_PASSWORD"
-          echo "🌐 連接方式: ssh root@${{ steps.get-ip.outputs.public_ip }}"
-          echo ""
-          echo "⚠️  安全提示: 密碼認證和 root 登入在生產環境中不推薦使用"
-
-      - name: Print Final Result
+      - name: Handle final result
         if: always()
         run: |
           echo "=== 執行結果彙總 ==="
           echo "執行時間: $(date)"
+          echo "執行模式: ${{ github.event_name }}"
+          
           if [[ "${{ steps.create-vm.outputs.success }}" == "true" ]]; then
-            echo "✅ 工作流執行成功: 虛擬機器已建立並配置完成"
-            echo "虛擬機器名稱: ${{ steps.create-vm.outputs.vm_name }}"
-            echo "公網 IP: ${{ steps.get-ip.outputs.public_ip }}"
+            if [[ "${{ steps.wait-for-running.outputs.running }}" == "true" ]]; then
+              echo "✅ 工作流執行成功: 虛擬機器已建立並配置完成"
+              echo "虛擬機器名稱: ${{ steps.create-vm.outputs.vm_name }}"
+              echo "公網 IP: ${{ steps.get-ip.outputs.public_ip }}"
+            else
+              echo "⚠️  虛擬機器已建立但未達到 RUNNING 狀態"
+              echo "虛擬機器 OCID: ${{ steps.create-vm.outputs.instance_ocid }}"
+              echo "請稍後在 OCI 控制台中檢查狀態"
+            fi
           else
             echo "❌ 工作流執行失敗: 虛擬機器建立未成功"
             echo "錯誤類型: ${{ steps.create-vm.outputs.error_type }}"
-            echo "請查看上述錯誤訊息和建議"
+            echo "錯誤訊息: ${{ steps.create-vm.outputs.error_message }}"
+            
+            # 免費帳戶資源限制的特殊提示
+            if [[ "${{ steps.create-vm.outputs.free_tier_limit }}" == "true" ]]; then
+              echo ""
+              echo "💡 Oracle Cloud 免費帳戶建立虛擬機器失敗建議:"
+              echo "1. 嘗試使用不同的可用性網域"
+              echo "2. 稍後重試 (幾小時或第二天)"
+              echo "3. 考慮使用不同的區域"
+              echo "4. 嘗試建立較小配置的實例"
+            fi
+            
+            # 認證錯誤的特殊提示
+            if [[ "${{ steps.create-vm.outputs.error_type }}" == "auth_error" ]]; then
+              echo ""
+              echo "🔐 認證錯誤建議:"
+              echo "1. 檢查 OCI 配置和 API 金鑰"
+              echo "2. 確認用戶有足夠權限建立虛擬機器"
+              echo "3. 驗證所有 OCID 和區域配置是否正確"
+            fi
           fi
