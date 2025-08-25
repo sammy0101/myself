@@ -285,6 +285,21 @@ jobs:
             echo "❌ 所有SSH健康檢查嘗試均失敗"
           fi
 
+      - name: Debug Telegram secrets
+        run: |
+          echo "檢查 Telegram 設定..."
+          if [ -z "${{ secrets.TELEGRAM_BOT_TOKEN }}" ]; then
+            echo "❌ TELEGRAM_BOT_TOKEN 未設置或為空"
+          else
+            echo "✅ TELEGRAM_BOT_TOKEN 已設置"
+          fi
+          
+          if [ -z "${{ secrets.TELEGRAM_CHAT_ID }}" ]; then
+            echo "❌ TELEGRAM_CHAT_ID 未設置或為空"
+          else
+            echo "✅ TELEGRAM_CHAT_ID 已設置"
+          fi
+
       - name: Prepare Telegram notification message
         id: prepare-telegram-message
         run: |
@@ -322,14 +337,28 @@ jobs:
           echo "message<<EOF" >> $GITHUB_OUTPUT
           echo "$MESSAGE" | sed 's/^              //g' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          
+          # 輸出訊息內容以便調試
+          echo "準備發送的 Telegram 訊息:"
+          echo "$MESSAGE" | sed 's/^              //g'
 
       - name: Send Telegram notification
+        id: send-telegram
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: ${{ steps.prepare-telegram-message.outputs.message }}
           format: html
+
+      - name: Check Telegram notification status
+        run: |
+          if [ "${{ steps.send-telegram.outputs.status }}" = "success" ]; then
+            echo "✅ Telegram 通知發送成功"
+          else
+            echo "❌ Telegram 通知發送失敗"
+            echo "請檢查 TELEGRAM_BOT_TOKEN 和 TELEGRAM_CHAT_ID 是否正確設置"
+          fi
 
       - name: Handle final result
         if: always()
@@ -369,3 +398,6 @@ jobs:
               echo "4. 嘗試建立較小配置的實例"
             fi
           fi
+          
+          # 添加 Telegram 通知狀態
+          echo "Telegram 通知狀態: ${{ steps.send-telegram.outputs.status }}"
