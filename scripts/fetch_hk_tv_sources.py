@@ -10,12 +10,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs
 
 class HKTVSourceFetcher:
-    def __init__(self):
+    def __init__(self, custom_sources=None):
         self.sources = []
         self.timeout = 10
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
+        
+        # 自定义源列表
+        self.custom_sources = custom_sources or []
+        
         # 定义分类优先级顺序
         self.category_order = [
             'TVB', 'ViuTV', 'HOY TV', 'RTHK', '新闻', '体育', '电影', '国际', '儿童', '其他'
@@ -64,9 +68,20 @@ class HKTVSourceFetcher:
             self.fetch_bigbiggrandg,
         ]
         
+        # 添加自定义源获取方法
+        if self.custom_sources:
+            for i, custom_source in enumerate(self.custom_sources):
+                method_name = f"fetch_custom_{i}"
+                method = lambda src=custom_source: self.fetch_custom_source(src, f"自定义源_{i+1}")
+                sources_methods.append(method)
+        
         # 使用多线程并行获取
         with ThreadPoolExecutor(max_workers=5) as executor:
-            future_to_method = {executor.submit(method): method.__name__ for method in sources_methods}
+            future_to_method = {}
+            for method in sources_methods:
+                future = executor.submit(method)
+                method_name = method.__name__ if hasattr(method, '__name__') else "custom_method"
+                future_to_method[future] = method_name
             
             for future in as_completed(future_to_method):
                 method_name = future_to_method[future]
@@ -93,6 +108,19 @@ class HKTVSourceFetcher:
         self.generate_output_files(tested_sources)
         
         return tested_sources
+    
+    def fetch_custom_source(self, source_config, source_name):
+        """获取自定义直播源"""
+        url = source_config['url']
+        filter_hk = source_config.get('filter_hk', True)
+        
+        content = self.make_request(url)
+        if content:
+            sources = self.parse_m3u_content(content, source_name, filter_hk=filter_hk)
+            self.add_sources(sources)
+            print(f"从{source_name}获取到 {len(sources)} 个频道")
+            return len(sources)
+        return 0
     
     def test_sources_connectivity(self, sources):
         """测试源的连接性并过滤无效源"""
@@ -481,7 +509,22 @@ class HKTVSourceFetcher:
 
 def main():
     """主函数"""
-    fetcher = HKTVSourceFetcher()
+    # 自定义源配置
+    custom_sources = [
+        {
+            "name": "我的自定义源1",
+            "url": "http://r.jdshipin.com/your_custom_list.m3u",  # 替换为你的自定义源URL
+            "filter_hk": True  # 是否筛选香港频道
+        },
+        # 可以添加更多自定义源
+        # {
+        #     "name": "我的自定义源2",
+        #     "url": "http://another.source.com/list.m3u",
+        #     "filter_hk": False
+        # }
+    ]
+    
+    fetcher = HKTVSourceFetcher(custom_sources=custom_sources)
     sources = fetcher.fetch_all_sources()
     
     # 如果没有获取到任何源，使用备用源
