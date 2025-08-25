@@ -91,11 +91,12 @@ jobs:
 
       - name: Create A1 Flex VM Instance with Retry Mechanism
         id: create-vm
+        continue-on-error: true  # 即使此步驟失敗，也繼續執行後續步驟
         run: |
           set +e  # 允許命令失敗而不立即退出
           
-          # 重試參數配置
-          max_retries=4           # 最多重試4次（共5次嘗試）
+          # 重試參數配置 - 最多重試3次（包括初始嘗試）
+          max_retries=2           # 最多重試2次（共3次嘗試）
           retry_delay=300         # 每次重試延遲300秒（5分鐘）
           total_attempts=0
           
@@ -159,16 +160,22 @@ jobs:
               elif echo "$output" | grep -Ei "timeout|connection|request timed out"; then
                 echo "檢測到網路超時錯誤，將在延遲後重試..."
                 error_type="network_error"
+              elif echo "$output" | grep -Ei "TooManyRequests|Too many requests"; then
+                echo "檢測到請求過多錯誤，將在延遲後重試..."
+                error_type="too_many_requests"
               else
                 echo "檢測到其他錯誤類型"
                 error_type="other_error"
-                break  # 其他錯誤可能重試也無意義
+                # 對於其他錯誤，我們也繼續重試
               fi
               
               # 儲存錯誤資訊
               echo "free_tier_limit=true" >> $GITHUB_OUTPUT
               echo "error_type=$error_type" >> $GITHUB_OUTPUT
-              echo "error_message=第 $total_attempts 次嘗試失敗: $(echo "$output" | head -5)" >> $GITHUB_OUTPUT
+              
+              # 處理錯誤訊息，避免格式問題
+              safe_error_msg=$(echo "第 $total_attempts 次嘗試失敗: $output" | head -n 1 | sed 's/[{}]//g' | cut -c 1-200)
+              echo "error_message=$safe_error_msg" >> $GITHUB_OUTPUT
             fi
             
             # 如果是最後一次嘗試，不再延遲
@@ -184,9 +191,11 @@ jobs:
           # 恢復錯誤處理
           set -e
 
+      # 以下步驟保持不變...
       - name: Wait for instance to reach RUNNING state
         if: steps.create-vm.outputs.success == 'true'
         id: wait-for-running
+        continue-on-error: true
         run: |
           INSTANCE_OCID="${{ steps.create-vm.outputs.instance_ocid }}"
           echo "等待實例 $INSTANCE_OCID 進入 RUNNING 狀態..."
@@ -224,6 +233,7 @@ jobs:
       - name: Get VM Public IP (Precise Query)
         if: steps.create-vm.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true'
         id: get-ip
+        continue-on-error: true
         run: |
           INSTANCE_OCID="${{ steps.create-vm.outputs.instance_ocid }}"
           echo "獲取實例的公網 IP: $INSTANCE_OCID"
@@ -246,6 +256,7 @@ jobs:
       - name: SSH Health Check
         if: steps.create-vm.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true' && steps.get-ip.outputs.public_ip != 'unknown'
         id: ssh-health-check
+        continue-on-error: true
         run: |
           PUBLIC_IP="${{ steps.get-ip.outputs.public_ip }}"
           ROOT_PASSWORD="${{ secrets.ROOT_PASSWORD }}"
