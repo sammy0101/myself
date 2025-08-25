@@ -10,15 +10,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs
 
 class HKTVSourceFetcher:
-    def __init__(self, custom_sources=None):
+    def __init__(self):
         self.sources = []
         self.timeout = 10
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         
-        # 自定义源列表
-        self.custom_sources = custom_sources or []
+        # 从文件加载自定义源
+        self.custom_sources = self.load_custom_sources()
         
         # 定义分类优先级顺序
         self.category_order = [
@@ -53,6 +53,45 @@ class HKTVSourceFetcher:
             '多语言': ['雙語', '双语', '多語', '多语', 'BILINGUAL']
         }
     
+    def load_custom_sources(self):
+        """从custom_sources.txt文件加载自定义源"""
+        custom_sources = []
+        custom_file = "custom_sources.txt"
+        
+        if os.path.exists(custom_file):
+            try:
+                with open(custom_file, 'r', encoding='utf-8') as f:
+                    for line_num, line in enumerate(f, 1):
+                        line = line.strip()
+                        # 跳过空行和注释行
+                        if not line or line.startswith('#'):
+                            continue
+                        
+                        # 解析自定义源配置
+                        parts = line.split(',')
+                        if len(parts) >= 2:
+                            name = parts[0].strip()
+                            url = parts[1].strip()
+                            
+                            # 处理筛选选项（可选）
+                            filter_hk = True
+                            if len(parts) >= 3:
+                                filter_option = parts[2].strip().lower()
+                                filter_hk = filter_option not in ['false', '0', 'no', 'off']
+                            
+                            custom_sources.append({
+                                "name": name,
+                                "url": url,
+                                "filter_hk": filter_hk
+                            })
+                        else:
+                            print(f"警告: 第 {line_num} 行格式不正确: {line}")
+            except Exception as e:
+                print(f"读取自定义源文件时出错: {e}")
+        
+        print(f"从自定义文件加载了 {len(custom_sources)} 个源")
+        return custom_sources
+    
     def fetch_all_sources(self):
         """从所有可用来源获取直播源"""
         print("开始获取香港电视直播源...")
@@ -69,11 +108,10 @@ class HKTVSourceFetcher:
         ]
         
         # 添加自定义源获取方法
-        if self.custom_sources:
-            for i, custom_source in enumerate(self.custom_sources):
-                method_name = f"fetch_custom_{i}"
-                method = lambda src=custom_source: self.fetch_custom_source(src, f"自定义源_{i+1}")
-                sources_methods.append(method)
+        for i, custom_source in enumerate(self.custom_sources):
+            method_name = f"fetch_custom_{i}"
+            method = lambda src=custom_source: self.fetch_custom_source(src, f"自定义源_{i+1}")
+            sources_methods.append(method)
         
         # 使用多线程并行获取
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -478,6 +516,8 @@ class HKTVSourceFetcher:
         txt_content = "# 香港电视直播源\n"
         txt_content += f"# 更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         txt_content += "# 来源: 多个公开直播源仓库\n"
+        if self.custom_sources:
+            txt_content += "# 包含自定义源\n"
         txt_content += "# 此文件由GitHub Actions自动生成，每2天更新一次\n"
         txt_content += "# 已通过连接测试，响应时间越短的源越稳定\n\n"
         
@@ -509,22 +549,7 @@ class HKTVSourceFetcher:
 
 def main():
     """主函数"""
-    # 自定义源配置
-    custom_sources = [
-        {
-            "name": "我的自定义源1",
-            "url": "http://r.jdshipin.com/your_custom_list.m3u",  # 替换为你的自定义源URL
-            "filter_hk": True  # 是否筛选香港频道
-        },
-        # 可以添加更多自定义源
-        # {
-        #     "name": "我的自定义源2",
-        #     "url": "http://another.source.com/list.m3u",
-        #     "filter_hk": False
-        # }
-    ]
-    
-    fetcher = HKTVSourceFetcher(custom_sources=custom_sources)
+    fetcher = HKTVSourceFetcher()
     sources = fetcher.fetch_all_sources()
     
     # 如果没有获取到任何源，使用备用源
