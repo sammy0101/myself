@@ -67,25 +67,18 @@ class HKTVSourceFetcher:
                         if not line or line.startswith('#'):
                             continue
                         
-                        # 解析自定义源配置
-                        parts = line.split(',')
-                        if len(parts) >= 2:
-                            name = parts[0].strip()
-                            url = parts[1].strip()
-                            
-                            # 处理筛选选项（可选）
-                            filter_hk = True
-                            if len(parts) >= 3:
-                                filter_option = parts[2].strip().lower()
-                                filter_hk = filter_option not in ['false', '0', 'no', 'off']
-                            
-                            custom_sources.append({
-                                "name": name,
-                                "url": url,
-                                "filter_hk": filter_hk
-                            })
-                        else:
-                            print(f"警告: 第 {line_num} 行格式不正确: {line}")
+                        # 提取URL
+                        url = line
+                        
+                        # 从URL中提取名称
+                        parsed_url = urlparse(url)
+                        name = f"自定义源_{parsed_url.netloc}"
+                        
+                        custom_sources.append({
+                            "name": name,
+                            "url": url,
+                            "filter_hk": True  # 默认只筛选香港频道
+                        })
             except Exception as e:
                 print(f"读取自定义源文件时出错: {e}")
         
@@ -565,9 +558,9 @@ def main():
             {"name": "HOY TV", "url": "http://example.com/hoytv.m3u8", "group": "香港", "source": "备用",
              "category": "HOY TV", "language": "粤语", "resolution": "720p", "hd": False, "channel_id": "77", "response_time": 100},
             {"name": "RTHK31", "url": "http://example.com/rthk31.m3u8", "group": "香港", "source": "备用",
-             "category": "RTHK", "language": "粤语", "resolution": "720p", "hd": False, "channel_id": "31", "response_time": 100},
+             "category": "RTHK", "language": '粤语', "resolution": "720p", "hd": False, "channel_id": "31", "response_time": 100},
             {"name": "RTHK32", "url": "http://example.com/rthk32.m3u8", "group": "香港", "source": "备用",
-             "category": "RTHK", "language": "普通话", "resolution": "720p", "hd": False, "channel_id": "32", "response_time": 100}
+             "category": "RTHK", "language": '普通话', "resolution": "720p", "hd": False, "channel_id": "32", "response_time": 100}
         ]
         fetcher.generate_output_files(backup_sources)
 
