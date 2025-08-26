@@ -5,13 +5,12 @@ on:
   schedule:
     - cron: '0 0 */2 * *'  # 每2天运行一次
   workflow_dispatch:  # 允许手动触发
-  # 移除了 push 触发条件，这样代码修改不会自动运行
 
 jobs:
   fetch-and-update:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # 必須有寫入權限才能 commit & push
     
     steps:
     - name: Checkout repository
@@ -22,10 +21,12 @@ jobs:
       with:
         python-version: '3.10'
 
+    # --- ↓↓↓ 這是需要修改的地方 ↓↓↓ ---
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4
+        pip install requests m3u8
+    # --- ↑↑↑ 修改結束 ↑↑↑ ---
 
     - name: Run HK TV sources fetcher
       run: python scripts/fetch_hk_tv_sources.py
@@ -35,5 +36,10 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add -A
-        git diff --staged --quiet || git commit -m "Auto-update HK TV sources with API"
-        git push
+        # 只有在檔案有變更時才執行 commit
+        if ! git diff --staged --quiet; then
+          git commit -m "Auto-update HK TV sources"
+          git push
+        else
+          echo "No changes to commit."
+        fi
