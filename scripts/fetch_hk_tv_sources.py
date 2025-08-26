@@ -13,11 +13,10 @@ from urllib.parse import urlparse
 from typing import List, Dict, Any, Optional, Tuple
 
 # --- 全域設定 ---
-# 將常數集中管理，方便修改
 CONFIG = {
     "TIMEOUT": 10,
-    "CONNECTIVITY_TIMEOUT": 5, # 連接測試的超時時間可以短一些
-    "MAX_WORKERS": 20, # 由於網路 I/O 密集，可以適當增加執行緒數量
+    "CONNECTIVITY_TIMEOUT": 5,
+    "MAX_WORKERS": 20,
     "CACHE_DIR": "cache",
     "CACHE_EXPIRATION": 3600,  # 1 小時
     "CUSTOM_SOURCES_FILE": "custom_sources.txt",
@@ -59,51 +58,40 @@ class HKTVSourceFetcher:
         self.custom_sources = self._load_custom_sources()
 
     def _load_custom_sources(self) -> List[Dict[str, Any]]:
-        """從 custom_sources.txt 檔案載入自訂來源"""
         custom_sources = []
         custom_file = CONFIG["CUSTOM_SOURCES_FILE"]
-        
         if not os.path.exists(custom_file):
             logging.info(f"自訂來源檔案 '{custom_file}' 不存在，跳過載入。")
             return custom_sources
-
         try:
             with open(custom_file, 'r', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
-                    if not line or line.startswith('#'):
-                        continue
-                    
+                    if not line or line.startswith('#'): continue
                     parsed_url = urlparse(line)
                     name = f"自定义源_{parsed_url.netloc}"
                     custom_sources.append({"name": name, "url": line})
         except Exception as e:
             logging.error(f"讀取自訂來源檔案時出錯: {e}")
-        
         logging.info(f"從自訂檔案載入了 {len(custom_sources)} 個來源")
         return custom_sources
 
     def _make_request(self, url: str, use_cache: bool = True) -> Optional[str]:
-        """通用請求函數，支援快取"""
         os.makedirs(CONFIG["CACHE_DIR"], exist_ok=True)
         url_hash = hashlib.md5(url.encode()).hexdigest()
         cache_file = os.path.join(CONFIG["CACHE_DIR"], f"{url_hash}.cache")
-        
         if use_cache and os.path.exists(cache_file):
             if (time.time() - os.path.getmtime(cache_file)) < CONFIG["CACHE_EXPIRATION"]:
                 try:
-                    with open(cache_file, 'r', encoding='utf-8') as f:
-                        return f.read()
+                    with open(cache_file, 'r', encoding='utf-8') as f: return f.read()
                 except Exception as e:
                     logging.warning(f"讀取快取檔案失敗: {e}")
-
         try:
             response = requests.get(url, timeout=CONFIG["TIMEOUT"], headers=self.headers)
             response.raise_for_status()
             content = response.text
             try:
-                with open(cache_file, 'w', encoding='utf-8') as f:
-                    f.write(content)
+                with open(cache_file, 'w', encoding='utf-8') as f: f.write(content)
             except Exception as e:
                 logging.warning(f"寫入快取檔案失敗: {e}")
             return content
@@ -112,35 +100,22 @@ class HKTVSourceFetcher:
         return None
 
     def _is_hk_channel(self, name: str, group: str) -> bool:
-        """判斷是否為香港頻道"""
         text_to_check = (name + group).upper()
         return any(keyword.upper() in text_to_check for keyword in self.hk_keywords)
 
     def _parse_m3u_content(self, content: str, source_name: str, filter_hk: bool = True) -> List[Dict[str, Any]]:
-        """解析 M3U 內容"""
         sources = []
-        if not content:
-            return sources
-
+        if not content: return sources
         pattern = re.compile(r'#EXTINF:-1([^,]*),(.*?)\n(http[^\s]*)')
         matches = pattern.findall(content)
-
         for params_str, name, url in matches:
             params = dict(re.findall(r'(\S+?)="([^"]*)"', params_str))
             group = params.get('group-title', source_name)
-            
             if not filter_hk or self._is_hk_channel(name, group):
-                sources.append({
-                    "name": name.strip(),
-                    "url": url.strip(),
-                    "group": group,
-                    "source": source_name,
-                    "params": params
-                })
+                sources.append({"name": name.strip(), "url": url.strip(), "group": group, "source": source_name, "params": params})
         return sources
 
     def _fetch_from_source(self, url: str, name: str, filter_hk: bool = True):
-        """從單一來源獲取並解析內容"""
         logging.info(f"開始從 {name} 獲取...")
         content = self._make_request(url)
         if content:
@@ -151,9 +126,7 @@ class HKTVSourceFetcher:
             logging.warning(f"從 {name} 未獲取到任何內容")
 
     def fetch_all_sources(self):
-        """從所有可用來源並行獲取直播源"""
         logging.info("開始獲取香港電視直播源...")
-        
         default_sources = [
             {"url": "https://live.fanmingming.com/tv/m3u/ipv6.m3u", "name": "范明明IPv6"},
             {"url": "https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/v6.m3u", "name": "范明明v6"},
@@ -164,14 +137,11 @@ class HKTVSourceFetcher:
             {"url": "https://raw.githubusercontent.com/BigBigGrandG/IPTV-URL/release/Gather.m3u", "name": "BigBigGrandG"}
         ]
         all_source_configs = default_sources + self.custom_sources
-
         with ThreadPoolExecutor(max_workers=CONFIG["MAX_WORKERS"]) as executor:
             futures = [executor.submit(self._fetch_from_source, src['url'], src['name'], src.get('filter_hk', True)) for src in all_source_configs]
             for future in as_completed(futures):
-                try:
-                    future.result()
-                except Exception as e:
-                    logging.error(f"獲取來源時發生錯誤: {e}")
+                try: future.result()
+                except Exception as e: logging.error(f"獲取來源時發生錯誤: {e}")
         
         unique_sources = self._remove_duplicates()
         enhanced_sources = self._enhance_metadata(unique_sources)
@@ -184,7 +154,6 @@ class HKTVSourceFetcher:
         return tested_sources
 
     def _remove_duplicates(self) -> List[Dict[str, Any]]:
-        """去重處理"""
         unique_sources = {}
         for source in self.sources:
             normalized_url = source['url'].split('?')[0].rstrip('/')
@@ -193,7 +162,6 @@ class HKTVSourceFetcher:
         return list(unique_sources.values())
 
     def _determine_category(self, name: str, group: str) -> str:
-        """確定頻道分類"""
         text_to_check = (name + group).upper()
         for category, keywords in self.channel_categories.items():
             if any(keyword.upper() in text_to_check for keyword in keywords):
@@ -201,7 +169,6 @@ class HKTVSourceFetcher:
         return '其他'
 
     def _determine_resolution(self, name: str) -> str:
-        """從名稱中確定清晰度"""
         name_upper = name.upper()
         if '4K' in name_upper or 'UHD' in name_upper: return '4K'
         if '1080' in name_upper or 'FHD' in name_upper: return '1080p'
@@ -210,7 +177,6 @@ class HKTVSourceFetcher:
         return '未知'
 
     def _enhance_metadata(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """增強頻道元資料"""
         for source in sources:
             name = source['name']
             group = source.get('group', '')
@@ -220,47 +186,41 @@ class HKTVSourceFetcher:
 
     def _test_source_connectivity(self, source: Dict[str, Any]) -> Tuple[bool, int, str]:
         """
-        更有效的測試單一來源連接性。
-        此方法會嘗試解析 M3U8 播放列表並驗證第一個影片分段。
+        更有效的測試單一來源連接性，並使用更嚴格的元組超時防止卡死。
         """
         url = source['url']
         start_time = time.time()
+        # 使用更嚴格的元組超時設定 (連線超時, 讀取超時)
+        robust_timeout = (3.05, 5)
 
         try:
-            # 步驟 1: 初始請求，使用 stream=True
-            with requests.get(url, stream=True, timeout=CONFIG["CONNECTIVITY_TIMEOUT"], headers=self.headers) as response:
-                response.raise_for_status() # 檢查 HTTP 狀態碼是否為 2xx
+            with requests.get(url, stream=True, timeout=robust_timeout, headers=self.headers) as response:
+                response.raise_for_status()
                 
-                # 步驟 2: 檢查 Content-Type
                 content_type = response.headers.get('Content-Type', '').lower()
                 if 'text/html' in content_type:
                     return False, 9999, "無效內容 (HTML)"
 
-                # 讀取內容用於解析
                 content = response.text
                 
-                # 步驟 3: 嘗試解析 M3U8
                 try:
                     playlist = m3u8.loads(content, uri=url)
                     
-                    if playlist.is_variant: # 主播放列表
-                        if not playlist.playlists:
-                            return False, 9999, "M3U8無效 (無子播放列表)"
+                    if playlist.is_variant:
+                        if not playlist.playlists: return False, 9999, "M3U8無效 (無子播放列表)"
                         segment_uri_to_test = playlist.playlists[0].uri
-                    elif playlist.segments: # 媒體播放列表
+                    elif playlist.segments:
                         segment_uri_to_test = playlist.segments[0].uri
                     else:
                         return False, 9999, "M3U8無效 (空播放列表)"
 
-                    # 步驟 4: 測試影片分段/子播放列表的 URL (使用 HEAD 請求)
-                    seg_response = requests.head(segment_uri_to_test, timeout=CONFIG["CONNECTIVITY_TIMEOUT"], headers=self.headers)
+                    seg_response = requests.head(segment_uri_to_test, timeout=robust_timeout, headers=self.headers)
                     seg_response.raise_for_status()
 
                     response_time = int((time.time() - start_time) * 1000)
                     return True, response_time, "驗證成功"
 
                 except Exception:
-                    # 解析 M3U8 失敗，但來源可能是直接串流(如.ts)，只要初始請求成功就認為有效
                     if response.status_code == 200 and len(content) > 0:
                         response_time = int((time.time() - start_time) * 1000)
                         return True, response_time, "成功 (直接串流)"
@@ -275,13 +235,10 @@ class HKTVSourceFetcher:
             return False, 9999, f"未知錯誤: {str(e)[:50]}"
 
     def _test_sources_connectivity(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """並行測試來源的連接性並過濾無效來源"""
         logging.info("開始深度測試頻道連接性 (將驗證 M3U8 內容)...")
         valid_sources = []
-        
         with ThreadPoolExecutor(max_workers=CONFIG["MAX_WORKERS"]) as executor:
             future_to_source = {executor.submit(self._test_source_connectivity, source): source for source in sources}
-            
             total = len(sources)
             for i, future in enumerate(as_completed(future_to_source), 1):
                 source = future_to_source[future]
@@ -295,50 +252,33 @@ class HKTVSourceFetcher:
                         logging.warning(f"[{i}/{total}] ✗ {source['name']} - {status}")
                 except Exception as e:
                     logging.error(f"[{i}/{total}] ✗ {source['name']} - 測試時發生嚴重錯誤: {e}")
-        
         return valid_sources
     
     def _sort_sources(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """按照分類優先級和頻道名稱排序"""
         category_index = {category: idx for idx, category in enumerate(self.category_order)}
-        
         def sort_key(source):
             cat = source['category']
             return (category_index.get(cat, len(self.category_order)), source['name'])
-            
         return sorted(sources, key=sort_key)
 
     def _generate_output_files(self, sources: List[Dict[str, Any]]):
-        """生成輸出檔案"""
         if not sources:
             logging.warning("沒有有效的來源可供生成檔案。")
             return
-
         sorted_sources = self._sort_sources(sources)
         
-        # --- 生成 M3U 檔案 ---
         m3u_lines = ["#EXTM3U"]
         for source in sorted_sources:
             params = source.get("params", {})
-            m3u_lines.append(
-                f'#EXTINF:-1 tvg-id="{params.get("tvg-id", "")}" '
-                f'tvg-name="{source["name"]}" '
-                f'tvg-logo="{params.get("tvg-logo", "")}" '
-                f'group-title="{source["category"]}",{source["name"]}'
-            )
+            m3u_lines.append(f'#EXTINF:-1 tvg-id="{params.get("tvg-id", "")}" tvg-name="{source["name"]}" tvg-logo="{params.get("tvg-logo", "")}" group-title="{source["category"]}",{source["name"]}')
             m3u_lines.append(source["url"])
+        with open(CONFIG["OUTPUT_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
         
-        with open(CONFIG["OUTPUT_M3U_FILE"], "w", encoding="utf-8") as f:
-            f.write("\n".join(m3u_lines))
-        
-        # --- 生成 TXT 檔案 ---
         txt_lines = [f"# 香港電視直播源", f"# 更新時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"]
-        
         channels_by_category = {}
         for source in sorted_sources:
             cat = source['category']
             channels_by_category.setdefault(cat, []).append(source)
-        
         for category in self.category_order:
             if category in channels_by_category:
                 txt_lines.append(f"\n# {category}")
@@ -346,28 +286,19 @@ class HKTVSourceFetcher:
                     hd_flag = "[HD]" if channel['resolution'] in ['1080p', '720p'] else ""
                     time_info = f"[{channel.get('response_time', 'N/A')}ms]"
                     txt_lines.append(f"{channel['name']}{hd_flag}{time_info},{channel['url']}")
-        
-        with open(CONFIG["OUTPUT_TXT_FILE"], "w", encoding="utf-8") as f:
-            f.write("\n".join(txt_lines))
+        with open(CONFIG["OUTPUT_TXT_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(txt_lines))
         
         logging.info(f"已生成 {CONFIG['OUTPUT_M3U_FILE']} 和 {CONFIG['OUTPUT_TXT_FILE']}")
-        
-        # --- 備份一份供下次使用 ---
-        with open(CONFIG["BACKUP_M3U_FILE"], "w", encoding="utf-8") as f:
-             f.write("\n".join(m3u_lines))
+        with open(CONFIG["BACKUP_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
 
 def main():
-    """主函數"""
     fetcher = HKTVSourceFetcher()
     valid_sources = fetcher.fetch_all_sources()
-    
     if not valid_sources:
         logging.warning("未能從網路獲取任何有效來源，嘗試從備份檔案恢復。")
         backup_file = CONFIG["BACKUP_M3U_FILE"]
         if os.path.exists(backup_file):
-            with open(backup_file, "r", encoding="utf-8") as f:
-                content = f.read()
-            
+            with open(backup_file, "r", encoding="utf-8") as f: content = f.read()
             sources = fetcher._parse_m3u_content(content, "備份", filter_hk=False)
             enhanced = fetcher._enhance_metadata(sources)
             fetcher._generate_output_files(enhanced)
