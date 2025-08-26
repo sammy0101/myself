@@ -5,6 +5,7 @@ import time
 import json
 import os
 import socket
+import hashlib
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs
@@ -52,6 +53,14 @@ class HKTVSourceFetcher:
             '英语': ['英語', '英语', 'ENGLISH'],
             '多语言': ['雙語', '双语', '多語', '多语', 'BILINGUAL']
         }
+        
+        # 扩展香港频道关键词
+        self.hk_keywords = [
+            '香港', 'HK', 'TVB', '翡翠', '明珠', 'ViuTV', 'VIU', 'RTHK', '鳳凰', '凤凰', 
+            '香港开电视', 'J2', '無綫', '无线', 'HOY', '開電視', '开电视', '有線', '有线',
+            '奇妙', '77台', '78台', '79台', '港台', '香港电台', '澳門', 'Macau', '澳视',
+            '澳門衛視', '澳廣視', 'TDM'
+        ]
     
     def load_custom_sources(self):
         """从custom_sources.txt文件加载自定义源"""
@@ -170,13 +179,13 @@ class HKTVSourceFetcher:
             for i, future in enumerate(as_completed(future_to_source)):
                 source = future_to_source[future]
                 try:
-                    is_valid, response_time = future.result()
+                    is_valid, response_time, error_type = future.result()
                     if is_valid:
                         source['response_time'] = response_time
                         valid_sources.append(source)
                         print(f"✓ {source['name']} - {response_time}ms")
                     else:
-                        print(f"✗ {source['name']} - 无效")
+                        print(f"✗ {source['name']} - {error_type}")
                 except Exception as e:
                     print(f"✗ {source['name']} - 测试错误: {e}")
                 
@@ -192,40 +201,40 @@ class HKTVSourceFetcher:
         
         # 跳过明显无效的URL
         if not url or url.startswith('http://example.com'):
-            return False, 9999
+            return False, 9999, "无效URL"
         
         try:
-            # 解析主机名和端口
-            parsed_url = urlparse(url)
-            hostname = parsed_url.hostname
-            port = parsed_url.port or (443 if parsed_url.scheme == 'https' else 80)
+            # 使用带Range头的GET请求，只请求少量数据
+            headers = self.headers.copy()
+            headers['Range'] = 'bytes=0-1024'  # 只请求前1KB数据
             
-            # 首先测试TCP连接
             start_time = time.time()
-            with socket.create_connection((hostname, port), timeout=5):
-                tcp_time = int((time.time() - start_time) * 1000)
-            
-            # 然后测试HTTP请求
-            start_time = time.time()
-            response = requests.head(
+            response = requests.get(
                 url, 
                 timeout=5, 
-                headers=self.headers,
-                allow_redirects=True
+                headers=headers,
+                stream=True
             )
-            http_time = int((time.time() - start_time) * 1000)
+            # 读取少量数据确认流可用
+            for chunk in response.iter_content(chunk_size=512):
+                if chunk:
+                    break
+                    
+            response_time = int((time.time() - start_time) * 1000)
             
-            # 计算总时间
-            total_time = (tcp_time + http_time) // 2
-            
-            # 检查响应状态
-            if response.status_code < 400:
-                return True, total_time
+            if response.status_code in (200, 206):  # 200 OK或206部分内容
+                return True, response_time, "成功"
             else:
-                return False, total_time
+                return False, response_time, f"HTTP错误: {response.status_code}"
                 
-        except (requests.RequestException, socket.timeout, socket.gaierror, OSError):
-            return False, 9999
+        except requests.RequestException as e:
+            return False, 9999, f"HTTP请求错误: {e}"
+        except socket.timeout:
+            return False, 9999, "连接超时"
+        except socket.gaierror:
+            return False, 9999, "DNS解析失败"
+        except OSError as e:
+            return False, 9999, f"系统错误: {e}"
     
     def enhance_metadata(self, sources):
         """增强频道元数据：分类、语言、清晰度等"""
@@ -339,14 +348,39 @@ class HKTVSourceFetcher:
         
         return unique_sources
     
-    def make_request(self, url):
-        """通用请求函数"""
+    def make_request(self, url, use_cache=True):
+        """通用请求函数，支持缓存"""
+        cache_dir = "cache"
+        os.makedirs(cache_dir, exist_ok=True)
+        
+        # 生成缓存文件名
+        url_hash = hashlib.md5(url.encode()).hexdigest()
+        cache_file = os.path.join(cache_dir, f"{url_hash}.cache")
+        
+        # 检查缓存是否有效（1小时内）
+        if use_cache and os.path.exists(cache_file):
+            file_age = time.time() - os.path.getmtime(cache_file)
+            if file_age < 3600:  # 1小时缓存
+                try:
+                    with open(cache_file, 'r', encoding='utf-8') as f:
+                        return f.read()
+                except:
+                    pass  # 缓存读取失败，继续请求
+        
         try:
             response = requests.get(url, timeout=self.timeout, headers=self.headers)
             if response.status_code == 200:
-                return response.text
+                content = response.text
+                # 保存到缓存
+                try:
+                    with open(cache_file, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                except:
+                    pass  # 缓存写入失败不影响主流程
+                return content
         except Exception as e:
             print(f"请求失败 {url}: {e}")
+        
         return None
     
     def parse_m3u_content(self, content, source_name, filter_hk=True):
@@ -356,50 +390,51 @@ class HKTVSourceFetcher:
             return sources
         
         lines = content.split('\n')
-        i = 0
+        current_info = {}
         
-        while i < len(lines):
-            line = lines[i].strip()
+        for line in lines:
+            line = line.strip()
             if line.startswith('#EXTINF:'):
-                # 提取频道信息
-                params = {}
-                name = line.split(',')[-1] if ',' in line else f"Unknown_{source_name}"
+                # 重置当前频道信息
+                current_info = {"params": {}, "name": ""}
+                
+                # 提取频道名称
+                if ',' in line:
+                    current_info["name"] = line.split(',', 1)[1].strip()
                 
                 # 解析参数
-                params_match = re.search(r'#EXTINF:.*?,(.*)', line)
-                if params_match:
-                    name = params_match.group(1).strip()
-                
-                param_matches = re.findall(r'([^=]+)="([^"]*)"', line)
+                param_matches = re.findall(r'(\w+)=["\']([^"\']*)["\']', line)
                 for key, value in param_matches:
-                    params[key] = value
+                    current_info["params"][key.lower()] = value
                 
-                # 获取URL
-                if i + 1 < len(lines):
-                    url_line = lines[i + 1].strip()
-                    if url_line and not url_line.startswith('#'):
-                        group = params.get('group-title', source_name)
-                        
-                        # 筛选香港相关频道
-                        if not filter_hk or self.is_hk_channel(name, group):
-                            sources.append({
-                                "name": name,
-                                "url": url_line,
-                                "group": group,
-                                "source": source_name
-                            })
-                        i += 1  # 跳过URL行
-            i += 1
+            elif line and not line.startswith('#') and current_info:
+                # 这是URL行，且前面有EXTINF信息
+                group = current_info["params"].get('group-title', source_name)
+                name = current_info["name"] or f"Unknown_{source_name}"
+                
+                # 筛选香港相关频道
+                if not filter_hk or self.is_hk_channel(name, group):
+                    source_data = {
+                        "name": name,
+                        "url": line,
+                        "group": group,
+                        "source": source_name
+                    }
+                    # 添加所有解析到的参数
+                    source_data.update(current_info["params"])
+                    sources.append(source_data)
+                
+                # 重置当前信息
+                current_info = {}
         
         return sources
     
     def is_hk_channel(self, name, group):
         """判断是否为香港频道"""
-        hk_keywords = ['香港', 'HK', 'TVB', '翡翠', '明珠', 'ViuTV', 'RTHK', '鳳凰', '凤凰', '香港开电视', 'J2', '無綫', '无线', 'HOY']
         name_upper = name.upper()
         group_upper = group.upper()
         
-        for keyword in hk_keywords:
+        for keyword in self.hk_keywords:
             if keyword.upper() in name_upper or keyword.upper() in group_upper:
                 return True
         return False
@@ -417,7 +452,8 @@ class HKTVSourceFetcher:
             sources = self.parse_m3u_content(content, "范明明IPv6")
             self.add_sources(sources)
             print(f"从范明明IPv6获取到 {len(sources)} 个香港频道")
-        return len(sources) if content else 0
+            return len(sources)
+        return 0
     
     def fetch_fanmingming_v6(self):
         """获取范明明v6直播源"""
@@ -427,7 +463,8 @@ class HKTVSourceFetcher:
             sources = self.parse_m3u_content(content, "范明明v6")
             self.add_sources(sources)
             print(f"从范明明v6获取到 {len(sources)} 个香港频道")
-        return len(sources) if content else 0
+            return len(sources)
+        return 0
     
     def fetch_iptv_org_hk(self):
         """获取iptv-org香港直播源"""
@@ -437,7 +474,8 @@ class HKTVSourceFetcher:
             sources = self.parse_m3u_content(content, "iptv-org", filter_hk=False)
             self.add_sources(sources)
             print(f"从iptv-org获取到 {len(sources)} 个香港频道")
-        return len(sources) if content else 0
+            return len(sources)
+        return 0
     
     def fetch_epg_pw_hk(self):
         """获取epg.pw香港频道"""
@@ -447,7 +485,8 @@ class HKTVSourceFetcher:
             sources = self.parse_m3u_content(content, "epg.pw", filter_hk=False)
             self.add_sources(sources)
             print(f"从epg.pw获取到 {len(sources)} 个香港频道")
-        return len(sources) if content else 0
+            return len(sources)
+        return 0
     
     def fetch_aktv(self):
         """获取AKTV直播源"""
@@ -457,7 +496,8 @@ class HKTVSourceFetcher:
             sources = self.parse_m3u_content(content, "AKTV")
             self.add_sources(sources)
             print(f"从AKTV获取到 {len(sources)} 个香港频道")
-        return len(sources) if content else 0
+            return len(sources)
+        return 0
     
     def fetch_yuechan(self):
         """获取YueChan直播源"""
@@ -467,7 +507,8 @@ class HKTVSourceFetcher:
             sources = self.parse_m3u_content(content, "YueChan")
             self.add_sources(sources)
             print(f"从YueChan获取到 {len(sources)} 个香港频道")
-        return len(sources) if content else 0
+            return len(sources)
+        return 0
     
     def fetch_bigbiggrandg(self):
         """获取BigBigGrandG直播源"""
@@ -477,7 +518,8 @@ class HKTVSourceFetcher:
             sources = self.parse_m3u_content(content, "BigBigGrandG")
             self.add_sources(sources)
             print(f"从BigBigGrandG获取到 {len(sources)} 个香港频道")
-        return len(sources) if content else 0
+            return len(sources)
+        return 0
     
     def sort_sources(self, sources):
         """按照分类优先级和频道名称排序"""
@@ -499,7 +541,7 @@ class HKTVSourceFetcher:
         # 生成M3U文件
         m3u_content = "#EXTM3U\n"
         for source in sorted_sources:
-            m3u_content += f'#EXTINF:-1 tvg-id="{source.get("channel_id", "")}" tvg-name="{source["name"]}" tvg-logo="" group-title="{source["category"]}",{source["name"]}\n'
+            m3u_content += f'#EXTINF:-1 tvg-id="{source.get("channel_id", "")}" tvg-name="{source["name"]}" tvg-logo="{source.get("tvg-logo", "")}" group-title="{source["category"]}" tvg-language="{source.get("language", "")}",{source["name"]}\n'
             m3u_content += f'{source["url"]}\n'
         
         with open("hk_tv_sources.m3u", "w", encoding="utf-8") as f:
@@ -545,24 +587,43 @@ def main():
     fetcher = HKTVSourceFetcher()
     sources = fetcher.fetch_all_sources()
     
-    # 如果没有获取到任何源，使用备用源
+    # 如果没有获取到任何源，尝试使用缓存或已知稳定源
     if not sources:
-        print("使用备用直播源...")
-        backup_sources = [
-            {"name": "TVB翡翠台", "url": "http://example.com/tvb1.m3u8", "group": "香港", "source": "备用", 
-             "category": "TVB", "language": "粤语", "resolution": "1080p", "hd": True, "channel_id": "81", "response_time": 100},
-            {"name": "TVB明珠台", "url": "http://example.com/tvb2.m3u8", "group": "香港", "source": "备用",
-             "category": "TVB", "language": "英语", "resolution": "1080p", "hd": True, "channel_id": "84", "response_time": 100},
-            {"name": "ViuTV", "url": "http://example.com/viutv.m3u8", "group": "香港", "source": "备用",
-             "category": "ViuTV", "language": "粤语", "resolution": "1080p", "hd": True, "channel_id": "99", "response_time": 100},
-            {"name": "HOY TV", "url": "http://example.com/hoytv.m3u8", "group": "香港", "source": "备用",
-             "category": "HOY TV", "language": "粤语", "resolution": "720p", "hd": False, "channel_id": "77", "response_time": 100},
-            {"name": "RTHK31", "url": "http://example.com/rthk31.m3u8", "group": "香港", "source": "备用",
-             "category": "RTHK", "language": '粤语', "resolution": "720p", "hd": False, "channel_id": "31", "response_time": 100},
-            {"name": "RTHK32", "url": "http://example.com/rthk32.m3u8", "group": "香港", "source": "备用",
-             "category": "RTHK", "language": '普通话', "resolution": "720p", "hd": False, "channel_id": "32", "response_time": 100}
-        ]
-        fetcher.generate_output_files(backup_sources)
+        print("使用备用方案...")
+        # 检查是否有之前的缓存文件
+        if os.path.exists("hk_tv_sources_backup.m3u"):
+            print("从缓存文件加载备用源...")
+            with open("hk_tv_sources_backup.m3u", "r", encoding="utf-8") as f:
+                content = f.read()
+            sources = fetcher.parse_m3u_content(content, "缓存备份")
+        else:
+            # 使用一些相对稳定的公开源作为最终备用
+            backup_urls = [
+                "https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u",
+                "https://iptv-org.github.io/iptv/countries/hk.m3u"
+            ]
+            for url in backup_urls:
+                content = fetcher.make_request(url)
+                if content:
+                    sources = fetcher.parse_m3u_content(content, "最终备用")
+                    break
+    
+    # 生成输出文件
+    if sources:
+        # 增强元数据
+        enhanced_sources = fetcher.enhance_metadata(sources)
+        # 测试连接
+        tested_sources = fetcher.test_sources_connectivity(enhanced_sources)
+        fetcher.generate_output_files(tested_sources)
+        
+        # 保存一份备份供下次使用
+        with open("hk_tv_sources_backup.m3u", "w", encoding="utf-8") as f:
+            f.write("#EXTM3U\n")
+            for source in tested_sources:
+                f.write(f"#EXTINF:-1 tvg-id=\"{source.get('channel_id', '')}\" group-title=\"{source['category']}\",{source['name']}\n")
+                f.write(f"{source['url']}\n")
+    else:
+        print("无法获取任何直播源，请检查网络连接")
 
 if __name__ == "__main__":
     main()
