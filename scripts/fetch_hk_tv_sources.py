@@ -155,7 +155,6 @@ class HKTVSourceFetcher:
         logging.info("開始獲取香港電視直播源...")
         default_sources = [
             {"url": "https://live.fanmingming.com/tv/m3u/ipv6.m3u", "name": "范明明IPv6"},
-            {"url": "https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/v6.m3u", "name": "范明明v6"},
             {"url": "https://iptv-org.github.io/iptv/countries/hk.m3u", "name": "iptv-org", "filter_hk": False},
             {"url": "https://epg.pw/test_channels_hong_kong.m3u", "name": "epg.pw", "filter_hk": False},
             {"url": "https://aktv.space/live.m3u", "name": "AKTV"},
