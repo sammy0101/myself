@@ -89,16 +89,11 @@ jobs:
           
           sed -i "s/\$ROOT_PASSWORD/${{ secrets.ROOT_PASSWORD }}/g" cloud-init.txt
 
-      - name: Create A1 Flex VM Instance with Retry Mechanism
+      - name: Create A1 Flex VM Instance (Single Attempt)
         id: create-vm
         continue-on-error: true  # 即使此步驟失敗，也繼續執行後續步驟
         run: |
           set +e  # 允許命令失敗而不立即退出
-          
-          # 重試參數配置 - 最多重試3次（包括初始嘗試）
-          max_retries=2           # 最多重試2次（共3次嘗試）
-          retry_delay=300         # 每次重試延遲300秒（5分鐘）
-          total_attempts=0
           
           # 決定虛擬機器名稱
           if [ -n "${{ github.event.inputs.vm-name }}" ]; then
@@ -108,85 +103,73 @@ jobs:
           fi
           
           echo "開始建立虛擬機器: $VM_NAME"
-          echo "重試策略: 最多 $max_retries 次重試，每次延遲 $retry_delay 秒"
+          echo "策略: 單次嘗試 (已取消重試機制)"
           
-          for attempt in $(seq 0 $max_retries); do
-            total_attempts=$((attempt + 1))
-            echo "--- 嘗試第 $total_attempts 次建立 ---"
+          # 執行 OCI 命令建立虛擬機器，並捕獲 JSON 輸出
+          output=$(oci compute instance launch \
+            --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
+            --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
+            --display-name "$VM_NAME" \
+            --shape "VM.Standard.A1.Flex" \
+            --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
+            --image-id "${{ secrets.OCI_IMAGE_OCID }}" \
+            --subnet-id "${{ secrets.OCI_SUBNET_ID }}" \
+            --assign-public-ip true \
+            --user-data-file ./cloud-init.txt \
+            --output json 2>&1)
+          
+          exit_code=$?
+          
+          if [ $exit_code -eq 0 ]; then
+            # 從 JSON 輸出中提取實例 OCID
+            INSTANCE_OCID=$(echo "$output" | jq -r '.data.id')
             
-            # 執行 OCI 命令建立虛擬機器，並捕獲 JSON 輸出
-            output=$(oci compute instance launch \
-              --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
-              --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
-              --display-name "$VM_NAME" \
-              --shape "VM.Standard.A1.Flex" \
-              --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
-              --image-id "${{ secrets.OCI_IMAGE_OCID }}" \
-              --subnet-id "${{ secrets.OCI_SUBNET_ID }}" \
-              --assign-public-ip true \
-              --user-data-file ./cloud-init.txt \
-              --output json 2>&1)
-            
-            exit_code=$?
-            
-            if [ $exit_code -eq 0 ]; then
-              # 從 JSON 輸出中提取實例 OCID
-              INSTANCE_OCID=$(echo "$output" | jq -r '.data.id')
-              
-              if [ -n "$INSTANCE_OCID" ] && [ "$INSTANCE_OCID" != "null" ]; then
-                echo "✅ 虛擬機器建立成功 (第 $total_attempts 次嘗試)"
-                echo "success=true" >> $GITHUB_OUTPUT
-                echo "vm_name=$VM_NAME" >> $GITHUB_OUTPUT
-                echo "instance_ocid=$INSTANCE_OCID" >> $GITHUB_OUTPUT
-                echo "attempt_count=$total_attempts" >> $GITHUB_OUTPUT
-                echo "Instance OCID: $INSTANCE_OCID"
-                break
-              else
-                echo "❌ 無法從輸出中解析 Instance OCID"
-                echo "output: $output"
-              fi
+            if [ -n "$INSTANCE_OCID" ] && [ "$INSTANCE_OCID" != "null" ]; then
+              echo "✅ 虛擬機器建立成功"
+              echo "success=true" >> $GITHUB_OUTPUT
+              echo "vm_name=$VM_NAME" >> $GITHUB_OUTPUT
+              echo "instance_ocid=$INSTANCE_OCID" >> $GITHUB_OUTPUT
+              echo "attempt_count=1" >> $GITHUB_OUTPUT
+              echo "Instance OCID: $INSTANCE_OCID"
             else
-              echo "❌ 第 $total_attempts 次嘗試失敗，退出碼: $exit_code"
-              echo "錯誤輸出: $output"
-              
-              # 檢查錯誤類型
-              if echo "$output" | grep -Ei "out of host capacity|insufficientcapacity|outofcapacity|service limit exceeded|limit exceeded|capacity not available|not available|host capacity"; then
-                echo "檢測到容量不足錯誤，將在延遲後重試..."
-                error_type="capacity_error"
-              elif echo "$output" | grep -Ei "quota|limit|notavailable|free tier|insufficient|over quota"; then
-                echo "檢測到配額限制錯誤"
-                error_type="quota_error"
-                break  # 配額錯誤重試無意義
-              elif echo "$output" | grep -Ei "timeout|connection|request timed out"; then
-                echo "檢測到網路超時錯誤，將在延遲後重試..."
-                error_type="network_error"
-              elif echo "$output" | grep -Ei "TooManyRequests|Too many requests"; then
-                echo "檢測到請求過多錯誤，將在延遲後重試..."
-                error_type="too_many_requests"
-              else
-                echo "檢測到其他錯誤類型"
-                error_type="other_error"
-                # 對於其他錯誤，我們也繼續重試
-              fi
-              
-              # 儲存錯誤資訊
-              echo "free_tier_limit=true" >> $GITHUB_OUTPUT
-              echo "error_type=$error_type" >> $GITHUB_OUTPUT
-              
-              # 處理錯誤訊息，避免格式問題
-              safe_error_msg=$(echo "第 $total_attempts 次嘗試失敗: $output" | head -n 1 | sed 's/[{}]//g' | cut -c 1-200)
-              echo "error_message=$safe_error_msg" >> $GITHUB_OUTPUT
+              echo "❌ 無法從輸出中解析 Instance OCID"
+              echo "output: $output"
+              echo "success=false" >> $GITHUB_OUTPUT
+              echo "error_type=parsing_error" >> $GITHUB_OUTPUT
+              echo "error_message=無法從OCI回應中解析實例ID" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ 虛擬機器建立失敗，退出碼: $exit_code"
+            echo "錯誤輸出: $output"
+            
+            # 檢查錯誤類型
+            if echo "$output" | grep -Ei "out of host capacity|insufficientcapacity|outofcapacity|service limit exceeded|limit exceeded|capacity not available|not available|host capacity"; then
+              echo "檢測到容量不足錯誤"
+              error_type="capacity_error"
+            elif echo "$output" | grep -Ei "quota|limit|notavailable|free tier|insufficient|over quota"; then
+              echo "檢測到配額限制錯誤"
+              error_type="quota_error"
+            elif echo "$output" | grep -Ei "timeout|connection|request timed out"; then
+              echo "檢測到網路超時錯誤"
+              error_type="network_error"
+            elif echo "$output" | grep -Ei "TooManyRequests|Too many requests"; then
+              echo "檢測到請求過多錯誤"
+              error_type="too_many_requests"
+            else
+              echo "檢測到其他錯誤類型"
+              error_type="other_error"
             fi
             
-            # 如果是最後一次嘗試，不再延遲
-            if [ $attempt -eq $max_retries ]; then
-              echo "已達最大重試次數 ($max_retries 次)，停止重試"
-              break
-            fi
+            # 儲存錯誤資訊
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "free_tier_limit=true" >> $GITHUB_OUTPUT
+            echo "error_type=$error_type" >> $GITHUB_OUTPUT
+            echo "attempt_count=1" >> $GITHUB_OUTPUT
             
-            echo "等待 $retry_delay 秒後重試..."
-            sleep $retry_delay
-          done
+            # 處理錯誤訊息，避免格式問題
+            safe_error_msg=$(echo "$output" | head -n 1 | sed 's/[{}]//g' | cut -c 1-200)
+            echo "error_message=$safe_error_msg" >> $GITHUB_OUTPUT
+          fi
           
           # 恢復錯誤處理
           set -e
@@ -363,13 +346,16 @@ jobs:
           format: html
 
       - name: Check Telegram notification status
-        run: |
-          if [ "${{ steps.send-telegram.outputs.status }}" = "success" ]; then
-            echo "✅ Telegram 通知發送成功"
-          else
-            echo "❌ Telegram 通知發送失敗"
-            echo "請檢查 TELEGRAM_BOT_TOKEN 和 TELEGRAM_CHAT_ID 是否正確設置"
-          fi
+  run: |
+    # 檢查狀態變量是否存在且為 'success'
+    if [ "${{ steps.send-telegram.outputs.status }}" = "success" ]; then
+      echo "✅ Telegram 通知發送成功"
+    else
+      echo "❌ Telegram 通知發送失敗或狀態未知"
+      echo "請檢查 TELEGRAM_BOT_TOKEN 和 TELEGRAM_CHAT_ID 是否正確設置"
+      # 即使發送失敗，我們也不讓整個工作流失敗，因為通知可能實際已送達
+      # 故此處不執行 exit 1
+    fi
 
       - name: Handle final result
         if: always()
