@@ -13,12 +13,22 @@ on:
         default: 'a1-flex-vm'
         type: string
 
+env:
+  HK_TIME: ${{ steps.get-time.outputs.hk_time }}
+
 jobs:
   create-vm:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: 計算香港時間
+        id: get-time
+        run: |
+          HK_TIME=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M:%S %Z')
+          echo "hk_time=$HK_TIME" >> $GITHUB_OUTPUT
+          echo "香港時間: $HK_TIME"
 
       - name: 設置 Python 和 OCI CLI
         run: |
@@ -27,7 +37,7 @@ jobs:
           python3 -c "import sys; assert sys.version_info >= (3, 6), 'Python 3.6+ required'; print('✅ Python 版本符合要求')"
           
           # 安裝指定版本的 OCI CLI (使用最新穩定版)
-          pip install oci-cli==3.64.1 --user
+          pip install oci-cli --user
           
           # 將使用者站點包添加到 PATH
           echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -36,10 +46,10 @@ jobs:
           oci --version
           echo "✅ OCI CLI 版本: $(oci --version)"
 
-      - name: 安裝額外依賴
+      - name: 安裝必要依賴
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl dnsutils jq ssh-client
+          sudo apt-get install -y curl dnsutils jq
 
       - name: 配置 OCI CLI
         run: |
@@ -61,7 +71,7 @@ jobs:
 
       - name: 顯示當前配置
         run: |
-          echo "目前時間: $(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M:%S %Z')"
+          echo "目前時間: ${{ env.HK_TIME }}"
           echo "目前配置:"
           echo "區域: ${{ secrets.OCI_REGION }}"
           echo "可用性網域: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
@@ -97,6 +107,19 @@ jobs:
             VM_NAME="${{ github.event.inputs.vm-name }}"
           else
             VM_NAME="scheduled-a1-vm-$(date +%Y%m%d-%H%M)"
+          fi
+          
+          # 檢查名稱是否已存在，如果存在則添加隨機後綴
+          EXISTING_INSTANCE=$(oci compute instance list \
+            --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
+            --display-name "$VM_NAME" \
+            --query "data[0].id" \
+            --raw-output)
+          
+          if [ -n "$EXISTING_INSTANCE" ] && [ "$EXISTING_INSTANCE" != "null" ]; then
+            echo "名稱 '$VM_NAME' 已存在，添加隨機後綴"
+            RANDOM_SUFFIX=$(head /dev/urandom | tr -dc a-z0-9 | head -c 4)
+            VM_NAME="${VM_NAME}-${RANDOM_SUFFIX}"
           fi
           
           echo "vm_name=$VM_NAME" >> $GITHUB_OUTPUT
@@ -162,8 +185,14 @@ jobs:
               echo "❌ 第 $CURRENT_ATTEMPT 次嘗試失敗，退出碼: $exit_code"
               echo "錯誤輸出: $output"
               
-              # 提取錯誤訊息
-              error_msg=$(echo "$output" | grep -o '"message": "[^"]*"' | head -1 | cut -d'"' -f4 || echo "未知錯誤")
+              # 使用 jq 提取錯誤訊息
+              if echo "$output" | jq -e . >/dev/null 2>&1; then
+                error_msg=$(echo "$output" | jq -r '.message // "未知錯誤"')
+              else
+                # 如果輸出不是 JSON，則使用 grep 提取
+                error_msg=$(echo "$output" | grep -o '"message": "[^"]*"' | head -1 | cut -d'"' -f4 || echo "未知錯誤")
+              fi
+              
               echo "error_message=$error_msg" >> $GITHUB_OUTPUT
               
               # 檢查錯誤類型
@@ -213,7 +242,7 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
             ${{ github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務' }} OCI 虛擬機器建立通知
-            • 時間: $(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M:%S %Z')
+            • 時間: ${{ env.HK_TIME }}
             • 嘗試: 第 ${{ steps.vm-creation-loop.outputs.current_attempt }} 次
             • 狀態: ${{ steps.vm-creation-loop.outputs.success == 'true' && '成功' || '失敗' }}
             • 訊息: ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.vm-creation-loop.outputs.success_message || steps.vm-creation-loop.outputs.error_message }}
@@ -229,8 +258,8 @@ jobs:
           INSTANCE_OCID="${{ steps.vm-creation-loop.outputs.instance_ocid }}"
           echo "等待實例 $INSTANCE_OCID 進入 RUNNING 狀態..."
           
-          # 設置輪詢參數
-          MAX_ATTEMPTS=30  # 最多嘗試30次 (5分鐘)
+          # 設置輪詢參數（延長到10分鐘以容納 cloud-init 執行時間）
+          MAX_ATTEMPTS=60  # 最多嘗試60次 (10分鐘)
           SLEEP_INTERVAL=10  # 每次間隔10秒
           attempt=1
           
@@ -290,7 +319,7 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
             ${{ github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務' }} OCI 虛擬機器建立最終結果
-            • 時間: $(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M:%S %Z')
+            • 時間: ${{ env.HK_TIME }}
             • 狀態: ${{ steps.vm-creation-loop.outputs.success == 'true' && '成功' || '失敗' }}
             • 嘗試次數: ${{ steps.vm-creation-loop.outputs.current_attempt }}
             • 訊息: ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.vm-creation-loop.outputs.success_message || steps.vm-creation-loop.outputs.error_message }}
@@ -304,7 +333,7 @@ jobs:
         if: always()
         run: |
           echo "=== 執行結果彙總 ==="
-          echo "執行時間: $(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M:%S %Z')"
+          echo "執行時間: ${{ env.HK_TIME }}"
           echo "執行模式: ${{ github.event_name }}"
           
           if [[ "${{ steps.vm-creation-loop.outputs.success }}" == "true" ]]; then
@@ -332,7 +361,7 @@ jobs:
               echo ""
               echo "💡 Oracle Cloud 免費帳戶建立虛擬機器失敗建議:"
               echo "1. 嘗試使用不同的可用性網域"
-              echo "2. 稍後重試 (幾小時或第二天)"
+              echo "2. 稍後重試 (幾小時或第二天)
               echo "3. 考慮使用不同的區域"
               echo "4. 嘗試建立較小配置的實例"
             fi
