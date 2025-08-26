@@ -129,7 +129,7 @@ jobs:
           set +e
           
           # 增加重試次數以提高成功率
-          max_retries=0
+          max_retries=3
           retry_delay=600
           total_attempts=0
           all_errors=""
