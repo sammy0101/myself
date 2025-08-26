@@ -20,6 +20,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: 獲取當前時間
+        id: get-current-time
+        run: |
+          echo "time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+          echo "time_short=$(date -u +'%H:%M UTC')" >> $GITHUB_OUTPUT
+
       - name: 設置 Python 和 OCI CLI
         run: |
           # 更可靠的 Python 版本檢查
@@ -308,12 +314,15 @@ jobs:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
-            <b>${{ github.event_name }} OCI 虛擬機器建立最終結果</b>
-            • <b>時間:</b> $(date +'%Y-%m-%d %H:%M:%S UTC')
+            <b>OCI 虛擬機器建立結果 - ${{ github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務' }}</b>
+            • <b>觸發方式:</b> ${{ github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務' }}
+            • <b>執行時間:</b> ${{ steps.get-current-time.outputs.time }}
             • <b>狀態:</b> ${{ steps.create-vm.outputs.success == 'true' && '✅ 成功' || '❌ 失敗' }}
             • <b>嘗試次數:</b> ${{ steps.create-vm.outputs.attempt_count }}
             • <b>訊息:</b> ${{ steps.create-vm.outputs.success == 'true' && steps.create-vm.outputs.success_message || steps.create-vm.outputs.error_message }}
             • <b>區域:</b> ${{ secrets.OCI_REGION }}
+            ${{ github.event_name == 'workflow_dispatch' && format('• <b>手動觸發者:</b> @{0}', github.actor) || '' }}
+            ${{ github.event.inputs.vm-name && format('• <b>輸入的VM名稱:</b> {0}', github.event.inputs.vm-name) || '' }}
             • <b>詳情:</b> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">查看日誌</a>
             ${{ steps.create-vm.outputs.success == 'true' && format('• <b>虛擬機器名稱:</b> {0}', steps.create-vm.outputs.vm_name) || '' }}
             ${{ steps.create-vm.outputs.success == 'true' && steps.get-ip.outputs.public_ip != 'unknown' && format('• <b>公網 IP:</b> {0}', steps.get-ip.outputs.public_ip) || '' }}
