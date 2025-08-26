@@ -12,7 +12,7 @@ log() {
 log "腳本開始執行..."
 
 required_vars=(
-  OCI_COMPARTMENT_ID OCI_AVAILABILITY_DOMAIN OCI_IMAGE_OCID OCI_SUBNET_ID
+  OCI_COMPARTTMENT_ID OCI_AVAILABILITY_DOMAIN OCI_IMAGE_OCID OCI_SUBNET_ID
   VM_SHAPE OCPU_COUNT MEMORY_IN_GB
 )
 for var in "${required_vars[@]}"; do
@@ -29,7 +29,7 @@ else
 fi
 log "將要創建的虛擬機器名稱: $VM_NAME"
 
-MAX_RETRIES=${MAX_RETRIES:-3} # 您可以根據需要調整
+MAX_RETRIES=${MAX_RETRIES:-3}
 RETRY_DELAY=${RETRY_DELAY:-600}
 JITTER_RANGE=${JITTER_RANGE:-60}
 log "策略: 共 $MAX_RETRIES 次嘗試，基礎延遲 ${RETRY_DELAY}s，隨機延遲 ${JITTER_RANGE}s。"
@@ -41,7 +41,6 @@ attempt=1
 while [ $attempt -le $MAX_RETRIES ]; do
   log "--- 第 $attempt / $MAX_RETRIES 次嘗試建立 VM ---"
 
-  # <-- 變更點：在此處暫時禁用 "exit on error"
   set +e
   output=$(oci compute instance launch \
     --compartment-id "$OCI_COMPARTMENT_ID" \
@@ -55,13 +54,11 @@ while [ $attempt -le $MAX_RETRIES ]; do
     --user-data-file ./cloud-init.txt \
     --output json 2>&1)
   exit_code=$?
-  # <-- 變更點：處理完錯誤後，重新啟用 "exit on error"
   set -e
 
   if [ $exit_code -eq 0 ] && [ -n "$output" ] && echo "$output" | jq -e '.data.id' > /dev/null; then
     INSTANCE_OCID=$(echo "$output" | jq -r '.data.id')
     log "✅ VM 建立請求成功！實例 OCID: $INSTANCE_OCID"
-
     echo "success=true" >> "$GITHUB_OUTPUT"
     echo "vm_name=$VM_NAME" >> "$GITHUB_OUTPUT"
     echo "instance_ocid=$INSTANCE_OCID" >> "$GITHUB_OUTPUT"
@@ -71,8 +68,19 @@ while [ $attempt -le $MAX_RETRIES ]; do
   fi
 
   log "❌ 第 $attempt 次嘗試失敗，退出碼: $exit_code"
-  ERROR_CODE=$(echo "$output" | jq -r '.code // "UNKNOWN"')
-  ERROR_MESSAGE=$(echo "$output" | jq -r '.message // "無法從 OCI CLI 輸出中解析錯誤訊息。"')
+
+  # <-- 變更點：新增了健壯的錯誤解析邏輯
+  # 首先檢查輸出是否為有效的 JSON
+  if echo "$output" | jq . >/dev/null 2>&1; then
+    # 如果是 JSON，則從中解析
+    ERROR_CODE=$(echo "$output" | jq -r '.code // "UNKNOWN"')
+    ERROR_MESSAGE=$(echo "$output" | jq -r '.message // "無法從 JSON 中解析錯誤訊息。"')
+  else
+    # 如果不是 JSON，則直接使用原始輸出作為錯誤訊息
+    ERROR_CODE="UNKNOWN_FORMAT"
+    ERROR_MESSAGE="$output"
+  fi
+  
   log "錯誤碼: $ERROR_CODE"
   log "錯誤訊息: $ERROR_MESSAGE"
 
@@ -90,7 +98,7 @@ while [ $attempt -le $MAX_RETRIES ]; do
       log "檢測到請求過多錯誤，將在延遲後重試。"
       ;;
     *)
-      log "檢測到未分類的錯誤，將在延遲後重試。"
+      log "檢測到未分類的錯誤 ($ERROR_CODE)，將在延遲後重試。"
       ;;
   esac
 
@@ -112,4 +120,13 @@ log "❌ VM 建立失敗。"
 echo "success=false" >> "$GITHUB_OUTPUT"
 echo "attempt_count=$attempt" >> "$GITHUB_OUTPUT"
 echo "error_message=$LAST_ERROR_MESSAGE" >> "$GITHUB_OUTPUT"
-exit 1
+exit 1```
+
+### 變更摘要
+
+*   **智能錯誤解析**: 我們不再盲目地用 `jq` 解析 `$output`。而是：
+    1.  用 `if echo "$output" | jq . >/dev/null 2>&1; then` 來測試 `$output` 是否為合法的 JSON。
+    2.  如果是，就安全地從中提取錯誤碼和訊息。
+    3.  如果不是，就將 `$output` 的**全部純文字內容**直接賦值給 `ERROR_MESSAGE`。
+
+這個修改讓我們的腳本變得更加"堅不可摧"。無論 OCI CLI 返回什麼樣的錯誤，它都能正確捕獲、記錄，並繼續執行重試邏輯，最終在 Telegram 中給您一個包含**真正錯誤原因**的通知，而不是空白。
