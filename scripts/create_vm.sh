@@ -35,7 +35,7 @@ fi
 log "將要創建的虛擬機器名稱: $VM_NAME"
 
 # 定義重試參數
-MAX_RETRIES=${MAX_RETRIES:-5}       # 預設 5 次重試
+MAX_RETRIES=${MAX_RETRIES:-0}       # 預設 5 次重試
 RETRY_DELAY=${RETRY_DELAY:-600}   # 預設 10 分鐘延遲
 JITTER_RANGE=${JITTER_RANGE:-60}      # 預設 60 秒隨機延遲
 
