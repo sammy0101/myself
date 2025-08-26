@@ -7,10 +7,12 @@ import hashlib
 import logging
 import m3u8
 from datetime import datetime
-from concurrent.futures import as_completed, TimeoutError
+# --- ↓↓↓ 這是修正的地方 ↓↓↓ ---
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
+# --- ↑↑↑ 修正結束 ↑↑↑ ---
 from urllib.parse import urlparse
 from typing import List, Dict, Any, Optional, Tuple
-from pebble import ProcessPool  # <--- 引入 Pebble
+from pebble import ProcessPool
 
 # --- 全域設定 ---
 CONFIG = {
@@ -23,23 +25,17 @@ CONFIG = {
     "OUTPUT_TXT_FILE": "hk_tv_sources.txt",
     "BACKUP_M3U_FILE": "hk_tv_sources_backup.m3u",
     "USER_AGENT": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    "TASK_TIMEOUT": 15 # <--- 為每個測試任務設定15秒的絕對超時
+    "TASK_TIMEOUT": 15
 }
 
 # 設定日誌記錄
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- 將測試函式移出類別，使其成為一個獨立的頂層函式 ---
-# 這樣可以避免在多行程中序列化類別實例的問題，更健壯
 def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str]:
-    """
-    獨立的連接測試函式，專為在 PebblePool 中執行而設計。
-    """
     url = source['url']
     start_time = time.time()
     headers = {'User-Agent': CONFIG["USER_AGENT"]}
     robust_timeout = (3.05, 5)
-
     try:
         with requests.get(url, stream=True, timeout=robust_timeout, headers=headers) as response:
             response.raise_for_status()
@@ -87,7 +83,6 @@ class HKTVSourceFetcher:
         self.hk_keywords = ['香港', 'HK', 'TVB', '翡翠', '明珠', 'ViuTV', 'RTHK', '鳳凰', '開電視', '开电视', 'HOY', '有線', '有线', '奇妙', '77台', '78台', '港台', '澳門', 'Macau', '澳视']
         self.custom_sources = self._load_custom_sources()
 
-    # ... 其他 _load, _make_request, _is_hk_channel, _parse_m3u, _fetch_from_source 等函式保持不變 ...
     def _load_custom_sources(self) -> List[Dict[str, Any]]:
         custom_sources = []
         custom_file = CONFIG["CUSTOM_SOURCES_FILE"]
@@ -157,7 +152,6 @@ class HKTVSourceFetcher:
             logging.warning(f"從 {name} 未獲取到任何內容")
     
     def fetch_all_sources(self):
-        # ... fetch_all_sources 前半部分保持不變 ...
         logging.info("開始獲取香港電視直播源...")
         default_sources = [
             {"url": "https://live.fanmingming.com/tv/m3u/ipv6.m3u", "name": "范明明IPv6"},
@@ -169,7 +163,6 @@ class HKTVSourceFetcher:
             {"url": "https://raw.githubusercontent.com/BigBigGrandG/IPTV-URL/release/Gather.m3u", "name": "BigBigGrandG"}
         ]
         all_source_configs = default_sources + self.custom_sources
-        # 這裡的獲取階段用執行緒池沒問題，因為網路請求相對簡單
         with ThreadPoolExecutor(max_workers=CONFIG["MAX_WORKERS"]) as executor:
             futures = [executor.submit(self._fetch_from_source, src['url'], src['name'], src.get('filter_hk', True)) for src in all_source_configs]
             for future in as_completed(futures):
@@ -180,30 +173,23 @@ class HKTVSourceFetcher:
         enhanced_sources = self._enhance_metadata(unique_sources)
         logging.info(f"總共獲取到 {len(enhanced_sources)} 個唯一的香港頻道")
         
-        # --- ↓↓↓ 關鍵修改點 ↓↓↓ ---
         tested_sources = self._test_sources_connectivity_with_pebble(enhanced_sources)
-        # --- ↑↑↑ 關鍵修改點 ↑↑↑ ---
 
         logging.info(f"連接測試後剩餘 {len(tested_sources)} 個有效頻道")
         self._generate_output_files(tested_sources)
         return tested_sources
 
-    # --- ↓↓↓ 全新的、基於 Pebble 的測試函式 ↓↓↓ ---
     def _test_sources_connectivity_with_pebble(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         logging.info("開始深度測試頻道連接性 (使用 PebblePool，可強制超時)...")
         valid_sources = []
         
-        # 使用 PebblePool，它可以真正地終止超時的任務
         with ProcessPool(max_workers=CONFIG["MAX_WORKERS"]) as pool:
-            # 提交所有任務，並為每個任務設定絕對超時
             future_map = {pool.schedule(run_connectivity_test, args=(source,), timeout=CONFIG["TASK_TIMEOUT"]): source for source in sources}
             total = len(sources)
             
-            # 使用 as_completed 處理結果
             for i, future in enumerate(as_completed(future_map), 1):
                 source = future_map[future]
                 try:
-                    # 獲取結果
                     is_valid, response_time, status = future.result()
                     if is_valid:
                         source['response_time'] = response_time
@@ -212,15 +198,12 @@ class HKTVSourceFetcher:
                     else:
                         logging.warning(f"[{i}/{total}] ✗ {source['name']} - {status}")
                 except TimeoutError:
-                    # 捕獲 Pebble 拋出的超時錯誤
                     logging.warning(f"[{i}/{total}] ✗ {source['name']} - 測試嚴重逾時 (>{CONFIG['TASK_TIMEOUT']}s)，已被終止")
                 except Exception as e:
-                    # 捕獲其他可能在任務中發生的錯誤
                     logging.error(f"[{i}/{total}] ✗ {source['name']} - 測試時發生嚴重錯誤: {e}")
         
         return valid_sources
     
-    # ... 其他 _remove_duplicates, _determine_category 等函式保持不變 ...
     def _remove_duplicates(self) -> List[Dict[str, Any]]:
         unique_sources = {}
         for source in self.sources:
