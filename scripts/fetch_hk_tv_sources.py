@@ -3,60 +3,91 @@ import requests
 import re
 import time
 import os
-import socket
 import hashlib
 import logging
-import m3u8  # 引入 m3u8 函式庫
+import m3u8
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed, TimeoutError
 from urllib.parse import urlparse
 from typing import List, Dict, Any, Optional, Tuple
+from pebble import ProcessPool  # <--- 引入 Pebble
 
 # --- 全域設定 ---
 CONFIG = {
     "TIMEOUT": 10,
-    "CONNECTIVITY_TIMEOUT": 5,
     "MAX_WORKERS": 20,
     "CACHE_DIR": "cache",
-    "CACHE_EXPIRATION": 3600,  # 1 小時
+    "CACHE_EXPIRATION": 3600,
     "CUSTOM_SOURCES_FILE": "custom_sources.txt",
     "OUTPUT_M3U_FILE": "hk_tv_sources.m3u",
     "OUTPUT_TXT_FILE": "hk_tv_sources.txt",
     "BACKUP_M3U_FILE": "hk_tv_sources_backup.m3u",
-    "USER_AGENT": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    "USER_AGENT": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    "TASK_TIMEOUT": 15 # <--- 為每個測試任務設定15秒的絕對超時
 }
 
 # 設定日誌記錄
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# --- 將測試函式移出類別，使其成為一個獨立的頂層函式 ---
+# 這樣可以避免在多行程中序列化類別實例的問題，更健壯
+def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str]:
+    """
+    獨立的連接測試函式，專為在 PebblePool 中執行而設計。
+    """
+    url = source['url']
+    start_time = time.time()
+    headers = {'User-Agent': CONFIG["USER_AGENT"]}
+    robust_timeout = (3.05, 5)
+
+    try:
+        with requests.get(url, stream=True, timeout=robust_timeout, headers=headers) as response:
+            response.raise_for_status()
+            content_type = response.headers.get('Content-Type', '').lower()
+            if 'text/html' in content_type:
+                return False, 9999, "無效內容 (HTML)"
+            content = response.text
+            try:
+                playlist = m3u8.loads(content, uri=url)
+                if playlist.is_variant:
+                    if not playlist.playlists: return False, 9999, "M3U8無效 (無子播放列表)"
+                    uri_to_test = playlist.playlists[0].uri
+                elif playlist.segments:
+                    uri_to_test = playlist.segments[0].uri
+                else:
+                    return False, 9999, "M3U8無效 (空播放列表)"
+                seg_response = requests.head(uri_to_test, timeout=robust_timeout, headers=headers)
+                seg_response.raise_for_status()
+                response_time = int((time.time() - start_time) * 1000)
+                return True, response_time, "驗證成功"
+            except Exception:
+                if response.status_code == 200 and len(content) > 0:
+                    response_time = int((time.time() - start_time) * 1000)
+                    return True, response_time, "成功 (直接串流)"
+                return False, 9999, "M3U8解析失敗"
+    except requests.exceptions.Timeout:
+        return False, 9999, "連接逾時"
+    except requests.exceptions.RequestException as e:
+        return False, 9999, f"請求錯誤: {str(e).splitlines()[0][:50]}"
+    except Exception as e:
+        return False, 9999, f"未知錯誤: {str(e)[:50]}"
+
 class HKTVSourceFetcher:
     def __init__(self):
         self.sources: List[Dict[str, Any]] = []
         self.headers = {'User-Agent': CONFIG["USER_AGENT"]}
-        
-        # 靜態資料定義
-        self.category_order = [
-            'TVB', 'ViuTV', 'HOY TV', 'RTHK', '新闻', '体育', '电影', '国际', '儿童', '其他'
-        ]
+        self.category_order = ['TVB', 'ViuTV', 'HOY TV', 'RTHK', '新闻', '体育', '电影', '国际', '儿童', '其他']
         self.channel_categories = {
-            'TVB': ['TVB', '無綫', '无线', '翡翠', '明珠', 'J2'],
-            'ViuTV': ['ViuTV', 'Viu'],
-            'HOY TV': ['HOY', '開電視', '开电视', '有線', '有线', '奇妙', '77台', '78台'],
-            'RTHK': ['RTHK', '香港电台', '港台'],
-            '新闻': ['新聞', '新闻', 'NEWS', '資訊', '財經', '财经'],
-            '体育': ['體育', '体育', 'SPORTS', '賽馬', '赛马'],
-            '电影': ['電影', '电影', 'MOVIE', '影院', '戲劇', '戏剧'],
-            '国际': ['國際', '国际', 'WORLD', 'BBC', 'CNN', '凤凰衛視', '鳳凰衛視'],
+            'TVB': ['TVB', '無綫', '无线', '翡翠', '明珠', 'J2'], 'ViuTV': ['ViuTV', 'Viu'],
+            'HOY TV': ['HOY', '開電視', '开电视', '有線', '有线', '奇妙', '77台', '78台'], 'RTHK': ['RTHK', '香港电台', '港台'],
+            '新闻': ['新聞', '新闻', 'NEWS', '資訊', '財經', '财经'], '体育': ['體育', '体育', 'SPORTS', '賽馬', '赛马'],
+            '电影': ['電影', '电影', 'MOVIE', '影院', '戲劇', '戏剧'], '国际': ['國際', '国际', 'WORLD', 'BBC', 'CNN', '凤凰衛視', '鳳凰衛視'],
             '儿童': ['兒童', '儿童', 'KIDS', '卡通', '動畫', '动画'],
         }
-        self.hk_keywords = [
-            '香港', 'HK', 'TVB', '翡翠', '明珠', 'ViuTV', 'RTHK', '鳳凰', 
-            '開電視', '开电视', 'HOY', '有線', '有线', '奇妙', '77台', '78台', '港台',
-            '澳門', 'Macau', '澳视'
-        ]
-        
+        self.hk_keywords = ['香港', 'HK', 'TVB', '翡翠', '明珠', 'ViuTV', 'RTHK', '鳳凰', '開電視', '开电视', 'HOY', '有線', '有线', '奇妙', '77台', '78台', '港台', '澳門', 'Macau', '澳视']
         self.custom_sources = self._load_custom_sources()
 
+    # ... 其他 _load, _make_request, _is_hk_channel, _parse_m3u, _fetch_from_source 等函式保持不變 ...
     def _load_custom_sources(self) -> List[Dict[str, Any]]:
         custom_sources = []
         custom_file = CONFIG["CUSTOM_SOURCES_FILE"]
@@ -124,8 +155,9 @@ class HKTVSourceFetcher:
             logging.info(f"從 {name} 獲取到 {len(sources)} 個相關頻道")
         else:
             logging.warning(f"從 {name} 未獲取到任何內容")
-
+    
     def fetch_all_sources(self):
+        # ... fetch_all_sources 前半部分保持不變 ...
         logging.info("開始獲取香港電視直播源...")
         default_sources = [
             {"url": "https://live.fanmingming.com/tv/m3u/ipv6.m3u", "name": "范明明IPv6"},
@@ -137,6 +169,7 @@ class HKTVSourceFetcher:
             {"url": "https://raw.githubusercontent.com/BigBigGrandG/IPTV-URL/release/Gather.m3u", "name": "BigBigGrandG"}
         ]
         all_source_configs = default_sources + self.custom_sources
+        # 這裡的獲取階段用執行緒池沒問題，因為網路請求相對簡單
         with ThreadPoolExecutor(max_workers=CONFIG["MAX_WORKERS"]) as executor:
             futures = [executor.submit(self._fetch_from_source, src['url'], src['name'], src.get('filter_hk', True)) for src in all_source_configs]
             for future in as_completed(futures):
@@ -147,12 +180,47 @@ class HKTVSourceFetcher:
         enhanced_sources = self._enhance_metadata(unique_sources)
         logging.info(f"總共獲取到 {len(enhanced_sources)} 個唯一的香港頻道")
         
-        tested_sources = self._test_sources_connectivity(enhanced_sources)
-        logging.info(f"連接測試後剩餘 {len(tested_sources)} 個有效頻道")
+        # --- ↓↓↓ 關鍵修改點 ↓↓↓ ---
+        tested_sources = self._test_sources_connectivity_with_pebble(enhanced_sources)
+        # --- ↑↑↑ 關鍵修改點 ↑↑↑ ---
 
+        logging.info(f"連接測試後剩餘 {len(tested_sources)} 個有效頻道")
         self._generate_output_files(tested_sources)
         return tested_sources
 
+    # --- ↓↓↓ 全新的、基於 Pebble 的測試函式 ↓↓↓ ---
+    def _test_sources_connectivity_with_pebble(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        logging.info("開始深度測試頻道連接性 (使用 PebblePool，可強制超時)...")
+        valid_sources = []
+        
+        # 使用 PebblePool，它可以真正地終止超時的任務
+        with ProcessPool(max_workers=CONFIG["MAX_WORKERS"]) as pool:
+            # 提交所有任務，並為每個任務設定絕對超時
+            future_map = {pool.schedule(run_connectivity_test, args=(source,), timeout=CONFIG["TASK_TIMEOUT"]): source for source in sources}
+            total = len(sources)
+            
+            # 使用 as_completed 處理結果
+            for i, future in enumerate(as_completed(future_map), 1):
+                source = future_map[future]
+                try:
+                    # 獲取結果
+                    is_valid, response_time, status = future.result()
+                    if is_valid:
+                        source['response_time'] = response_time
+                        valid_sources.append(source)
+                        logging.info(f"[{i}/{total}] ✓ {source['name']} - {response_time}ms ({status})")
+                    else:
+                        logging.warning(f"[{i}/{total}] ✗ {source['name']} - {status}")
+                except TimeoutError:
+                    # 捕獲 Pebble 拋出的超時錯誤
+                    logging.warning(f"[{i}/{total}] ✗ {source['name']} - 測試嚴重逾時 (>{CONFIG['TASK_TIMEOUT']}s)，已被終止")
+                except Exception as e:
+                    # 捕獲其他可能在任務中發生的錯誤
+                    logging.error(f"[{i}/{total}] ✗ {source['name']} - 測試時發生嚴重錯誤: {e}")
+        
+        return valid_sources
+    
+    # ... 其他 _remove_duplicates, _determine_category 等函式保持不變 ...
     def _remove_duplicates(self) -> List[Dict[str, Any]]:
         unique_sources = {}
         for source in self.sources:
@@ -183,77 +251,7 @@ class HKTVSourceFetcher:
             source['category'] = self._determine_category(name, group)
             source['resolution'] = self._determine_resolution(name)
         return sources
-
-    def _test_source_connectivity(self, source: Dict[str, Any]) -> Tuple[bool, int, str]:
-        """
-        更有效的測試單一來源連接性，並使用更嚴格的元組超時防止卡死。
-        """
-        url = source['url']
-        start_time = time.time()
-        # 使用更嚴格的元組超時設定 (連線超時, 讀取超時)
-        robust_timeout = (3.05, 5)
-
-        try:
-            with requests.get(url, stream=True, timeout=robust_timeout, headers=self.headers) as response:
-                response.raise_for_status()
-                
-                content_type = response.headers.get('Content-Type', '').lower()
-                if 'text/html' in content_type:
-                    return False, 9999, "無效內容 (HTML)"
-
-                content = response.text
-                
-                try:
-                    playlist = m3u8.loads(content, uri=url)
-                    
-                    if playlist.is_variant:
-                        if not playlist.playlists: return False, 9999, "M3U8無效 (無子播放列表)"
-                        segment_uri_to_test = playlist.playlists[0].uri
-                    elif playlist.segments:
-                        segment_uri_to_test = playlist.segments[0].uri
-                    else:
-                        return False, 9999, "M3U8無效 (空播放列表)"
-
-                    seg_response = requests.head(segment_uri_to_test, timeout=robust_timeout, headers=self.headers)
-                    seg_response.raise_for_status()
-
-                    response_time = int((time.time() - start_time) * 1000)
-                    return True, response_time, "驗證成功"
-
-                except Exception:
-                    if response.status_code == 200 and len(content) > 0:
-                        response_time = int((time.time() - start_time) * 1000)
-                        return True, response_time, "成功 (直接串流)"
-                    return False, 9999, "M3U8解析失敗"
-
-        except requests.exceptions.Timeout:
-            return False, 9999, "連接逾時"
-        except requests.exceptions.RequestException as e:
-            error_msg = str(e).split('\n')[0]
-            return False, 9999, f"請求錯誤: {error_msg[:50]}"
-        except Exception as e:
-            return False, 9999, f"未知錯誤: {str(e)[:50]}"
-
-    def _test_sources_connectivity(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        logging.info("開始深度測試頻道連接性 (將驗證 M3U8 內容)...")
-        valid_sources = []
-        with ThreadPoolExecutor(max_workers=CONFIG["MAX_WORKERS"]) as executor:
-            future_to_source = {executor.submit(self._test_source_connectivity, source): source for source in sources}
-            total = len(sources)
-            for i, future in enumerate(as_completed(future_to_source), 1):
-                source = future_to_source[future]
-                try:
-                    is_valid, response_time, status = future.result()
-                    if is_valid:
-                        source['response_time'] = response_time
-                        valid_sources.append(source)
-                        logging.info(f"[{i}/{total}] ✓ {source['name']} - {response_time}ms ({status})")
-                    else:
-                        logging.warning(f"[{i}/{total}] ✗ {source['name']} - {status}")
-                except Exception as e:
-                    logging.error(f"[{i}/{total}] ✗ {source['name']} - 測試時發生嚴重錯誤: {e}")
-        return valid_sources
-    
+        
     def _sort_sources(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         category_index = {category: idx for idx, category in enumerate(self.category_order)}
         def sort_key(source):
@@ -266,14 +264,12 @@ class HKTVSourceFetcher:
             logging.warning("沒有有效的來源可供生成檔案。")
             return
         sorted_sources = self._sort_sources(sources)
-        
         m3u_lines = ["#EXTM3U"]
         for source in sorted_sources:
             params = source.get("params", {})
             m3u_lines.append(f'#EXTINF:-1 tvg-id="{params.get("tvg-id", "")}" tvg-name="{source["name"]}" tvg-logo="{params.get("tvg-logo", "")}" group-title="{source["category"]}",{source["name"]}')
             m3u_lines.append(source["url"])
         with open(CONFIG["OUTPUT_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
-        
         txt_lines = [f"# 香港電視直播源", f"# 更新時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"]
         channels_by_category = {}
         for source in sorted_sources:
@@ -287,7 +283,6 @@ class HKTVSourceFetcher:
                     time_info = f"[{channel.get('response_time', 'N/A')}ms]"
                     txt_lines.append(f"{channel['name']}{hd_flag}{time_info},{channel['url']}")
         with open(CONFIG["OUTPUT_TXT_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(txt_lines))
-        
         logging.info(f"已生成 {CONFIG['OUTPUT_M3U_FILE']} 和 {CONFIG['OUTPUT_TXT_FILE']}")
         with open(CONFIG["BACKUP_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
 
