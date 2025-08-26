@@ -34,7 +34,7 @@ jobs:
           python3 -c "import sys; assert sys.version_info >= (3, 6), 'Python 3.6+ required'; print('✅ Python 版本符合要求')"
           
           # 安裝指定版本的 OCI CLI (穩定版本)
-          pip install oci-cli==3.63.3 --user
+          pip install oci-cli==3.64.1 --user
           
           # 將使用者站點包添加到 PATH
           echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -46,7 +46,7 @@ jobs:
       - name: 安裝必要依賴
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq sshpass
+          sudo apt-get install -y jq
 
       - name: 配置 OCI CLI
         run: |
@@ -181,23 +181,22 @@ jobs:
                 echo "檢測到 TooManyRequests 錯誤，停止重試"
                 ERROR_TYPE="too_many_requests"
                 SHOULD_RETRY="false"
-                echo "should_retry=false" >> $GITHUB_OUTPUT
-              elif echo "$output" | grep -Ei "out of host capacity|insufficientcapacity|outofcapacity|service limit exceeded|limit exceeded|capacity not available|not available|host capacity|capacity.*unavailable|no capacity|capacity error"; then
+              elif echo "$output" | grep -qi "out of host capacity\|insufficientcapacity\|outofcapacity\|service limit exceeded\|limit exceeded\|capacity not available\|not available\|host capacity\|capacity.*unavailable\|no capacity\|capacity error"; then
+                echo "檢測到容量不足錯誤 (Out of host capacity)"
                 ERROR_TYPE="capacity_error"
-                echo "檢測到容量錯誤，繼續重試"
-              elif echo "$output" | grep -Ei "quota|limit|notavailable|free tier|insufficient|over quota|quota.*exceeded"; then
+              elif echo "$output" | grep -qi "quota\|limit\|notavailable\|free tier\|insufficient\|over quota\|quota.*exceeded"; then
+                echo "檢測到配額錯誤"
                 ERROR_TYPE="quota_error"
-                # 配額錯誤重試無意義
                 SHOULD_RETRY="false"
-                echo "should_retry=false" >> $GITHUB_OUTPUT
-              elif echo "$output" | grep -Ei "timeout|connection|request timed out|network error"; then
+              elif echo "$output" | grep -qi "timeout\|connection\|request timed out\|network error"; then
+                echo "檢測到網路錯誤"
                 ERROR_TYPE="network_error"
-              elif echo "$output" | grep -Ei "not authorized|authentication|authorization|invalid.*credential|auth.*failed"; then
+              elif echo "$output" | grep -qi "not authorized\|authentication\|authorization\|invalid.*credential\|auth.*failed"; then
+                echo "檢測到認證錯誤"
                 ERROR_TYPE="auth_error"
-                # 認證錯誤重試無意義
                 SHOULD_RETRY="false"
-                echo "should_retry=false" >> $GITHUB_OUTPUT
               else
+                echo "檢測到其他類型錯誤"
                 ERROR_TYPE="other_error"
               fi
               
@@ -233,10 +232,12 @@ jobs:
             • 嘗試: 第 ${{ steps.vm-creation-loop.outputs.current_attempt }} 次
             • 狀態: ${{ steps.vm-creation-loop.outputs.success == 'true' && '成功' || '失敗' }}
             • 訊息: ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.vm-creation-loop.outputs.success_message || steps.vm-creation-loop.outputs.error_message }}
+            • 錯誤類型: ${{ steps.vm-creation-loop.outputs.error_type }}
             • 區域: ${{ secrets.OCI_REGION }}
             ${{ steps.vm-creation-loop.outputs.success != 'true' && steps.vm-creation-loop.outputs.current_attempt < steps.init.outputs.max_attempts && steps.vm-creation-loop.outputs.should_retry == 'true' && '• 下次嘗試: 5分鐘後' || '' }}
             ${{ steps.vm-creation-loop.outputs.error_type == 'too_many_requests' && '• 注意: 遇到 TooManyRequests 錯誤，已停止嘗試' || '' }}
             ${{ steps.vm-creation-loop.outputs.error_type == 'auth_error' && '• 注意: 認證錯誤，請檢查OCI配置' || '' }}
+            ${{ steps.vm-creation-loop.outputs.error_type == 'capacity_error' && '• 注意: 容量不足，建議稍後重試或嘗試其他區域' || '' }}
 
       - name: 等待實例達到 RUNNING 狀態
         if: steps.vm-creation-loop.outputs.success == 'true'
@@ -297,41 +298,6 @@ jobs:
             echo "✅ 虛擬機器公網 IP: $PUBLIC_IP"
           fi
 
-      - name: 檢查 SSH 連接
-        if: steps.vm-creation-loop.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true' && steps.get-ip.outputs.public_ip != 'unknown'
-        id: check-ssh
-        run: |
-          PUBLIC_IP="${{ steps.get-ip.outputs.public_ip }}"
-          ROOT_PASSWORD="${{ secrets.ROOT_PASSWORD }}"
-          
-          echo "檢查 SSH 連接: root@$PUBLIC_IP"
-          
-          # 設置輪詢參數
-          MAX_ATTEMPTS=20  # 最多嘗試20次 (10分鐘)
-          SLEEP_INTERVAL=30  # 每次間隔30秒
-          attempt=1
-          
-          while [ $attempt -le $MAX_ATTEMPTS ]; do
-            echo "SSH 檢查 $attempt/$MAX_ATTEMPTS"
-            
-            # 使用 sshpass 進行 SSH 連接測試
-            if sshpass -p "$ROOT_PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes root@$PUBLIC_IP "echo SSH連接成功" 2>/dev/null; then
-              echo "✅ SSH 連接成功"
-              echo "ssh_ready=true" >> $GITHUB_OUTPUT
-              break
-            fi
-            
-            if [ $attempt -eq $MAX_ATTEMPTS ]; then
-              echo "❌ SSH 連接失敗"
-              echo "ssh_ready=false" >> $GITHUB_OUTPUT
-              break
-            fi
-            
-            echo "SSH 尚未就緒，等待 $SLEEP_INTERVAL 秒後重試..."
-            sleep $SLEEP_INTERVAL
-            attempt=$((attempt+1))
-          done
-
       - name: 發送最終結果 Telegram 通知
         id: send-telegram-final
         if: always()
@@ -345,11 +311,11 @@ jobs:
             • 狀態: ${{ steps.vm-creation-loop.outputs.success == 'true' && '成功' || '失敗' }}
             • 嘗試次數: ${{ steps.vm-creation-loop.outputs.current_attempt }}
             • 訊息: ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.vm-creation-loop.outputs.success_message || steps.vm-creation-loop.outputs.error_message }}
+            • 錯誤類型: ${{ steps.vm-creation-loop.outputs.error_type }}
             ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true' && format('• 公網 IP: {0}', steps.get-ip.outputs.public_ip) || '' }}
-            ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true' && steps.check-ssh.outputs.ssh_ready == 'true' && '• SSH 狀態: 可用' || '' }}
-            ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true' && steps.check-ssh.outputs.ssh_ready != 'true' && '• SSH 狀態: 不可用' || '' }}
             ${{ steps.vm-creation-loop.outputs.error_type == 'too_many_requests' && '• 注意: 遇到 TooManyRequests 錯誤，已停止嘗試' || '' }}
             ${{ steps.vm-creation-loop.outputs.error_type == 'auth_error' && '• 注意: 認證錯誤，請檢查OCI配置' || '' }}
+            ${{ steps.vm-creation-loop.outputs.error_type == 'capacity_error' && '• 注意: 容量不足，建議稍後重試或嘗試其他區域' || '' }}
             • 區域: ${{ secrets.OCI_REGION }}
             • 詳情: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
@@ -366,12 +332,6 @@ jobs:
               echo "虛擬機器名稱: ${{ steps.init.outputs.vm_name }}"
               echo "公網 IP: ${{ steps.get-ip.outputs.public_ip }}"
               echo "嘗試次數: ${{ steps.vm-creation-loop.outputs.current_attempt }}"
-              
-              if [[ "${{ steps.check-ssh.outputs.ssh_ready }}" == "true" ]]; then
-                echo "SSH 狀態: 可用"
-              else
-                echo "SSH 狀態: 不可用 (可能需要手動檢查)"
-              fi
             else
               echo "⚠️  虛擬機器已建立但未達到 RUNNING 狀態"
               echo "虛擬機器 OCID: ${{ steps.vm-creation-loop.outputs.instance_ocid }}"
