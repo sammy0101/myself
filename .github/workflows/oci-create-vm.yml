@@ -8,7 +8,7 @@ on:
       vm-name:
         description: '虛擬機器的名稱 (可選)'
         required: false
-        default: 'a1-flex-vm'
+        default: 'manual-a1-flex-vm'
         type: string
 
 env:
@@ -28,7 +28,6 @@ jobs:
   create-vm:
     runs-on: ubuntu-22.04
     outputs:
-      # <-- 修正點 1：新增 time 輸出，使其能被後續 job 讀取
       time: ${{ steps.get-current-time.outputs.time }}
       vm_name: ${{ steps.create-vm-script.outputs.vm_name }}
       public_ip: ${{ steps.get-ip.outputs.public_ip }}
@@ -145,11 +144,11 @@ jobs:
             • <b>執行時間:</b> ${{ needs.create-vm.outputs.time }}
             • <b>狀態:</b> ${{ needs.create-vm.outputs.creation_status == 'true' && '✅ 成功' || '❌ 失敗' }}
             • <b>嘗試次數:</b> ${{ needs.create-vm.outputs.attempt_count }}
-            # <-- 修正點 2：修正訊息顯示邏輯
             • <b>訊息:</b> ${{ needs.create-vm.outputs.creation_status == 'true' && 'VM 創建成功' || needs.create-vm.outputs.error_message }}
             • <b>區域:</b> ${{ env.OCI_REGION }}
             • <b>詳情:</b> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">查看日誌</a>
+            # <-- 修正點：移除了引起解析錯誤的 "---"
             ${{ needs.create-vm.outputs.creation_status == 'true' && format('
-            <b>--- VM 資訊 ---</b>
+            <b>VM 資訊</b>
             • <b>虛擬機器名稱:</b> {0}
             • <b>公網 IP:</b> {1}', needs.create-vm.outputs.vm_name, needs.create-vm.outputs.public_ip) || '' }}
