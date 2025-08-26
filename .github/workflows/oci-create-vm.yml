@@ -8,7 +8,7 @@ on:
       vm-name:
         description: '虛擬機器的名稱 (可選)'
         required: false
-        default: 'a1-flex-vm'
+        default: 'manual-a1-flex-vm'
         type: string
 
 env:
@@ -17,7 +17,7 @@ env:
   OCI_AVAILABILITY_DOMAIN: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
   OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
   OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
-  OCI_IMAGE_OCID: ${{ secrets.OCI_IMAGE_OCID }} # e.g., Ubuntu 22.04 aarch64
+  OCI_IMAGE_OCID: ${{ secrets.OCI_IMAGE_OCID }}
 
   # --- VM 規格 ---
   VM_SHAPE: 'VM.Standard.A1.Flex'
@@ -28,6 +28,8 @@ jobs:
   create-vm:
     runs-on: ubuntu-22.04
     outputs:
+      # <-- 修正點 1：新增 time 輸出，使其能被後續 job 讀取
+      time: ${{ steps.get-current-time.outputs.time }}
       vm_name: ${{ steps.create-vm-script.outputs.vm_name }}
       public_ip: ${{ steps.get-ip.outputs.public_ip }}
       instance_ocid: ${{ steps.create-vm-script.outputs.instance_ocid }}
@@ -43,7 +45,6 @@ jobs:
         id: get-current-time
         run: echo "time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
 
-      # <-- 修正點：回退到手動安裝 OCI CLI
       - name: 設置 Python
         uses: actions/setup-python@v5
         with:
@@ -57,7 +58,6 @@ jobs:
           echo "正在配置 OCI CLI..."
           mkdir -p ~/.oci
           
-          # 從 secrets 和 env 變數生成 OCI 配置文件
           cat > ~/.oci/config << EOF
           [DEFAULT]
           user=${{ secrets.OCI_USER_ID }}
@@ -67,12 +67,8 @@ jobs:
           region=${{ env.OCI_REGION }}
           EOF
           
-          # 從 secrets 寫入 API 私鑰文件
           echo "${{ secrets.OCI_API_KEY }}" > ~/.oci/oci_api_key.pem
-          
-          # 設置正確的文件權限
           chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
-          
           echo "✅ OCI CLI 手動安裝與配置完成。"
 
       - name: 驗證 OCI CLI 配置
@@ -149,7 +145,8 @@ jobs:
             • <b>執行時間:</b> ${{ needs.create-vm.outputs.time }}
             • <b>狀態:</b> ${{ needs.create-vm.outputs.creation_status == 'true' && '✅ 成功' || '❌ 失敗' }}
             • <b>嘗試次數:</b> ${{ needs.create-vm.outputs.attempt_count }}
-            • <b>訊息:</b> ${{ needs.create-vm.outputs.error_message || 'VM 創建成功' }}
+            # <-- 修正點 2：修正訊息顯示邏輯
+            • <b>訊息:</b> ${{ needs.create-vm.outputs.creation_status == 'true' && 'VM 創建成功' || needs.create-vm.outputs.error_message }}
             • <b>區域:</b> ${{ env.OCI_REGION }}
             • <b>詳情:</b> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">查看日誌</a>
             ${{ needs.create-vm.outputs.creation_status == 'true' && format('
