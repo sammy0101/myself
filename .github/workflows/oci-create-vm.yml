@@ -96,8 +96,8 @@ jobs:
           set +e # 允許命令失敗而不立即退出
           
           # 重試參數配置 - 最多重試1次（共2次嘗試）
-          max_retries=1       # 最多重試1次（共2次嘗試）
-          retry_delay=300     # 每次重試延遲300秒（5分鐘）
+          max_retries=0       # (共 3 次嘗試) 或 max_retries=3 (共 4 次嘗試)
+          retry_delay=600     # (10 分鐘)
           total_attempts=0
           all_errors=""
           
