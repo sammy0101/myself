@@ -15,17 +15,10 @@ on:
 
 jobs:
   create-vm:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: 計算香港時間
-        id: get-time
-        run: |
-          HK_TIME=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M:%S %Z')
-          echo "hk_time=$HK_TIME" >> $GITHUB_OUTPUT
-          echo "香港時間: $HK_TIME"
 
       - name: 設置 Python 和 OCI CLI
         run: |
@@ -33,7 +26,7 @@ jobs:
           echo "目前 Python 版本: $(python3 --version)"
           python3 -c "import sys; assert sys.version_info >= (3, 6), 'Python 3.6+ required'; print('✅ Python 版本符合要求')"
           
-          # 安裝指定版本的 OCI CLI (穩定版本)
+          # 安裝指定版本的 OCI CLI (使用最新穩定版)
           pip install oci-cli==3.64.1 --user
           
           # 將使用者站點包添加到 PATH
@@ -43,10 +36,10 @@ jobs:
           oci --version
           echo "✅ OCI CLI 版本: $(oci --version)"
 
-      - name: 安裝必要依賴
+      - name: 安裝額外依賴
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq
+          sudo apt-get install -y curl dnsutils jq ssh-client
 
       - name: 配置 OCI CLI
         run: |
@@ -60,14 +53,15 @@ jobs:
           region=${{ secrets.OCI_REGION }}
           EOF
           
-          # 創建 API 密鑰文件
-          echo "${{ secrets.OCI_API_KEY }}" > ~/.oci/oci_api_key.pem
+          cat > ~/.oci/oci_api_key.pem << EOF
+          ${{ secrets.OCI_API_KEY }}
+          EOF
           
           chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
 
       - name: 顯示當前配置
         run: |
-          echo "目前時間: ${{ steps.get-time.outputs.hk_time }}"
+          echo "目前時間: $(date)"
           echo "目前配置:"
           echo "區域: ${{ secrets.OCI_REGION }}"
           echo "可用性網域: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
@@ -76,15 +70,15 @@ jobs:
 
       - name: 生成 cloud-init 腳本用於 root 登入
         run: |
-          cat > cloud-init.txt << EOF
+          cat > cloud-init.txt << 'EOF'
           #cloud-config
           users:
             - name: root
-              password: ${{ secrets.ROOT_PASSWORD }}
+              password: $ROOT_PASSWORD
               lock_passwd: false
           chpasswd:
             list: |
-              root:${{ secrets.ROOT_PASSWORD }}
+              root:$ROOT_PASSWORD
             expire: false
           runcmd:
             - sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config
@@ -92,10 +86,21 @@ jobs:
             - systemctl restart sshd
             - apt-get update && apt-get install -y openssh-server
           EOF
+          
+          sed -i "s/\$ROOT_PASSWORD/${{ secrets.ROOT_PASSWORD }}/g" cloud-init.txt
 
-      - name: 初始化嘗試參數
-        id: init
+      - name: 創建 A1 Flex 虛擬機器實例 (2次嘗試)
+        id: create-vm
+        continue-on-error: true  # 即使此步驟失敗，也繼續執行後續步驟
         run: |
+          set +e  # 允許命令失敗而不立即退出
+          
+          # 重試參數配置 - 最多重試1次（共2次嘗試）
+          max_retries=1           # 最多重試1次（共2次嘗試）
+          retry_delay=300         # 每次重試延遲300秒（5分鐘）
+          total_attempts=0
+          all_errors=""
+          
           # 決定虛擬機器名稱
           if [ -n "${{ github.event.inputs.vm-name }}" ]; then
             VM_NAME="${{ github.event.inputs.vm-name }}"
@@ -103,28 +108,14 @@ jobs:
             VM_NAME="scheduled-a1-vm-$(date +%Y%m%d-%H%M)"
           fi
           
-          echo "vm_name=$VM_NAME" >> $GITHUB_OUTPUT
-          echo "max_attempts=3" >> $GITHUB_OUTPUT
-          echo "current_attempt=0" >> $GITHUB_OUTPUT
-          echo "should_retry=true" >> $GITHUB_OUTPUT
-
-      - name: 虛擬機器建立循環
-        id: vm-creation-loop
-        run: |
-          # 設置初始參數
-          MAX_ATTEMPTS=${{ steps.init.outputs.max_attempts }}
-          CURRENT_ATTEMPT=${{ steps.init.outputs.current_attempt }}
-          SHOULD_RETRY=${{ steps.init.outputs.should_retry }}
-          VM_NAME="${{ steps.init.outputs.vm_name }}"
+          echo "開始建立虛擬機器: $VM_NAME"
+          echo "策略: 2次嘗試，每次延遲 $retry_delay 秒"
           
-          # 重試參數配置
-          RETRY_DELAY=300  # 5分鐘
-          
-          while [ $CURRENT_ATTEMPT -lt $MAX_ATTEMPTS ] && [ "$SHOULD_RETRY" = "true" ]; do
-            CURRENT_ATTEMPT=$((CURRENT_ATTEMPT + 1))
-            echo "--- 嘗試第 $CURRENT_ATTEMPT 次建立 ---"
+          for attempt in $(seq 0 $max_retries); do
+            total_attempts=$((attempt + 1))
+            echo "--- 嘗試第 $total_attempts 次建立 ---"
             
-            # 執行 OCI 命令建立虛擬機器，並捕獲輸出
+            # 執行 OCI 命令建立虛擬機器，並捕獲 JSON 輸出
             output=$(oci compute instance launch \
               --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
               --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
@@ -141,112 +132,184 @@ jobs:
             
             if [ $exit_code -eq 0 ]; then
               # 從 JSON 輸出中提取實例 OCID
-              INSTANCE_OCID=$(echo "$output" | jq -r '.data.id // empty')
+              INSTANCE_OCID=$(echo "$output" | jq -r '.data.id')
               
               if [ -n "$INSTANCE_OCID" ] && [ "$INSTANCE_OCID" != "null" ]; then
-                echo "✅ 虛擬機器建立成功 (第 $CURRENT_ATTEMPT 次嘗試)"
+                echo "✅ 虛擬機器建立成功 (第 $total_attempts 次嘗試)"
                 echo "success=true" >> $GITHUB_OUTPUT
+                echo "vm_name=$VM_NAME" >> $GITHUB_OUTPUT
                 echo "instance_ocid=$INSTANCE_OCID" >> $GITHUB_OUTPUT
-                echo "current_attempt=$CURRENT_ATTEMPT" >> $GITHUB_OUTPUT
+                echo "attempt_count=$total_attempts" >> $GITHUB_OUTPUT
+                echo "Instance OCID: $INSTANCE_OCID"
                 
                 # 提取成功訊息
                 success_msg=$(echo "$output" | jq -r '.message // "虛擬機器建立成功"' 2>/dev/null || echo "虛擬機器建立成功")
                 echo "success_message=$success_msg" >> $GITHUB_OUTPUT
-                
-                # 成功後停止重試
-                SHOULD_RETRY="false"
-                echo "should_retry=false" >> $GITHUB_OUTPUT
                 break
               else
                 echo "❌ 無法從輸出中解析 Instance OCID"
+                echo "output: $output"
                 error_msg="無法從OCI回應中解析實例ID"
-                echo "error_message=$error_msg" >> $GITHUB_OUTPUT
+                all_errors="$all_errors嘗試 $total_attempts: $error_msg; "
               fi
             else
-              echo "❌ 第 $CURRENT_ATTEMPT 次嘗試失敗，退出碼: $exit_code"
+              echo "❌ 第 $total_attempts 次嘗試失敗，退出碼: $exit_code"
               echo "錯誤輸出: $output"
               
-              # 使用 jq 提取錯誤訊息，如果輸出是 JSON
-              if echo "$output" | jq -e . >/dev/null 2>&1; then
-                error_msg=$(echo "$output" | jq -r '.message // "未知錯誤"')
-              else
-                # 如果輸出不是 JSON，則使用 grep 提取
-                error_msg=$(echo "$output" | grep -o -i '"message": "[^"]*"' | head -1 | cut -d'"' -f4 || echo "未知錯誤")
-              fi
+              # 提取錯誤訊息
+              error_msg=$(echo "$output" | grep -o '"message": "[^"]*"' | head -1 | cut -d'"' -f4 || echo "未知錯誤")
+              echo "提取的錯誤訊息: $error_msg"
+              all_errors="$all_errors嘗試 $total_attempts: $error_msg; "
               
-              echo "error_message=$error_msg" >> $GITHUB_OUTPUT
-              
-              # 檢查錯誤類型（擴展錯誤關鍵字）
-              if echo "$output" | grep -qi "TooManyRequests\|Too many requests\|RateLimit\|429"; then
-                echo "檢測到 TooManyRequests 錯誤，停止重試"
-                ERROR_TYPE="too_many_requests"
-                SHOULD_RETRY="false"
-              elif echo "$output" | grep -qi "out of host capacity\|insufficientcapacity\|outofcapacity\|service limit exceeded\|limit exceeded\|capacity not available\|not available\|host capacity\|capacity.*unavailable\|no capacity\|capacity error"; then
-                echo "檢測到容量不足錯誤 (Out of host capacity)"
-                ERROR_TYPE="capacity_error"
-              elif echo "$output" | grep -qi "quota\|limit\|notavailable\|free tier\|insufficient\|over quota\|quota.*exceeded"; then
-                echo "檢測到配額錯誤"
-                ERROR_TYPE="quota_error"
-                SHOULD_RETRY="false"
-              elif echo "$output" | grep -qi "timeout\|connection\|request timed out\|network error"; then
-                echo "檢測到網路錯誤"
-                ERROR_TYPE="network_error"
-              elif echo "$output" | grep -qi "not authorized\|authentication\|authorization\|invalid.*credential\|auth.*failed"; then
-                echo "檢測到認證錯誤"
-                ERROR_TYPE="auth_error"
-                SHOULD_RETRY="false"
+              # 檢查錯誤類型
+              if echo "$output" | grep -Ei "out of host capacity|insufficientcapacity|outofcapacity|service limit exceeded|limit exceeded|capacity not available|not available|host capacity"; then
+                error_type="capacity_error"
+              elif echo "$output" | grep -Ei "quota|limit|notavailable|free tier|insufficient|over quota"; then
+                error_type="quota_error"
+                break  # 配額錯誤重試無意義
+              elif echo "$output" | grep -Ei "timeout|connection|request timed out"; then
+                error_type="network_error"
+              elif echo "$output" | grep -Ei "TooManyRequests|Too many requests"; then
+                error_type="too_many_requests"
               else
-                echo "檢測到其他類型錯誤"
-                ERROR_TYPE="other_error"
+                error_type="other_error"
               fi
               
               # 儲存錯誤資訊
-              echo "error_type=$ERROR_TYPE" >> $GITHUB_OUTPUT
+              echo "free_tier_limit=true" >> $GITHUB_OUTPUT
+              echo "error_type=$error_type" >> $GITHUB_OUTPUT
+              
+              # 處理錯誤訊息，避免格式問題
+              safe_error_msg=$(echo "$error_msg" | head -n 1 | sed 's/[{}]//g' | cut -c 1-200)
+              echo "error_message=$safe_error_msg" >> $GITHUB_OUTPUT
             fi
             
-            # 更新當前嘗試次數
-            echo "current_attempt=$CURRENT_ATTEMPT" >> $GITHUB_OUTPUT
-            
-            # 如果不是最後一次嘗試且需要重試，則等待
-            if [ $CURRENT_ATTEMPT -lt $MAX_ATTEMPTS ] && [ "$SHOULD_RETRY" = "true" ]; then
-              echo "等待 $RETRY_DELAY 秒後重試..."
-              sleep $RETRY_DELAY
+            # 如果是最後一次嘗試，不再延遲
+            if [ $attempt -eq $max_retries ]; then
+              echo "已達最大重試次數 ($max_retries 次)，停止重試"
+              echo "success=false" >> $GITHUB_OUTPUT
+              echo "attempt_count=$total_attempts" >> $GITHUB_OUTPUT
+              break
             fi
+            
+            echo "等待 $retry_delay 秒後重試..."
+            sleep $retry_delay
           done
           
-          # 如果所有嘗試都失敗
-          if [ "$SHOULD_RETRY" = "true" ]; then
-            echo "success=false" >> $GITHUB_OUTPUT
-          fi
+          # 儲存所有錯誤訊息
+          echo "all_errors=$all_errors" >> $GITHUB_OUTPUT
+          
+          # 恢復錯誤處理
+          set -e
 
-      - name: 發送 Telegram 通知
-        id: send-telegram
+      - name: 發送第一次 Telegram 通知
+        id: send-telegram-attempt-1
         if: always()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
-            ${{ github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務' }} OCI 虛擬機器建立通知
-            • 時間: ${{ steps.get-time.outputs.hk_time }}
-            • 嘗試: 第 ${{ steps.vm-creation-loop.outputs.current_attempt }} 次
-            • 狀態: ${{ steps.vm-creation-loop.outputs.success == 'true' && '成功' || '失敗' }}
-            • 訊息: ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.vm-creation-loop.outputs.success_message || steps.vm-creation-loop.outputs.error_message }}
-            • 錯誤類型: ${{ steps.vm-creation-loop.outputs.error_type }}
+            ${{ format('{0} OCI 虛擬機器建立嘗試通知', github.event_name) }}
+            • 時間: $(date +'%Y-%m-%d %H:%M:%S UTC')
+            • 嘗試: 第 1 次
+            • 狀態: ${{ steps.create-vm.outputs.success == 'true' && '成功' || '失敗' }}
+            • 訊息: ${{ steps.create-vm.outputs.success == 'true' && steps.create-vm.outputs.success_message || steps.create-vm.outputs.error_message }}
             • 區域: ${{ secrets.OCI_REGION }}
-            ${{ steps.vm-creation-loop.outputs.success != 'true' && steps.vm-creation-loop.outputs.current_attempt < steps.init.outputs.max_attempts && steps.vm-creation-loop.outputs.should_retry == 'true' && '• 下次嘗試: 5分鐘後' || '' }}
-            ${{ steps.vm-creation-loop.outputs.error_type == 'too_many_requests' && '• 注意: 遇到 TooManyRequests 錯誤，已停止嘗試' || '' }}
-            ${{ steps.vm-creation-loop.outputs.error_type == 'auth_error' && '• 注意: 認證錯誤，請檢查OCI配置' || '' }}
-            ${{ steps.vm-creation-loop.outputs.error_type == 'capacity_error' && '• 注意: 容量不足，建議稍後重試或嘗試其他區域' || '' }}
+          format: html
+
+      - name: 等待第二次嘗試
+        if: steps.create-vm.outputs.success != 'true' && steps.create-vm.outputs.attempt_count == 1
+        run: |
+          echo "等待 300 秒後進行第二次嘗試..."
+          sleep 300
+
+      - name: 第二次嘗試建立虛擬機器
+        id: create-vm-attempt-2
+        if: steps.create-vm.outputs.success != 'true' && steps.create-vm.outputs.attempt_count == 1
+        continue-on-error: true
+        run: |
+          set +e
+          
+          echo "--- 嘗試第 2 次建立 ---"
+          
+          # 執行 OCI 命令建立虛擬機器，並捕獲 JSON 輸出
+          output=$(oci compute instance launch \
+            --compartment-id "${{ secrets.OCI_COMPARTMENT_ID }}" \
+            --availability-domain "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
+            --display-name "${{ steps.create-vm.outputs.vm_name }}" \
+            --shape "VM.Standard.A1.Flex" \
+            --shape-config '{"ocpus": 4, "memoryInGBs": 24}' \
+            --image-id "${{ secrets.OCI_IMAGE_OCID }}" \
+            --subnet-id "${{ secrets.OCI_SUBNET_ID }}" \
+            --assign-public-ip true \
+            --user-data-file ./cloud-init.txt \
+            --output json 2>&1)
+          
+          exit_code=$?
+          
+          if [ $exit_code -eq 0 ]; then
+            # 從 JSON 輸出中提取實例 OCID
+            INSTANCE_OCID=$(echo "$output" | jq -r '.data.id')
+            
+            if [ -n "$INSTANCE_OCID" ] && [ "$INSTANCE_OCID" != "null" ]; then
+              echo "✅ 虛擬機器建立成功 (第 2 次嘗試)"
+              echo "success=true" >> $GITHUB_OUTPUT
+              echo "instance_ocid=$INSTANCE_OCID" >> $GITHUB_OUTPUT
+              echo "attempt_count=2" >> $GITHUB_OUTPUT
+              echo "Instance OCID: $INSTANCE_OCID"
+              
+              # 提取成功訊息
+              success_msg=$(echo "$output" | jq -r '.message // "虛擬機器建立成功"' 2>/dev/null || echo "虛擬機器建立成功")
+              echo "success_message=$success_msg" >> $GITHUB_OUTPUT
+            else
+              echo "❌ 無法從輸出中解析 Instance OCID"
+              echo "output: $output"
+              echo "success=false" >> $GITHUB_OUTPUT
+              echo "attempt_count=2" >> $GITHUB_OUTPUT
+              
+              # 提取錯誤訊息
+              error_msg=$(echo "$output" | grep -o '"message": "[^"]*"' | head -1 | cut -d'"' -f4 || echo "未知錯誤")
+              echo "error_message=$error_msg" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ 第 2 次嘗試失敗，退出碼: $exit_code"
+            echo "錯誤輸出: $output"
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "attempt_count=2" >> $GITHUB_OUTPUT
+            
+            # 提取錯誤訊息
+            error_msg=$(echo "$output" | grep -o '"message": "[^"]*"' | head -1 | cut -d'"' -f4 || echo "未知錯誤")
+            echo "error_message=$error_msg" >> $GITHUB_OUTPUT
+          fi
+          
+          set -e
+
+      - name: 發送第二次 Telegram 通知
+        id: send-telegram-attempt-2
+        if: always() && steps.create-vm-attempt-2
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ${{ format('{0} OCI 虛擬機器建立嘗試通知', github.event_name) }}
+            • 時間: $(date +'%Y-%m-%d %H:%M:%S UTC')
+            • 嘗試: 第 2 次
+            • 狀態: ${{ steps.create-vm-attempt-2.outputs.success == 'true' && '成功' || '失敗' }}
+            • 訊息: ${{ steps.create-vm-attempt-2.outputs.success == 'true' && steps.create-vm-attempt-2.outputs.success_message || steps.create-vm-attempt-2.outputs.error_message }}
+            • 區域: ${{ secrets.OCI_REGION }}
+          format: html
 
       - name: 等待實例達到 RUNNING 狀態
-        if: steps.vm-creation-loop.outputs.success == 'true'
+        if: (steps.create-vm.outputs.success == 'true' || steps.create-vm-attempt-2.outputs.success == 'true') && (steps.create-vm.outputs.instance_ocid || steps.create-vm-attempt-2.outputs.instance_ocid)
         id: wait-for-running
+        continue-on-error: true
         run: |
-          INSTANCE_OCID="${{ steps.vm-creation-loop.outputs.instance_ocid }}"
+          INSTANCE_OCID="${{ steps.create-vm.outputs.instance_ocid || steps.create-vm-attempt-2.outputs.instance_ocid }}"
           echo "等待實例 $INSTANCE_OCID 進入 RUNNING 狀態..."
           
-          # 設置輪詢參數（延長到10分鐘以容納 cloud-init 執行時間）
+          # 設置輪詢參數（延長到10分鐘）
           MAX_ATTEMPTS=60  # 最多嘗試60次 (10分鐘)
           SLEEP_INTERVAL=10  # 每次間隔10秒
           attempt=1
@@ -273,14 +336,15 @@ jobs:
             fi
             
             sleep $SLEEP_INTERVAL
-            attempt=$((attempt+1))
+            ((attempt++))
           done
 
-      - name: 獲取虛擬機器公網 IP
-        if: steps.vm-creation-loop.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true'
+      - name: 獲取虛擬機器公網 IP (精確查詢)
+        if: (steps.create-vm.outputs.success == 'true' || steps.create-vm-attempt-2.outputs.success == 'true') && steps.wait-for-running.outputs.running == 'true'
         id: get-ip
+        continue-on-error: true
         run: |
-          INSTANCE_OCID="${{ steps.vm-creation-loop.outputs.instance_ocid }}"
+          INSTANCE_OCID="${{ steps.create-vm.outputs.instance_ocid || steps.create-vm-attempt-2.outputs.instance_ocid }}"
           echo "獲取實例的公網 IP: $INSTANCE_OCID"
           
           # 使用精確的實例OCID查詢公網IP
@@ -306,59 +370,45 @@ jobs:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
-            ${{ github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務' }} OCI 虛擬機器建立最終結果
-            • 時間: ${{ steps.get-time.outputs.hk_time }}
-            • 狀態: ${{ steps.vm-creation-loop.outputs.success == 'true' && '成功' || '失敗' }}
-            • 嘗試次數: ${{ steps.vm-creation-loop.outputs.current_attempt }}
-            • 訊息: ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.vm-creation-loop.outputs.success_message || steps.vm-creation-loop.outputs.error_message }}
-            • 錯誤類型: ${{ steps.vm-creation-loop.outputs.error_type }}
-            ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true' && format('• 公網 IP: {0}', steps.get-ip.outputs.public_ip) || '' }}
-            ${{ steps.vm-creation-loop.outputs.error_type == 'too_many_requests' && '• 注意: 遇到 TooManyRequests 錯誤，已停止嘗試' || '' }}
-            ${{ steps.vm-creation-loop.outputs.error_type == 'auth_error' && '• 注意: 認證錯誤，請檢查OCI配置' || '' }}
-            ${{ steps.vm-creation-loop.outputs.error_type == 'capacity_error' && '• 注意: 容量不足，建議稍後重試或嘗試其他區域' || '' }}
+            ${{ format('{0} OCI 虛擬機器建立最終結果', github.event_name) }}
+            • 時間: $(date +'%Y-%m-%d %H:%M:%S UTC')
+            • 狀態: ${{ (steps.create-vm.outputs.success == 'true' || steps.create-vm-attempt-2.outputs.success == 'true') && '成功' || '失敗' }}
+            • 嘗試次數: ${{ steps.create-vm.outputs.attempt_count || steps.create-vm-attempt-2.outputs.attempt_count }}
+            • 訊息: ${{ (steps.create-vm.outputs.success == 'true' || steps.create-vm-attempt-2.outputs.success == 'true') && (steps.create-vm.outputs.success_message || steps.create-vm-attempt-2.outputs.success_message) || (steps.create-vm.outputs.error_message || steps.create-vm-attempt-2.outputs.error_message) }}
             • 區域: ${{ secrets.OCI_REGION }}
             • 詳情: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          format: html
 
       - name: 處理最終結果
         if: always()
         run: |
           echo "=== 執行結果彙總 ==="
-          echo "執行時間: ${{ steps.get-time.outputs.hk_time }}"
+          echo "執行時間: $(date)"
           echo "執行模式: ${{ github.event_name }}"
           
-          if [[ "${{ steps.vm-creation-loop.outputs.success }}" == "true" ]]; then
+          if [[ "${{ steps.create-vm.outputs.success }}" == "true" || "${{ steps.create-vm-attempt-2.outputs.success }}" == "true" ]]; then
             if [[ "${{ steps.wait-for-running.outputs.running }}" == "true" ]]; then
               echo "✅ 工作流執行成功: 虛擬機器已建立並配置"
-              echo "虛擬機器名稱: ${{ steps.init.outputs.vm_name }}"
+              echo "虛擬機器名稱: ${{ steps.create-vm.outputs.vm_name }}"
               echo "公網 IP: ${{ steps.get-ip.outputs.public_ip }}"
-              echo "嘗試次數: ${{ steps.vm-creation-loop.outputs.current_attempt }}"
+              echo "嘗試次數: ${{ steps.create-vm.outputs.attempt_count || steps.create-vm-attempt-2.outputs.attempt_count }}"
             else
               echo "⚠️  虛擬機器已建立但未達到 RUNNING 狀態"
-              echo "虛擬機器 OCID: ${{ steps.vm-creation-loop.outputs.instance_ocid }}"
+              echo "虛擬機器 OCID: ${{ steps.create-vm.outputs.instance_ocid || steps.create-vm-attempt-2.outputs.instance_ocid }}"
               echo "請稍後在 OCI 控制台中檢查狀態"
             fi
           else
             echo "❌ 工作流執行失敗: 虛擬機器建立未成功"
-            echo "嘗試次數: ${{ steps.vm-creation-loop.outputs.current_attempt }}"
-            echo "錯誤訊息: ${{ steps.vm-creation-loop.outputs.error_message }}"
-            echo "錯誤類型: ${{ steps.vm-creation-loop.outputs.error_type }}"
+            echo "嘗試次數: ${{ steps.create-vm.outputs.attempt_count || steps.create-vm-attempt-2.outputs.attempt_count }}"
+            echo "錯誤訊息: ${{ steps.create-vm.outputs.error_message || steps.create-vm-attempt-2.outputs.error_message }}"
             
-            if [[ "${{ steps.vm-creation-loop.outputs.error_type }}" == "too_many_requests" ]]; then
-              echo ""
-              echo "💡 遇到 TooManyRequests 錯誤，已停止嘗試"
-              echo "建議等待一段時間後再手動觸發工作流"
-            elif [[ "${{ steps.vm-creation-loop.outputs.error_type }}" == "capacity_error" ]]; then
+            # 免費帳戶資源限制的特殊提示
+            if [[ "${{ steps.create-vm.outputs.free_tier_limit }}" == "true" ]]; then
               echo ""
               echo "💡 Oracle Cloud 免費帳戶建立虛擬機器失敗建議:"
               echo "1. 嘗試使用不同的可用性網域"
               echo "2. 稍後重試 (幾小時或第二天)"
               echo "3. 考慮使用不同的區域"
               echo "4. 嘗試建立較小配置的實例"
-            elif [[ "${{ steps.vm-creation-loop.outputs.error_type }}" == "auth_error" ]]; then
-              echo ""
-              echo "💡 認證錯誤，請檢查以下配置:"
-              echo "1. OCI_USER_ID, OCI_FINGERPRINT, OCI_TENANCY 是否正確"
-              echo "2. OCI_API_KEY 是否為有效的私鑰"
-              echo "3. OCI_REGION 是否正確"
             fi
           fi
