@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python and OCI CLI
+      - name: 設置 Python 和 OCI CLI
         run: |
           # 檢查 Python 版本 (OCI CLI 需要 Python 3.6+)
           echo "目前 Python 版本: $(python3 --version)"
@@ -36,12 +36,12 @@ jobs:
           oci --version
           echo "✅ OCI CLI 版本: $(oci --version)"
 
-      - name: Install additional dependencies
+      - name: 安裝額外依賴
         run: |
           sudo apt-get update
           sudo apt-get install -y curl dnsutils jq ssh-client
 
-      - name: Configure OCI CLI
+      - name: 配置 OCI CLI
         run: |
           mkdir -p ~/.oci
           cat > ~/.oci/config << EOF
@@ -59,7 +59,7 @@ jobs:
           
           chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
 
-      - name: Show current configuration
+      - name: 顯示當前配置
         run: |
           echo "目前時間: $(date)"
           echo "目前配置:"
@@ -68,7 +68,7 @@ jobs:
           echo "實例規格: VM.Standard.A1.Flex (4 OCPU, 24GB RAM)"
           echo "OCI CLI 版本: $(oci --version)"
 
-      - name: Generate cloud-init script for root login
+      - name: 生成 cloud-init 腳本用於 root 登入
         run: |
           cat > cloud-init.txt << 'EOF'
           #cloud-config
@@ -89,7 +89,7 @@ jobs:
           
           sed -i "s/\$ROOT_PASSWORD/${{ secrets.ROOT_PASSWORD }}/g" cloud-init.txt
 
-      - name: Create A1 Flex VM Instance (Single Attempt)
+      - name: 創建 A1 Flex 虛擬機器實例 (單次嘗試)
         id: create-vm
         continue-on-error: true  # 即使此步驟失敗，也繼續執行後續步驟
         run: |
@@ -174,8 +174,7 @@ jobs:
           # 恢復錯誤處理
           set -e
 
-      # 以下步驟保持不變...
-      - name: Wait for instance to reach RUNNING state
+      - name: 等待實例達到 RUNNING 狀態
         if: steps.create-vm.outputs.success == 'true'
         id: wait-for-running
         continue-on-error: true
@@ -213,7 +212,7 @@ jobs:
             ((attempt++))
           done
 
-      - name: Get VM Public IP (Precise Query)
+      - name: 獲取虛擬機器公網 IP (精確查詢)
         if: steps.create-vm.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true'
         id: get-ip
         continue-on-error: true
@@ -236,7 +235,7 @@ jobs:
             echo "✅ 虛擬機器公網 IP: $PUBLIC_IP"
           fi
 
-      - name: SSH Health Check
+      - name: SSH 健康檢查
         if: steps.create-vm.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true' && steps.get-ip.outputs.public_ip != 'unknown'
         id: ssh-health-check
         continue-on-error: true
@@ -279,7 +278,7 @@ jobs:
             echo "❌ 所有SSH健康檢查嘗試均失敗"
           fi
 
-      - name: Debug Telegram secrets
+      - name: 調試 Telegram 設定
         run: |
           echo "檢查 Telegram 設定..."
           if [ -z "${{ secrets.TELEGRAM_BOT_TOKEN }}" ]; then
@@ -294,7 +293,7 @@ jobs:
             echo "✅ TELEGRAM_CHAT_ID 已設置"
           fi
 
-      - name: Prepare Telegram notification message
+      - name: 準備 Telegram 通知訊息
         id: prepare-telegram-message
         run: |
           # 準備 Telegram 訊息內容
@@ -336,7 +335,7 @@ jobs:
           echo "準備發送的 Telegram 訊息:"
           echo "$MESSAGE" | sed 's/^              //g'
 
-      - name: Send Telegram notification
+      - name: 發送 Telegram 通知
         id: send-telegram
         uses: appleboy/telegram-action@master
         with:
@@ -345,19 +344,18 @@ jobs:
           message: ${{ steps.prepare-telegram-message.outputs.message }}
           format: html
 
-      - name: Check Telegram notification status
-  run: |
-    # 檢查狀態變量是否存在且為 'success'
-    if [ "${{ steps.send-telegram.outputs.status }}" = "success" ]; then
-      echo "✅ Telegram 通知發送成功"
-    else
-      echo "❌ Telegram 通知發送失敗或狀態未知"
-      echo "請檢查 TELEGRAM_BOT_TOKEN 和 TELEGRAM_CHAT_ID 是否正確設置"
-      # 即使發送失敗，我們也不讓整個工作流失敗，因為通知可能實際已送達
-      # 故此處不執行 exit 1
-    fi
+      - name: 檢查 Telegram 通知狀態
+        run: |
+          # 更健壯地檢查狀態變量，避免空值導致語法錯誤
+          if [ -n "${{ steps.send-telegram.outputs.status }}" ] && [ "${{ steps.send-telegram.outputs.status }}" = "success" ]; then
+            echo "✅ Telegram 通知發送成功 (狀態: success)"
+          else
+            echo "⚠️ Telegram 通知發送狀態未知或失敗 (狀態: '${{ steps.send-telegram.outputs.status }}')"
+            echo "這可能是一個暫時性問題，請檢查 Telegram 是否實際收到消息。"
+            # 不退出失敗，以免影響後續步驟
+          fi
 
-      - name: Handle final result
+      - name: 處理最終結果
         if: always()
         run: |
           echo "=== 執行結果彙總 ==="
