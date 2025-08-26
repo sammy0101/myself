@@ -8,7 +8,6 @@ on:
       vm-name:
         description: '虛擬機器的名稱 (可選)'
         required: false
-        # <-- 修正點 2：為手動觸發添加預設 VM 名稱
         default: 'a1-flex-vm'
         type: string
 
@@ -44,15 +43,37 @@ jobs:
         id: get-current-time
         run: echo "time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
 
-      - name: 設置 OCI CLI
-        # <-- 修正點 1：將版本標籤從 @v1.1 改為 @v1
-        uses: oracle-actions/setup-oci-cli@v1
+      # <-- 修正點：回退到手動安裝 OCI CLI
+      - name: 設置 Python
+        uses: actions/setup-python@v5
         with:
-          tenancy: ${{ secrets.OCI_TENANCY }}
-          user: ${{ secrets.OCI_USER_ID }}
-          fingerprint: ${{ secrets.OCI_FINGERPRINT }}
-          private_key: ${{ secrets.OCI_API_KEY }}
-          region: ${{ secrets.OCI_REGION }}
+          python-version: '3.10'
+
+      - name: 手動安裝與配置 OCI CLI
+        run: |
+          echo "正在安裝 OCI CLI..."
+          pip install oci-cli
+          
+          echo "正在配置 OCI CLI..."
+          mkdir -p ~/.oci
+          
+          # 從 secrets 和 env 變數生成 OCI 配置文件
+          cat > ~/.oci/config << EOF
+          [DEFAULT]
+          user=${{ secrets.OCI_USER_ID }}
+          fingerprint=${{ secrets.OCI_FINGERPRINT }}
+          key_file=~/.oci/oci_api_key.pem
+          tenancy=${{ secrets.OCI_TENANCY }}
+          region=${{ env.OCI_REGION }}
+          EOF
+          
+          # 從 secrets 寫入 API 私鑰文件
+          echo "${{ secrets.OCI_API_KEY }}" > ~/.oci/oci_api_key.pem
+          
+          # 設置正確的文件權限
+          chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
+          
+          echo "✅ OCI CLI 手動安裝與配置完成。"
 
       - name: 驗證 OCI CLI 配置
         run: |
@@ -65,8 +86,6 @@ jobs:
         run: |
           cat > cloud-init.txt << EOF
           #cloud-config
-          # 建議使用 SSH 金鑰進行身份驗證，而非密碼
-          # 如果您堅持使用密碼，請確保您的基礎鏡像支援
           users:
             - name: root
               lock_passwd: false
@@ -84,7 +103,6 @@ jobs:
       - name: 執行創建 VM 的腳本
         id: create-vm-script
         env:
-          # 從 workflow inputs 傳遞 vm-name
           INPUT_VM_NAME: ${{ github.event.inputs.vm-name }}
         run: |
           chmod +x ./scripts/create_vm.sh
@@ -117,7 +135,7 @@ jobs:
     name: Send Telegram Notification
     needs: create-vm
     runs-on: ubuntu-latest
-    if: always() # 無論成功或失敗都執行
+    if: always()
     steps:
       - name: 發送 Telegram 通知
         uses: appleboy/telegram-action@master
