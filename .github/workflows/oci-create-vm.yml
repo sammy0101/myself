@@ -166,24 +166,23 @@ jobs:
               error_msg=$(echo "$output" | grep -o '"message": "[^"]*"' | head -1 | cut -d'"' -f4 || echo "未知錯誤")
               echo "error_message=$error_msg" >> $GITHUB_OUTPUT
               
-              # 檢查是否為 TooManyRequests 錯誤
+              # 檢查錯誤類型
               if echo "$output" | grep -qi "TooManyRequests\|Too many requests"; then
-                echo "檢測到 TooManyRequests 錯誤，將繼續重試"
+                echo "檢測到 TooManyRequests 錯誤，停止重試"
                 ERROR_TYPE="too_many_requests"
+                SHOULD_RETRY="false"
+                echo "should_retry=false" >> $GITHUB_OUTPUT
+              elif echo "$output" | grep -Ei "out of host capacity|insufficientcapacity|outofcapacity|service limit exceeded|limit exceeded|capacity not available|not available|host capacity"; then
+                ERROR_TYPE="capacity_error"
+              elif echo "$output" | grep -Ei "quota|limit|notavailable|free tier|insufficient|over quota"; then
+                ERROR_TYPE="quota_error"
+                # 配額錯誤重試無意義
+                SHOULD_RETRY="false"
+                echo "should_retry=false" >> $GITHUB_OUTPUT
+              elif echo "$output" | grep -Ei "timeout|connection|request timed out"; then
+                ERROR_TYPE="network_error"
               else
-                # 檢查其他錯誤類型
-                if echo "$output" | grep -Ei "out of host capacity|insufficientcapacity|outofcapacity|service limit exceeded|limit exceeded|capacity not available|not available|host capacity"; then
-                  ERROR_TYPE="capacity_error"
-                elif echo "$output" | grep -Ei "quota|limit|notavailable|free tier|insufficient|over quota"; then
-                  ERROR_TYPE="quota_error"
-                  # 配額錯誤重試無意義
-                  SHOULD_RETRY="false"
-                  echo "should_retry=false" >> $GITHUB_OUTPUT
-                elif echo "$output" | grep -Ei "timeout|connection|request timed out"; then
-                  ERROR_TYPE="network_error"
-                else
-                  ERROR_TYPE="other_error"
-                fi
+                ERROR_TYPE="other_error"
               fi
               
               # 儲存錯誤資訊
@@ -219,7 +218,8 @@ jobs:
             • 狀態: ${{ steps.vm-creation-loop.outputs.success == 'true' && '成功' || '失敗' }}
             • 訊息: ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.vm-creation-loop.outputs.success_message || steps.vm-creation-loop.outputs.error_message }}
             • 區域: ${{ secrets.OCI_REGION }}
-            ${{ steps.vm-creation-loop.outputs.success != 'true' && steps.vm-creation-loop.outputs.current_attempt < steps.init.outputs.max_attempts && '• 下次嘗試: 5分鐘後' || '' }}
+            ${{ steps.vm-creation-loop.outputs.success != 'true' && steps.vm-creation-loop.outputs.current_attempt < steps.init.outputs.max_attempts && steps.vm-creation-loop.outputs.should_retry == 'true' && '• 下次嘗試: 5分鐘後' || '' }}
+            ${{ steps.vm-creation-loop.outputs.error_type == 'too_many_requests' && '• 注意: 遇到 TooManyRequests 錯誤，已停止嘗試' || '' }}
           format: html
 
       - name: 等待實例達到 RUNNING 狀態
@@ -295,6 +295,7 @@ jobs:
             • 嘗試次數: ${{ steps.vm-creation-loop.outputs.current_attempt }}
             • 訊息: ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.vm-creation-loop.outputs.success_message || steps.vm-creation-loop.outputs.error_message }}
             ${{ steps.vm-creation-loop.outputs.success == 'true' && steps.wait-for-running.outputs.running == 'true' && format('• 公網 IP: {0}', steps.get-ip.outputs.public_ip) || '' }}
+            ${{ steps.vm-creation-loop.outputs.error_type == 'too_many_requests' && '• 注意: 遇到 TooManyRequests 錯誤，已停止嘗試' || '' }}
             • 區域: ${{ secrets.OCI_REGION }}
             • 詳情: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
           format: html
@@ -321,9 +322,13 @@ jobs:
             echo "❌ 工作流執行失敗: 虛擬機器建立未成功"
             echo "嘗試次數: ${{ steps.vm-creation-loop.outputs.current_attempt }}"
             echo "錯誤訊息: ${{ steps.vm-creation-loop.outputs.error_message }}"
+            echo "錯誤類型: ${{ steps.vm-creation-loop.outputs.error_type }}"
             
-            # 免費帳戶資源限制的特殊提示
-            if [[ "${{ steps.vm-creation-loop.outputs.error_type }}" == "capacity_error" ]]; then
+            if [[ "${{ steps.vm-creation-loop.outputs.error_type }}" == "too_many_requests" ]]; then
+              echo ""
+              echo "💡 遇到 TooManyRequests 錯誤，已停止嘗試"
+              echo "建議等待一段時間後再手動觸發工作流"
+            elif [[ "${{ steps.vm-creation-loop.outputs.error_type }}" == "capacity_error" ]]; then
               echo ""
               echo "💡 Oracle Cloud 免費帳戶建立虛擬機器失敗建議:"
               echo "1. 嘗試使用不同的可用性網域"
