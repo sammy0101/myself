@@ -11,8 +11,6 @@ log() {
 # --- 腳本主體 ---
 log "腳本開始執行..."
 
-# 檢查必要的環境變數...
-# (此處省略了變數檢查，與您現有版本保持一致即可)
 required_vars=(
   OCI_COMPARTMENT_ID OCI_AVAILABILITY_DOMAIN OCI_IMAGE_OCID OCI_SUBNET_ID
   VM_SHAPE OCPU_COUNT MEMORY_IN_GB
@@ -31,12 +29,11 @@ else
 fi
 log "將要創建的虛擬機器名稱: $VM_NAME"
 
-MAX_RETRIES=${MAX_RETRIES:-3}
+MAX_RETRIES=${MAX_RETRIES:-3} # 您可以根據需要調整
 RETRY_DELAY=${RETRY_DELAY:-600}
 JITTER_RANGE=${JITTER_RANGE:-60}
 log "策略: 共 $MAX_RETRIES 次嘗試，基礎延遲 ${RETRY_DELAY}s，隨機延遲 ${JITTER_RANGE}s。"
 
-# <-- 變更點 1：初始化一個變數來保存最後的錯誤訊息
 LAST_ERROR_MESSAGE="已達最大重試次數，但未捕獲到詳細錯誤。"
 
 # --- 重試循環 ---
@@ -44,6 +41,8 @@ attempt=1
 while [ $attempt -le $MAX_RETRIES ]; do
   log "--- 第 $attempt / $MAX_RETRIES 次嘗試建立 VM ---"
 
+  # <-- 變更點：在此處暫時禁用 "exit on error"
+  set +e
   output=$(oci compute instance launch \
     --compartment-id "$OCI_COMPARTMENT_ID" \
     --availability-domain "$OCI_AVAILABILITY_DOMAIN" \
@@ -56,6 +55,8 @@ while [ $attempt -le $MAX_RETRIES ]; do
     --user-data-file ./cloud-init.txt \
     --output json 2>&1)
   exit_code=$?
+  # <-- 變更點：處理完錯誤後，重新啟用 "exit on error"
+  set -e
 
   if [ $exit_code -eq 0 ] && [ -n "$output" ] && echo "$output" | jq -e '.data.id' > /dev/null; then
     INSTANCE_OCID=$(echo "$output" | jq -r '.data.id')
@@ -75,7 +76,6 @@ while [ $attempt -le $MAX_RETRIES ]; do
   log "錯誤碼: $ERROR_CODE"
   log "錯誤訊息: $ERROR_MESSAGE"
 
-  # <-- 變更點 2：更新最後的錯誤訊息變數，而不是直接輸出
   LAST_ERROR_MESSAGE=$(echo "$ERROR_MESSAGE" | head -n 1 | sed 's/[{}]//g' | cut -c 1-200)
 
   case "$ERROR_CODE" in
@@ -111,6 +111,5 @@ done
 log "❌ VM 建立失敗。"
 echo "success=false" >> "$GITHUB_OUTPUT"
 echo "attempt_count=$attempt" >> "$GITHUB_OUTPUT"
-# <-- 變更點 3：在最後統一輸出保存的錯誤訊息，確保永不為空
 echo "error_message=$LAST_ERROR_MESSAGE" >> "$GITHUB_OUTPUT"
 exit 1
