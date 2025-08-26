@@ -11,7 +11,6 @@ log() {
 # --- 腳本主體 ---
 log "腳本開始執行..."
 
-# <-- 變更點：修正了 OCI_COMPARTMENT_ID 的拼寫錯誤
 required_vars=(
   OCI_COMPARTMENT_ID OCI_AVAILABILITY_DOMAIN OCI_IMAGE_OCID OCI_SUBNET_ID
   VM_SHAPE OCPU_COUNT MEMORY_IN_GB
@@ -70,16 +69,29 @@ while [ $attempt -le $MAX_RETRIES ]; do
 
   log "❌ 第 $attempt 次嘗試失敗，退出碼: $exit_code"
 
-  if echo "$output" | jq . >/dev/null 2>&1; then
-    ERROR_CODE=$(echo "$output" | jq -r '.code // "UNKNOWN"')
-    ERROR_MESSAGE=$(echo "$output" | jq -r '.message // "無法從 JSON 中解析錯誤訊息。"')
+  # <-- 變更點：採用更強大的「雙重檢查」錯誤解析邏輯
+  # 優先嘗試解析 JSON
+  json_body=$(echo "$output" | sed -n '/^{/,$p') # 提取從 { 開始的 JSON 部分
+  if [ -n "$json_body" ] && echo "$json_body" | jq . >/dev/null 2>&1; then
+    ERROR_CODE=$(echo "$json_body" | jq -r '.code // "UNKNOWN"')
+    ERROR_MESSAGE=$(echo "$json_body" | jq -r '.message // "No message in JSON."')
   else
     ERROR_CODE="UNKNOWN_FORMAT"
     ERROR_MESSAGE="$output"
   fi
+
+  # 安全網：無論前面的解析結果如何，都對原始輸出進行關鍵字掃描
+  # `grep -q -i` 表示不區分大小寫 (-i) 且靜默模式 (-q)
+  if echo "$output" | grep -q -i "Out of host capacity"; then
+    log "檢測到關鍵字 'Out of host capacity'，強制分類為容量錯誤。"
+    ERROR_CODE="OutOfHostCapacity"
+  elif echo "$output" | grep -q -i "InsufficientCapacity"; then
+    log "檢測到關鍵字 'InsufficientCapacity'，強制分類為容量錯誤。"
+    ERROR_CODE="InsufficientCapacity"
+  fi
   
-  log "錯誤碼: $ERROR_CODE"
-  log "錯誤訊息: $ERROR_MESSAGE"
+  log "最終錯誤碼: $ERROR_CODE"
+  log "錯誤訊息摘要: $(echo "$ERROR_MESSAGE" | head -n 1)"
 
   LAST_ERROR_MESSAGE=$(echo "$ERROR_MESSAGE" | head -n 1 | sed 's/[{}]//g' | cut -c 1-200)
 
@@ -88,8 +100,8 @@ while [ $attempt -le $MAX_RETRIES ]; do
       log "檢測到配額或限制錯誤，停止重試。"
       break
       ;;
-    "OutOfHostCapacity" | "InsufficientCapacity")
-      log "檢測到容量不足錯誤，將在延遲後重試。"
+    "OutOfHostCapacity" | "InsufficientCapacity" | "InternalError") # 將 InternalError 也視為可重試的容量問題
+      log "檢測到容量不足或內部錯誤，將在延遲後重試。"
       ;;
     "TooManyRequests")
       log "檢測到請求過多錯誤，將在延遲後重試。"
