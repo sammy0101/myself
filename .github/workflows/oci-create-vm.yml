@@ -8,6 +8,8 @@ on:
       vm-name:
         description: '虛擬機器的名稱 (可選)'
         required: false
+        # <-- 修正點 2：為手動觸發添加預設 VM 名稱
+        default: 'a1-flex-vm'
         type: string
 
 env:
@@ -43,7 +45,8 @@ jobs:
         run: echo "time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
 
       - name: 設置 OCI CLI
-        uses: oracle-actions/setup-oci-cli@v1.1
+        # <-- 修正點 1：將版本標籤從 @v1.1 改為 @v1
+        uses: oracle-actions/setup-oci-cli@v1
         with:
           tenancy: ${{ secrets.OCI_TENANCY }}
           user: ${{ secrets.OCI_USER_ID }}
