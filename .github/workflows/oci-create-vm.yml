@@ -8,7 +8,7 @@ on:
       vm-name:
         description: '虛擬機器的名稱 (可選)'
         required: false
-        default: 'manual-a1-flex-vm'
+        default: 'a1-flex-vm'
         type: string
 
 env:
