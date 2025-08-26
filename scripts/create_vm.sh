@@ -11,8 +11,9 @@ log() {
 # --- 腳本主體 ---
 log "腳本開始執行..."
 
+# <-- 變更點：修正了 OCI_COMPARTMENT_ID 的拼寫錯誤
 required_vars=(
-  OCI_COMPARTTMENT_ID OCI_AVAILABILITY_DOMAIN OCI_IMAGE_OCID OCI_SUBNET_ID
+  OCI_COMPARTMENT_ID OCI_AVAILABILITY_DOMAIN OCI_IMAGE_OCID OCI_SUBNET_ID
   VM_SHAPE OCPU_COUNT MEMORY_IN_GB
 )
 for var in "${required_vars[@]}"; do
@@ -69,14 +70,10 @@ while [ $attempt -le $MAX_RETRIES ]; do
 
   log "❌ 第 $attempt 次嘗試失敗，退出碼: $exit_code"
 
-  # <-- 變更點：新增了健壯的錯誤解析邏輯
-  # 首先檢查輸出是否為有效的 JSON
   if echo "$output" | jq . >/dev/null 2>&1; then
-    # 如果是 JSON，則從中解析
     ERROR_CODE=$(echo "$output" | jq -r '.code // "UNKNOWN"')
     ERROR_MESSAGE=$(echo "$output" | jq -r '.message // "無法從 JSON 中解析錯誤訊息。"')
   else
-    # 如果不是 JSON，則直接使用原始輸出作為錯誤訊息
     ERROR_CODE="UNKNOWN_FORMAT"
     ERROR_MESSAGE="$output"
   fi
@@ -120,13 +117,4 @@ log "❌ VM 建立失敗。"
 echo "success=false" >> "$GITHUB_OUTPUT"
 echo "attempt_count=$attempt" >> "$GITHUB_OUTPUT"
 echo "error_message=$LAST_ERROR_MESSAGE" >> "$GITHUB_OUTPUT"
-exit 1```
-
-### 變更摘要
-
-*   **智能錯誤解析**: 我們不再盲目地用 `jq` 解析 `$output`。而是：
-    1.  用 `if echo "$output" | jq . >/dev/null 2>&1; then` 來測試 `$output` 是否為合法的 JSON。
-    2.  如果是，就安全地從中提取錯誤碼和訊息。
-    3.  如果不是，就將 `$output` 的**全部純文字內容**直接賦值給 `ERROR_MESSAGE`。
-
-這個修改讓我們的腳本變得更加"堅不可摧"。無論 OCI CLI 返回什麼樣的錯誤，它都能正確捕獲、記錄，並繼續執行重試邏輯，最終在 Telegram 中給您一個包含**真正錯誤原因**的通知，而不是空白。
+exit 1
