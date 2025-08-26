@@ -12,14 +12,11 @@ on:
         type: string
 
 env:
-  # --- OCI 配置 ---
   OCI_REGION: ${{ secrets.OCI_REGION }}
   OCI_AVAILABILITY_DOMAIN: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
   OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
   OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
   OCI_IMAGE_OCID: ${{ secrets.OCI_IMAGE_OCID }}
-
-  # --- VM 規格 ---
   VM_SHAPE: 'VM.Standard.A1.Flex'
   OCPU_COUNT: 4
   MEMORY_IN_GB: 24
@@ -53,10 +50,8 @@ jobs:
         run: |
           echo "正在安裝 OCI CLI..."
           pip install oci-cli
-          
           echo "正在配置 OCI CLI..."
           mkdir -p ~/.oci
-          
           cat > ~/.oci/config << EOF
           [DEFAULT]
           user=${{ secrets.OCI_USER_ID }}
@@ -65,7 +60,6 @@ jobs:
           tenancy=${{ secrets.OCI_TENANCY }}
           region=${{ env.OCI_REGION }}
           EOF
-          
           echo "${{ secrets.OCI_API_KEY }}" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
           echo "✅ OCI CLI 手動安裝與配置完成。"
@@ -98,7 +92,7 @@ jobs:
       - name: 執行創建 VM 的腳本
         id: create-vm-script
         env:
-          INPUT_VM_NAME: ${{ github.event.inputs.vm-name }}
+          INPUT_VM_NAME: ${{ github.event.inputs.vm_name }}
         run: |
           chmod +x ./scripts/create_vm.sh
           ./scripts/create_vm.sh
@@ -147,7 +141,6 @@ jobs:
             • <b>訊息:</b> ${{ needs.create-vm.outputs.creation_status == 'true' && 'VM 創建成功' || needs.create-vm.outputs.error_message }}
             • <b>區域:</b> ${{ env.OCI_REGION }}
             • <b>詳情:</b> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">查看日誌</a>
-            # <-- 修正點：移除了引起解析錯誤的 "---"
             ${{ needs.create-vm.outputs.creation_status == 'true' && format('
             <b>VM 資訊</b>
             • <b>虛擬機器名稱:</b> {0}
