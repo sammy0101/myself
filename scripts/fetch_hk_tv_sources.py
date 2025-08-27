@@ -23,8 +23,10 @@ CONFIG = {
     "OUTPUT_TXT_FILE": "hk_tv_sources.txt",
     "BACKUP_M3U_FILE": "hk_tv_sources_backup.m3u",
     "USER_AGENT": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    "TASK_TIMEOUT": 15
-    # PREFERRED_DOMAINS 已被移除，排序將全自動進行
+    "TASK_TIMEOUT": 15,
+    "PREFERRED_DOMAINS": [
+        "r.jdshipin.com"
+    ]
 }
 
 # 設定日誌記錄
@@ -36,6 +38,7 @@ def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str]:
     headers = {'User-Agent': CONFIG["USER_AGENT"]}
     robust_timeout = (3.05, 5)
     try:
+        # 清理 URL 中可能存在的非標準後綴
         cleaned_url = url.split('『')[0].strip()
         with requests.get(cleaned_url, stream=True, timeout=robust_timeout, headers=headers) as response:
             response.raise_for_status()
@@ -109,7 +112,6 @@ class HKTVSourceFetcher:
         return custom_sources
 
     def _make_request(self, url: str, use_cache: bool = True) -> Optional[str]:
-        # ... 此函式內容不變 ...
         os.makedirs(CONFIG["CACHE_DIR"], exist_ok=True)
         url_hash = hashlib.md5(url.encode()).hexdigest()
         cache_file = os.path.join(CONFIG["CACHE_DIR"], f"{url_hash}.cache")
@@ -132,33 +134,48 @@ class HKTVSourceFetcher:
             logging.error(f"請求失敗 {url}: {e}")
         return None
 
-
     def _is_hk_channel(self, name: str, group: str) -> bool:
-        # ... 此函式內容不變 ...
         text_to_check = (name + group).upper()
         return any(keyword.upper() in text_to_check for keyword in self.hk_keywords)
 
-
+    # --- ↓↓↓ 這就是全新的、更健壯的解析函式 ↓↓↓ ---
     def _parse_m3u_content(self, content: str, source_name: str, filter_hk: bool = True) -> List[Dict[str, Any]]:
-        # ... 此函式內容不變 ...
         sources = []
         if not content: return sources
+        
         lines = content.split('\n')
         current_info = {}
+
         for line in lines:
             line = line.strip()
             if line.startswith('#EXTINF:'):
+                # 提取頻道名稱和參數
                 params_str, _, name = line.partition(',')
-                current_info = {"name": name.strip(), "params": dict(re.findall(r'(\S+?)="([^"]*)"', params_str))}
+                current_info = {
+                    "name": name.strip(),
+                    "params": dict(re.findall(r'(\S+?)="([^"]*)"', params_str))
+                }
             elif line and not line.startswith('#') and current_info:
+                # 這是一個 URL 行，並且前面有 #EXTINF
                 group = current_info["params"].get('group-title', source_name)
+                
+                # 進行篩選
                 if not filter_hk or self._is_hk_channel(current_info["name"], group):
-                    sources.append({"name": current_info["name"], "url": line, "group": group, "source": source_name, "params": current_info["params"]})
+                    sources.append({
+                        "name": current_info["name"],
+                        "url": line,  # 直接使用整行作為 URL
+                        "group": group,
+                        "source": source_name,
+                        "params": current_info["params"]
+                    })
+                
+                # 重置 current_info 以準備下一個頻道
                 current_info = {}
+                
         return sources
+    # --- ↑↑↑ 修改結束 ↑↑↑ ---
 
     def _fetch_from_source(self, url: str, name: str, filter_hk: bool = True):
-        # ... 此函式內容不變 ...
         logging.info(f"開始從 {name} ({url}) 獲取...")
         content = self._make_request(url)
         if content:
@@ -169,7 +186,6 @@ class HKTVSourceFetcher:
             logging.warning(f"從 {name} 未獲取到任何內容")
     
     def fetch_all_sources(self):
-        # ... 此函式內容不變 ...
         logging.info(f"開始從 {CONFIG['CUSTOM_SOURCES_FILE']} 獲取所有直播源...")
         all_source_configs = self.custom_sources
         if not all_source_configs:
@@ -180,16 +196,17 @@ class HKTVSourceFetcher:
             for future in as_completed(futures):
                 try: future.result()
                 except Exception as e: logging.error(f"獲取來源時發生錯誤: {e}")
+        
         unique_sources = self._remove_duplicates()
         enhanced_sources = self._enhance_metadata(unique_sources)
         logging.info(f"總共獲取到 {len(enhanced_sources)} 個唯一的香港頻道")
+        
         tested_sources = self._test_sources_connectivity_with_pebble(enhanced_sources)
         logging.info(f"連接測試後剩餘 {len(tested_sources)} 個有效頻道")
         self._generate_output_files(tested_sources)
         return tested_sources
 
     def _test_sources_connectivity_with_pebble(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        # ... 此函式內容不變 ...
         logging.info("開始深度測試頻道連接性 (使用 PebblePool，可強制超時)...")
         valid_sources = []
         with ProcessPool(max_workers=CONFIG["MAX_WORKERS"]) as pool:
@@ -212,7 +229,6 @@ class HKTVSourceFetcher:
         return valid_sources
     
     def _remove_duplicates(self) -> List[Dict[str, Any]]:
-        # ... 此函式內容不變 ...
         unique_sources = {}
         for source in self.sources:
             normalized_url = source['url'].split('?')[0].rstrip('/')
@@ -221,7 +237,6 @@ class HKTVSourceFetcher:
         return list(unique_sources.values())
 
     def _determine_category(self, name: str, group: str) -> str:
-        # ... 此函式內容不變 ...
         text_to_check = (name + group).upper()
         for category, keywords in self.channel_categories.items():
             if any(keyword.upper() in text_to_check for keyword in keywords):
@@ -229,7 +244,6 @@ class HKTVSourceFetcher:
         return '其他'
 
     def _determine_resolution(self, name: str) -> str:
-        # ... 此函式內容不變 ...
         name_upper = name.upper()
         if '4K' in name_upper or 'UHD' in name_upper: return '4K'
         if '1080' in name_upper or 'FHD' in name_upper: return '1080p'
@@ -238,7 +252,6 @@ class HKTVSourceFetcher:
         return '未知'
 
     def _enhance_metadata(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        # ... 此函式內容不變 ...
         for source in sources:
             name = source['name']
             group = source.get('group', '')
@@ -246,57 +259,20 @@ class HKTVSourceFetcher:
             source['resolution'] = self._determine_resolution(name)
         return sources
         
-    # --- ↓↓↓ 這就是全新的、全自動的動態排序函式 ↓↓↓ ---
     def _sort_sources(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        按照多層級條件動態排序：
-        1. 分類
-        2. 網域的平均延遲 (動態計算)
-        3. 頻道名稱
-        4. 單一頻道的延遲
-        """
-        # 步驟 1: 計算每個網域的平均延遲
-        domain_latencies = {}
-        for source in sources:
-            if 'response_time' in source and source['response_time'] < 9999:
-                domain = urlparse(source['url']).netloc
-                if domain not in domain_latencies:
-                    domain_latencies[domain] = []
-                domain_latencies[domain].append(source['response_time'])
-
-        domain_avg_latency = {}
-        for domain, latencies in domain_latencies.items():
-            domain_avg_latency[domain] = sum(latencies) / len(latencies)
-
-        # 步驟 2: 根據平均延遲生成動態的網域排名
-        ranked_domains = sorted(domain_avg_latency, key=domain_avg_latency.get)
-        domain_rank_index = {domain: idx for idx, domain in enumerate(ranked_domains)}
-        
-        logging.info("根據本次測試的平均延遲，網域排名如下 (越前越好):")
-        for domain in ranked_domains:
-            logging.info(f"- {domain}: {domain_avg_latency[domain]:.2f}ms")
-
-        # 步驟 3: 執行多層排序
         category_index = {category: idx for idx, category in enumerate(self.category_order)}
-        
+        preferred_domain_index = {domain: idx for idx, domain in enumerate(CONFIG["PREFERRED_DOMAINS"])}
         def sort_key(source: Dict[str, Any]):
             cat = source.get('category', '其他')
             cat_idx = category_index.get(cat, len(self.category_order))
-            
             domain = urlparse(source['url']).netloc
-            # 使用動態排名，給未排名的網域一個較低的優先級
-            domain_rank = domain_rank_index.get(domain, len(ranked_domains))
-            
+            domain_idx = preferred_domain_index.get(domain, len(CONFIG["PREFERRED_DOMAINS"]))
             name = source.get('name', '')
             latency = source.get('response_time', 9999)
-            
-            return (cat_idx, domain_rank, name, latency)
-            
+            return (cat_idx, domain_idx, name, latency)
         return sorted(sources, key=sort_key)
-    # --- ↑↑↑ 修改結束 ↑↑↑ ---
 
     def _generate_output_files(self, sources: List[Dict[str, Any]]):
-        # ... 此函式內容不變 ...
         if not sources:
             logging.warning("沒有有效的來源可供生成檔案。")
             return
@@ -307,11 +283,13 @@ class HKTVSourceFetcher:
             m3u_lines.append(f'#EXTINF:-1 tvg-id="{params.get("tvg-id", "")}" tvg-name="{source["name"]}" tvg-logo="{params.get("tvg-logo", "")}" group-title="{source["category"]}",{source["name"]}')
             m3u_lines.append(source["url"])
         with open(CONFIG["OUTPUT_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
+        
         txt_lines = [f"# 香港電視直播源", f"# 更新時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"]
         channels_by_category = {}
         for source in sorted_sources:
             cat = source['category']
             channels_by_category.setdefault(cat, []).append(source)
+        
         all_categories_in_order = self.category_order + sorted([cat for cat in channels_by_category if cat not in self.category_order])
         for category in all_categories_in_order:
             if category in channels_by_category:
@@ -321,6 +299,7 @@ class HKTVSourceFetcher:
                     hd_flag = "[HD]" if channel['resolution'] in ['1080p', '720p'] else ""
                     time_info = f"[{channel.get('response_time', 'N/A')}ms]"
                     txt_lines.append(f"{channel['name']}{hd_flag}{time_info},{channel['url']}")
+        
         with open(CONFIG["OUTPUT_TXT_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(txt_lines))
         logging.info(f"已生成 {CONFIG['OUTPUT_M3U_FILE']} 和 {CONFIG['OUTPUT_TXT_FILE']}")
         with open(CONFIG["BACKUP_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
