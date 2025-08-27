@@ -84,6 +84,7 @@ class HKTVSourceFetcher:
         self.hk_keywords = ['香港', 'HK', 'TVB', '翡翠', '明珠', 'ViuTV', 'RTHK', '鳳凰', '開電視', '开电视', 'HOY', '有線', '有线', '奇妙', '77台', '78台', '港台', '澳門', 'Macau', '澳视']
         self.custom_sources = self._load_custom_sources()
 
+    # --- ↓↓↓ 這是唯一修改的函式，採用了 '*' 標記法 ↓↓↓ ---
     def _load_custom_sources(self) -> List[Dict[str, Any]]:
         custom_sources = []
         custom_file = CONFIG["CUSTOM_SOURCES_FILE"]
@@ -94,14 +95,28 @@ class HKTVSourceFetcher:
             with open(custom_file, 'r', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
-                    if not line or line.startswith('#'): continue
-                    parsed_url = urlparse(line)
+                    # 忽略註解行和空行
+                    if not line or line.startswith('#'):
+                        continue
+
+                    # 預設啟用篩選
+                    filter_hk = True
+                    url = line
+
+                    # 新功能：如果行首是 *，則對此來源禁用篩選
+                    if line.startswith('*'):
+                        url = line[1:]  # URL 是星號之後的內容
+                        filter_hk = False
+                        logging.info(f"檢測到 '*' 標記，將禁用對 {url} 的香港頻道篩選。")
+
+                    parsed_url = urlparse(url)
                     name = f"CustomSource-{parsed_url.netloc}"
-                    custom_sources.append({"url": line, "name": name, "filter_hk": True})
+                    custom_sources.append({"url": url, "name": name, "filter_hk": filter_hk})
         except Exception as e:
             logging.error(f"讀取自訂來源檔案時出錯: {e}")
         logging.info(f"從自訂檔案載入了 {len(custom_sources)} 個來源")
         return custom_sources
+    # --- ↑↑↑ 修改結束 ↑↑↑ ---
 
     def _make_request(self, url: str, use_cache: bool = True) -> Optional[str]:
         os.makedirs(CONFIG["CACHE_DIR"], exist_ok=True)
@@ -198,9 +213,7 @@ class HKTVSourceFetcher:
     def _remove_duplicates(self) -> List[Dict[str, Any]]:
         unique_sources = {}
         for source in self.sources:
-            # --- ↓↓↓ 這就是之前出錯的那一行，現已修正 ↓↓↓ ---
             normalized_url = source['url'].split('?')[0].rstrip('/')
-            # --- ↑↑↑ 修正結束 ↑↑↑ ---
             if normalized_url not in unique_sources:
                 unique_sources[normalized_url] = source
         return list(unique_sources.values())
