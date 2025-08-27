@@ -23,53 +23,88 @@ CONFIG = {
     "OUTPUT_TXT_FILE": "hk_tv_sources.txt",
     "BACKUP_M3U_FILE": "hk_tv_sources_backup.m3u",
     "USER_AGENT": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    "TASK_TIMEOUT": 15,
-    "PREFERRED_DOMAINS": [
-        "r.jdshipin.com"
-    ]
+    "TASK_TIMEOUT": 20, # 速度測試可能需要更長一點時間，增加任務超時
+    
+    # --- ↓↓↓ 新增的速度測試設定 ↓↓↓ ---
+    "STREAM_TEST_CHUNK_SIZE_KB": 128, # 測試時下載的數據量 (KB)
+    "MIN_STREAM_SPEED_KBPS": 100 # 最低可接受的串流速度 (KB/s)，低於此速度的源將被過濾
 }
 
 # 設定日誌記錄
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str]:
+def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str, float]:
+    """
+    更進階的連接測試函式，會實際下載一小段影片數據來測試串流速度。
+    返回: (是否有效, 延遲ms, 狀態訊息, 速度KB/s)
+    """
     url = source['url']
     start_time = time.time()
     headers = {'User-Agent': CONFIG["USER_AGENT"]}
-    robust_timeout = (3.05, 5)
+    robust_timeout = (3.05, 10) # 讀取超時可以更長一些
+    
+    uri_to_test = None
+    
     try:
-        # 清理 URL 中可能存在的非標準後綴
         cleaned_url = url.split('『')[0].strip()
         with requests.get(cleaned_url, stream=True, timeout=robust_timeout, headers=headers) as response:
             response.raise_for_status()
+            
+            latency_ms = int((time.time() - start_time) * 1000) # 記錄獲取M3U8的延遲
+            
             content_type = response.headers.get('Content-Type', '').lower()
             if 'text/html' in content_type:
-                return False, 9999, "無效內容 (HTML)"
+                return False, latency_ms, "無效內容 (HTML)", 0.0
+
             content = response.text
             try:
                 playlist = m3u8.loads(content, uri=cleaned_url)
-                if playlist.is_variant:
-                    if not playlist.playlists: return False, 9999, "M3U8無效 (無子播放列表)"
+                if playlist.is_variant and playlist.playlists:
                     uri_to_test = playlist.playlists[0].uri
                 elif playlist.segments:
                     uri_to_test = playlist.segments[0].uri
                 else:
-                    return False, 9999, "M3U8無效 (空播放列表)"
-                seg_response = requests.head(uri_to_test, timeout=robust_timeout, headers=headers)
-                seg_response.raise_for_status()
-                response_time = int((time.time() - start_time) * 1000)
-                return True, response_time, "驗證成功"
+                    return False, latency_ms, "M3U8無效 (空播放列表)", 0.0
             except Exception:
+                # 如果M3U8解析失敗，但初始請求成功，視為直接串流
                 if response.status_code == 200 and len(content) > 0:
-                    response_time = int((time.time() - start_time) * 1000)
-                    return True, response_time, "成功 (直接串流)"
-                return False, 9999, "M3U8解析失敗"
+                    uri_to_test = cleaned_url
+                else:
+                    return False, latency_ms, "M3U8解析失敗", 0.0
+
+        if not uri_to_test:
+            return False, latency_ms, "找不到可測試的串流", 0.0
+            
+        # --- 核心：串流速度測試 ---
+        test_bytes = CONFIG["STREAM_TEST_CHUNK_SIZE_KB"] * 1024
+        download_start_time = time.time()
+        
+        with requests.get(uri_to_test, stream=True, timeout=robust_timeout, headers=headers) as stream_response:
+            stream_response.raise_for_status()
+            
+            data_downloaded = 0
+            for chunk in stream_response.iter_content(chunk_size=8192):
+                data_downloaded += len(chunk)
+                if data_downloaded >= test_bytes:
+                    break
+            
+            download_duration = time.time() - download_start_time
+            
+            if download_duration > 0 and data_downloaded > 0:
+                speed_kbps = (data_downloaded / 1024) / download_duration
+                if speed_kbps < CONFIG["MIN_STREAM_SPEED_KBPS"]:
+                    return False, latency_ms, f"速度過慢 ({speed_kbps:.0f} KB/s)", speed_kbps
+                
+                return True, latency_ms, f"驗證成功", speed_kbps
+            else:
+                 return False, latency_ms, "下載測試失敗 (無數據)", 0.0
+
     except requests.exceptions.Timeout:
-        return False, 9999, "連接逾時"
+        return False, 9999, "連接逾時", 0.0
     except requests.exceptions.RequestException as e:
-        return False, 9999, f"請求錯誤: {str(e).splitlines()[0][:50]}"
+        return False, 9999, f"請求錯誤: {str(e).splitlines()[0][:50]}", 0.0
     except Exception as e:
-        return False, 9999, f"未知錯誤: {str(e)[:50]}"
+        return False, 9999, f"未知錯誤: {str(e)[:50]}", 0.0
 
 class HKTVSourceFetcher:
     def __init__(self):
@@ -112,6 +147,7 @@ class HKTVSourceFetcher:
         return custom_sources
 
     def _make_request(self, url: str, use_cache: bool = True) -> Optional[str]:
+        # ... 此函式內容不變 ...
         os.makedirs(CONFIG["CACHE_DIR"], exist_ok=True)
         url_hash = hashlib.md5(url.encode()).hexdigest()
         cache_file = os.path.join(CONFIG["CACHE_DIR"], f"{url_hash}.cache")
@@ -135,47 +171,30 @@ class HKTVSourceFetcher:
         return None
 
     def _is_hk_channel(self, name: str, group: str) -> bool:
+        # ... 此函式內容不變 ...
         text_to_check = (name + group).upper()
         return any(keyword.upper() in text_to_check for keyword in self.hk_keywords)
 
-    # --- ↓↓↓ 這就是全新的、更健壯的解析函式 ↓↓↓ ---
     def _parse_m3u_content(self, content: str, source_name: str, filter_hk: bool = True) -> List[Dict[str, Any]]:
+        # ... 此函式內容不變 ...
         sources = []
         if not content: return sources
-        
         lines = content.split('\n')
         current_info = {}
-
         for line in lines:
             line = line.strip()
             if line.startswith('#EXTINF:'):
-                # 提取頻道名稱和參數
                 params_str, _, name = line.partition(',')
-                current_info = {
-                    "name": name.strip(),
-                    "params": dict(re.findall(r'(\S+?)="([^"]*)"', params_str))
-                }
+                current_info = {"name": name.strip(), "params": dict(re.findall(r'(\S+?)="([^"]*)"', params_str))}
             elif line and not line.startswith('#') and current_info:
-                # 這是一個 URL 行，並且前面有 #EXTINF
                 group = current_info["params"].get('group-title', source_name)
-                
-                # 進行篩選
                 if not filter_hk or self._is_hk_channel(current_info["name"], group):
-                    sources.append({
-                        "name": current_info["name"],
-                        "url": line,  # 直接使用整行作為 URL
-                        "group": group,
-                        "source": source_name,
-                        "params": current_info["params"]
-                    })
-                
-                # 重置 current_info 以準備下一個頻道
+                    sources.append({"name": current_info["name"], "url": line, "group": group, "source": source_name, "params": current_info["params"]})
                 current_info = {}
-                
         return sources
-    # --- ↑↑↑ 修改結束 ↑↑↑ ---
 
     def _fetch_from_source(self, url: str, name: str, filter_hk: bool = True):
+        # ... 此函式內容不變 ...
         logging.info(f"開始從 {name} ({url}) 獲取...")
         content = self._make_request(url)
         if content:
@@ -184,8 +203,9 @@ class HKTVSourceFetcher:
             logging.info(f"從 {name} 獲取到 {len(sources)} 個相關頻道")
         else:
             logging.warning(f"從 {name} 未獲取到任何內容")
-    
+
     def fetch_all_sources(self):
+        # ... 此函式內容不變 ...
         logging.info(f"開始從 {CONFIG['CUSTOM_SOURCES_FILE']} 獲取所有直播源...")
         all_source_configs = self.custom_sources
         if not all_source_configs:
@@ -196,18 +216,17 @@ class HKTVSourceFetcher:
             for future in as_completed(futures):
                 try: future.result()
                 except Exception as e: logging.error(f"獲取來源時發生錯誤: {e}")
-        
         unique_sources = self._remove_duplicates()
         enhanced_sources = self._enhance_metadata(unique_sources)
         logging.info(f"總共獲取到 {len(enhanced_sources)} 個唯一的香港頻道")
-        
         tested_sources = self._test_sources_connectivity_with_pebble(enhanced_sources)
         logging.info(f"連接測試後剩餘 {len(tested_sources)} 個有效頻道")
         self._generate_output_files(tested_sources)
         return tested_sources
 
     def _test_sources_connectivity_with_pebble(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        logging.info("開始深度測試頻道連接性 (使用 PebblePool，可強制超時)...")
+        # --- ↓↓↓ 已更新，以接收新的返回值 (包括速度) ↓↓↓ ---
+        logging.info(f"開始深度品質測試 (最低速度要求: {CONFIG['MIN_STREAM_SPEED_KBPS']} KB/s)...")
         valid_sources = []
         with ProcessPool(max_workers=CONFIG["MAX_WORKERS"]) as pool:
             future_map = {pool.schedule(run_connectivity_test, args=(source,), timeout=CONFIG["TASK_TIMEOUT"]): source for source in sources}
@@ -215,11 +234,12 @@ class HKTVSourceFetcher:
             for i, future in enumerate(as_completed(future_map), 1):
                 source = future_map[future]
                 try:
-                    is_valid, response_time, status = future.result()
+                    is_valid, response_time, status, speed_kbps = future.result()
                     if is_valid:
                         source['response_time'] = response_time
+                        source['speed_kbps'] = speed_kbps
                         valid_sources.append(source)
-                        logging.info(f"[{i}/{total}] ✓ {source['name']} - {response_time}ms ({status})")
+                        logging.info(f"[{i}/{total}] ✓ {source['name']} - {response_time}ms, {speed_kbps:.0f} KB/s")
                     else:
                         logging.warning(f"[{i}/{total}] ✗ {source['name']} - {status}")
                 except TimeoutError:
@@ -229,6 +249,7 @@ class HKTVSourceFetcher:
         return valid_sources
     
     def _remove_duplicates(self) -> List[Dict[str, Any]]:
+        # ... 此函式內容不變 ...
         unique_sources = {}
         for source in self.sources:
             normalized_url = source['url'].split('?')[0].rstrip('/')
@@ -237,6 +258,7 @@ class HKTVSourceFetcher:
         return list(unique_sources.values())
 
     def _determine_category(self, name: str, group: str) -> str:
+        # ... 此函式內容不變 ...
         text_to_check = (name + group).upper()
         for category, keywords in self.channel_categories.items():
             if any(keyword.upper() in text_to_check for keyword in keywords):
@@ -244,6 +266,7 @@ class HKTVSourceFetcher:
         return '其他'
 
     def _determine_resolution(self, name: str) -> str:
+        # ... 此函式內容不變 ...
         name_upper = name.upper()
         if '4K' in name_upper or 'UHD' in name_upper: return '4K'
         if '1080' in name_upper or 'FHD' in name_upper: return '1080p'
@@ -252,6 +275,7 @@ class HKTVSourceFetcher:
         return '未知'
 
     def _enhance_metadata(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        # ... 此函式內容不變 ...
         for source in sources:
             name = source['name']
             group = source.get('group', '')
@@ -260,19 +284,33 @@ class HKTVSourceFetcher:
         return sources
         
     def _sort_sources(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        # --- ↓↓↓ 排序邏輯已更新，優先按速度排序 ↓↓↓ ---
+        """
+        按照多層級條件動態排序：
+        1. 分類
+        2. 頻道名稱
+        3. 串流速度 (越高越好)
+        4. 延遲 (越低越好)
+        """
         category_index = {category: idx for idx, category in enumerate(self.category_order)}
-        preferred_domain_index = {domain: idx for idx, domain in enumerate(CONFIG["PREFERRED_DOMAINS"])}
+        
         def sort_key(source: Dict[str, Any]):
             cat = source.get('category', '其他')
             cat_idx = category_index.get(cat, len(self.category_order))
-            domain = urlparse(source['url']).netloc
-            domain_idx = preferred_domain_index.get(domain, len(CONFIG["PREFERRED_DOMAINS"]))
+            
             name = source.get('name', '')
+            
+            # 速度是倒序排，所以快的 (數值大的) 在前面
+            speed = source.get('speed_kbps', 0.0) * -1 
+            
             latency = source.get('response_time', 9999)
-            return (cat_idx, domain_idx, name, latency)
+            
+            return (cat_idx, name, speed, latency)
+            
         return sorted(sources, key=sort_key)
 
     def _generate_output_files(self, sources: List[Dict[str, Any]]):
+        # --- ↓↓↓ 已更新，會在 .txt 檔案中顯示速度 ↓↓↓ ---
         if not sources:
             logging.warning("沒有有效的來源可供生成檔案。")
             return
@@ -297,14 +335,17 @@ class HKTVSourceFetcher:
                 channels = channels_by_category[category]
                 for channel in channels:
                     hd_flag = "[HD]" if channel['resolution'] in ['1080p', '720p'] else ""
-                    time_info = f"[{channel.get('response_time', 'N/A')}ms]"
-                    txt_lines.append(f"{channel['name']}{hd_flag}{time_info},{channel['url']}")
+                    # 新增速度顯示
+                    latency_info = f"[{channel.get('response_time', 'N/A')}ms]"
+                    speed_info = f"[{channel.get('speed_kbps', 0.0):.0f}KB/s]"
+                    txt_lines.append(f"{channel['name']}{hd_flag}{latency_info}{speed_info},{channel['url']}")
         
         with open(CONFIG["OUTPUT_TXT_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(txt_lines))
         logging.info(f"已生成 {CONFIG['OUTPUT_M3U_FILE']} 和 {CONFIG['OUTPUT_TXT_FILE']}")
         with open(CONFIG["BACKUP_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
 
 def main():
+    # ... 此函式內容不變 ...
     fetcher = HKTVSourceFetcher()
     valid_sources = fetcher.fetch_all_sources()
     if not valid_sources:
