@@ -16,7 +16,9 @@ from pebble import ProcessPool
 CONFIG = {
     "TIMEOUT": 10,
     "MAX_WORKERS": 20,
-    "CACHE_DIR": "cache,
+    # --- ↓↓↓ 這就是之前出錯的那一行，現已修正 ↓↓↓ ---
+    "CACHE_DIR": "cache",
+    # --- ↑↑↑ 修正結束 ↑↑↑ ---
     "CACHE_EXPIRATION": 3600,
     "CUSTOM_SOURCES_FILE": "custom_sources.txt",
     "OUTPUT_M3U_FILE": "hk_tv_sources.m3u",
@@ -24,12 +26,8 @@ CONFIG = {
     "BACKUP_M3U_FILE": "hk_tv_sources_backup.m3u",
     "USER_AGENT": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
     "TASK_TIMEOUT": 15,
-
-    # --- 在這裡設定您偏好的網域列表 ---
-    # 列表中的網域會被優先排序在前面，順序也很重要
     "PREFERRED_DOMAINS": [
         "r.jdshipin.com"
-        # "another.stable.domain.com",
     ]
 }
 
@@ -52,9 +50,9 @@ def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str]:
                 playlist = m3u8.loads(content, uri=url)
                 if playlist.is_variant:
                     if not playlist.playlists: return False, 9999, "M3U8無效 (無子播放列表)"
-                    uri_to_test = playlist.playlists[0].uri
+                    uri_to_test = playlist.playlists.uri
                 elif playlist.segments:
-                    uri_to_test = playlist.segments[0].uri
+                    uri_to_test = playlist.segments.uri
                 else:
                     return False, 9999, "M3U8無效 (空播放列表)"
                 seg_response = requests.head(uri_to_test, timeout=robust_timeout, headers=headers)
@@ -69,7 +67,7 @@ def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str]:
     except requests.exceptions.Timeout:
         return False, 9999, "連接逾時"
     except requests.exceptions.RequestException as e:
-        return False, 9999, f"請求錯誤: {str(e).splitlines()[0][:50]}"
+        return False, 9999, f"請求錯誤: {str(e).splitlines()[:50]}"
     except Exception as e:
         return False, 9999, f"未知錯誤: {str(e)[:50]}"
 
@@ -202,7 +200,7 @@ class HKTVSourceFetcher:
     def _remove_duplicates(self) -> List[Dict[str, Any]]:
         unique_sources = {}
         for source in self.sources:
-            normalized_url = source['url'].split('?')[0].rstrip('/')
+            normalized_url = source['url'].split('?').rstrip('/')
             if normalized_url not in unique_sources:
                 unique_sources[normalized_url] = source
         return list(unique_sources.values())
@@ -230,42 +228,24 @@ class HKTVSourceFetcher:
             source['resolution'] = self._determine_resolution(name)
         return sources
         
-    # --- ↓↓↓ 這是全新的、更智能的排序函式 ↓↓↓ ---
     def _sort_sources(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        按照多層級條件排序：分類 -> 優先網域 -> 頻道名稱 -> 延遲
-        """
         category_index = {category: idx for idx, category in enumerate(self.category_order)}
         preferred_domain_index = {domain: idx for idx, domain in enumerate(CONFIG["PREFERRED_DOMAINS"])}
-        
         def sort_key(source: Dict[str, Any]):
-            # 1. 分類優先級
             cat = source.get('category', '其他')
             cat_idx = category_index.get(cat, len(self.category_order))
-            
-            # 2. 網域優先級
             domain = urlparse(source['url']).netloc
             domain_idx = preferred_domain_index.get(domain, len(CONFIG["PREFERRED_DOMAINS"]))
-            
-            # 3. 頻道名稱
             name = source.get('name', '')
-            
-            # 4. 延遲時間
             latency = source.get('response_time', 9999)
-            
             return (cat_idx, domain_idx, name, latency)
-            
         return sorted(sources, key=sort_key)
-    # --- ↑↑↑ 排序函式修改結束 ↑↑↑ ---
 
     def _generate_output_files(self, sources: List[Dict[str, Any]]):
         if not sources:
             logging.warning("沒有有效的來源可供生成檔案。")
             return
-            
-        # 使用全新的排序函式
         sorted_sources = self._sort_sources(sources)
-        
         m3u_lines = ["#EXTM3U"]
         for source in sorted_sources:
             params = source.get("params", {})
@@ -279,28 +259,16 @@ class HKTVSourceFetcher:
             cat = source['category']
             channels_by_category.setdefault(cat, []).append(source)
         
-        # 這裡的輸出邏輯維持不變，因為 sorted_sources 已經是排好序的
-        # 我們只需要確保分類標題的順序正確
-        for category in self.category_order:
+        all_categories_in_order = self.category_order + sorted([cat for cat in channels_by_category if cat not in self.category_order])
+        for category in all_categories_in_order:
             if category in channels_by_category:
                 txt_lines.append(f"\n# {category}")
-                # 這裡的 channels 已經是按新規則排好序的
                 channels = channels_by_category[category]
                 for channel in channels:
                     hd_flag = "[HD]" if channel['resolution'] in ['1080p', '720p'] else ""
                     time_info = f"[{channel.get('response_time', 'N/A')}ms]"
                     txt_lines.append(f"{channel['name']}{hd_flag}{time_info},{channel['url']}")
-
-        # 處理未在 category_order 中的其他分類
-        other_categories = sorted([cat for cat in channels_by_category if cat not in self.category_order])
-        for category in other_categories:
-            txt_lines.append(f"\n# {category}")
-            channels = channels_by_category[category]
-            for channel in channels:
-                hd_flag = "[HD]" if channel['resolution'] in ['1080p', '720p'] else ""
-                time_info = f"[{channel.get('response_time', 'N/A')}ms]"
-                txt_lines.append(f"{channel['name']}{hd_flag}{time_info},{channel['url']}")
-
+        
         with open(CONFIG["OUTPUT_TXT_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(txt_lines))
         logging.info(f"已生成 {CONFIG['OUTPUT_M3U_FILE']} 和 {CONFIG['OUTPUT_TXT_FILE']}")
         with open(CONFIG["BACKUP_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
