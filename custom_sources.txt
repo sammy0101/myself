@@ -1,3 +1,14 @@
+# custom_sources.txt
+
+# --- 篩選香港頻道 (預設行為) ---
+# 下面這個來源，只會找出其中和香港相關的頻道
+
+# --- 不進行篩選 (新功能) ---
+# 在 URL 前面加上星號 *，腳本就會載入這個來源的全部頻道
+
+# --- 註解/暫時禁用 ---
+# 在行首加上 #，這一行會被完全忽略，就像不存在一樣
+
 https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.m3u
 https://aktv.space/live.m3u
 https://iptv-org.github.io/iptv/countries/hk.m3u
