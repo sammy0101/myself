@@ -38,14 +38,16 @@ def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str]:
     headers = {'User-Agent': CONFIG["USER_AGENT"]}
     robust_timeout = (3.05, 5)
     try:
-        with requests.get(url, stream=True, timeout=robust_timeout, headers=headers) as response:
+        # 清理 URL 中可能存在的非標準後綴
+        cleaned_url = url.split('『')[0].strip()
+        with requests.get(cleaned_url, stream=True, timeout=robust_timeout, headers=headers) as response:
             response.raise_for_status()
             content_type = response.headers.get('Content-Type', '').lower()
             if 'text/html' in content_type:
                 return False, 9999, "無效內容 (HTML)"
             content = response.text
             try:
-                playlist = m3u8.loads(content, uri=url)
+                playlist = m3u8.loads(content, uri=cleaned_url)
                 if playlist.is_variant:
                     if not playlist.playlists: return False, 9999, "M3U8無效 (無子播放列表)"
                     uri_to_test = playlist.playlists[0].uri
@@ -84,7 +86,6 @@ class HKTVSourceFetcher:
         self.hk_keywords = ['香港', 'HK', 'TVB', '翡翠', '明珠', 'ViuTV', 'RTHK', '鳳凰', '開電視', '开电视', 'HOY', '有線', '有线', '奇妙', '77台', '78台', '港台', '澳門', 'Macau', '澳视']
         self.custom_sources = self._load_custom_sources()
 
-    # --- ↓↓↓ 這是唯一修改的函式，採用了 '*' 標記法 ↓↓↓ ---
     def _load_custom_sources(self) -> List[Dict[str, Any]]:
         custom_sources = []
         custom_file = CONFIG["CUSTOM_SOURCES_FILE"]
@@ -95,20 +96,13 @@ class HKTVSourceFetcher:
             with open(custom_file, 'r', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
-                    # 忽略註解行和空行
-                    if not line or line.startswith('#'):
-                        continue
-
-                    # 預設啟用篩選
+                    if not line or line.startswith('#'): continue
                     filter_hk = True
                     url = line
-
-                    # 新功能：如果行首是 *，則對此來源禁用篩選
                     if line.startswith('*'):
-                        url = line[1:]  # URL 是星號之後的內容
+                        url = line[1:]
                         filter_hk = False
                         logging.info(f"檢測到 '*' 標記，將禁用對 {url} 的香港頻道篩選。")
-
                     parsed_url = urlparse(url)
                     name = f"CustomSource-{parsed_url.netloc}"
                     custom_sources.append({"url": url, "name": name, "filter_hk": filter_hk})
@@ -116,7 +110,6 @@ class HKTVSourceFetcher:
             logging.error(f"讀取自訂來源檔案時出錯: {e}")
         logging.info(f"從自訂檔案載入了 {len(custom_sources)} 個來源")
         return custom_sources
-    # --- ↑↑↑ 修改結束 ↑↑↑ ---
 
     def _make_request(self, url: str, use_cache: bool = True) -> Optional[str]:
         os.makedirs(CONFIG["CACHE_DIR"], exist_ok=True)
@@ -145,17 +138,42 @@ class HKTVSourceFetcher:
         text_to_check = (name + group).upper()
         return any(keyword.upper() in text_to_check for keyword in self.hk_keywords)
 
+    # --- ↓↓↓ 這就是全新的、更健壯的解析函式 ↓↓↓ ---
     def _parse_m3u_content(self, content: str, source_name: str, filter_hk: bool = True) -> List[Dict[str, Any]]:
         sources = []
         if not content: return sources
-        pattern = re.compile(r'#EXTINF:-1([^,]*),(.*?)\n(http[^\s]*)')
-        matches = pattern.findall(content)
-        for params_str, name, url in matches:
-            params = dict(re.findall(r'(\S+?)="([^"]*)"', params_str))
-            group = params.get('group-title', source_name)
-            if not filter_hk or self._is_hk_channel(name, group):
-                sources.append({"name": name.strip(), "url": url.strip(), "group": group, "source": source_name, "params": params})
+        
+        lines = content.split('\n')
+        current_info = {}
+
+        for line in lines:
+            line = line.strip()
+            if line.startswith('#EXTINF:'):
+                # 提取頻道名稱和參數
+                params_str, _, name = line.partition(',')
+                current_info = {
+                    "name": name.strip(),
+                    "params": dict(re.findall(r'(\S+?)="([^"]*)"', params_str))
+                }
+            elif line and not line.startswith('#') and current_info:
+                # 這是一個 URL 行，並且前面有 #EXTINF
+                group = current_info["params"].get('group-title', source_name)
+                
+                # 進行篩選
+                if not filter_hk or self._is_hk_channel(current_info["name"], group):
+                    sources.append({
+                        "name": current_info["name"],
+                        "url": line,  # 直接使用整行作為 URL
+                        "group": group,
+                        "source": source_name,
+                        "params": current_info["params"]
+                    })
+                
+                # 重置 current_info 以準備下一個頻道
+                current_info = {}
+                
         return sources
+    # --- ↑↑↑ 修改結束 ↑↑↑ ---
 
     def _fetch_from_source(self, url: str, name: str, filter_hk: bool = True):
         logging.info(f"開始從 {name} ({url}) 獲取...")
