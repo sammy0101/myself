@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       vm-name:
-        description: '虛擬機器的名稱 (可選)'
-        required: false
+        description: '虛擬機器的名稱 (必填)'
+        required: true
         default: 'a1-flex-vm'
         type: string
 
@@ -26,12 +26,13 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       time: ${{ steps.get-current-time.outputs.time }}
-      vm_name: ${{ steps.create-vm-script.outputs.vm_name }}
-      public_ip: ${{ steps.get-ip.outputs.public_ip }}
-      instance_ocid: ${{ steps.create-vm-script.outputs.instance_ocid }}
+      vm_exists: ${{ steps.check-vm-exists.outputs.exists }}
+      checked_vm_name: ${{ steps.check-vm-exists.outputs.vm_name }}
       creation_status: ${{ steps.create-vm-script.outputs.success }}
       attempt_count: ${{ steps.create-vm-script.outputs.attempt_count }}
       error_message: ${{ steps.create-vm-script.outputs.error_message }}
+      vm_name: ${{ steps.create-vm-script.outputs.vm_name }}
+      public_ip: ${{ steps.get-ip.outputs.public_ip }}
       
     steps:
       - name: Checkout repository
@@ -48,9 +49,7 @@ jobs:
 
       - name: 手動安裝與配置 OCI CLI
         run: |
-          echo "正在安裝 OCI CLI..."
           pip install oci-cli
-          echo "正在配置 OCI CLI..."
           mkdir -p ~/.oci
           cat > ~/.oci/config << EOF
           [DEFAULT]
@@ -62,17 +61,49 @@ jobs:
           EOF
           echo "${{ secrets.OCI_API_KEY }}" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
-          echo "✅ OCI CLI 手動安裝與配置完成。"
 
       - name: 驗證 OCI CLI 配置
         run: |
-          echo "OCI CLI 版本: $(oci --version)"
-          echo "正在驗證能否列出區劃..."
           oci iam compartment list --compartment-id-in-subtree true --all --output table --query 'data[0:1].{Name:name, OCID:id}'
           echo "✅ OCI 配置驗證成功"
 
-      - name: 生成 cloud-init 腳本
+      # <-- 變更點 1：新增檢查步驟
+      - name: 檢查同名 VM 是否已存在
+        id: check-vm-exists
         run: |
+          # 決定要檢查的 VM 名稱 (僅在手動觸發時檢查)
+          VM_NAME_TO_CHECK=""
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.vm-name }}" ]; then
+            VM_NAME_TO_CHECK="${{ github.event.inputs.vm-name }}"
+            echo "正在檢查手動指定的 VM 名稱: $VM_NAME_TO_CHECK"
+            
+            # 查詢處於活動狀態的同名 VM
+            EXISTING_VM_OCID=$(oci compute instance list \
+              --compartment-id "${{ env.OCI_COMPARTMENT_ID }}" \
+              --display-name "$VM_NAME_TO_CHECK" \
+              --lifecycle-state RUNNING \
+              --lifecycle-state PROVISIONING \
+              --lifecycle-state STARTING \
+              --query 'data[0].id' --raw-output)
+              
+            if [ -n "$EXISTING_VM_OCID" ] && [ "$EXISTING_VM_OCID" != "null" ]; then
+              echo "❌ 發現已存在的同名 VM: $VM_NAME_TO_CHECK (OCID: $EXISTING_VM_OCID)"
+              echo "exists=true" >> "$GITHUB_OUTPUT"
+              echo "vm_name=$VM_NAME_TO_CHECK" >> "$GITHUB_OUTPUT"
+            else
+              echo "✅ 未發現同名的活動 VM，可以繼續。"
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "ℹ️  為定時任務，將生成唯一名稱，跳過檢查。"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 生成 cloud-init 腳本
+        # <-- 變更點 2：僅在 VM 不存在時執行
+        if: steps.check-vm-exists.outputs.exists == 'false'
+        run: |
+          # (cloud-init 腳本內容不變)
           cat > cloud-init.txt << EOF
           #cloud-config
           users:
@@ -87,38 +118,29 @@ jobs:
             - sed -i 's/^#?PasswordAuthentication.*/PasswordAuthentication yes/g' /etc/ssh/sshd_config
             - systemctl restart sshd || systemctl restart ssh
           EOF
-          echo "✅ cloud-init 腳本已生成"
 
       - name: 執行創建 VM 的腳本
         id: create-vm-script
+        # <-- 變更點 3：僅在 VM 不存在時執行
+        if: steps.check-vm-exists.outputs.exists == 'false'
         env:
-          INPUT_VM_NAME: ${{ github.event.inputs.vm_name }}
+          INPUT_VM_NAME: ${{ github.event.inputs.vm-name }}
         run: |
           chmod +x ./scripts/create_vm.sh
           ./scripts/create_vm.sh
 
       - name: 等待實例達到 RUNNING 狀態
-        if: steps.create-vm-script.outputs.success == 'true'
+        if: steps.check-vm-exists.outputs.exists == 'false' && steps.create-vm-script.outputs.success == 'true'
         id: wait-for-running
         run: |
-          INSTANCE_OCID="${{ steps.create-vm-script.outputs.instance_ocid }}"
-          echo "等待實例 $INSTANCE_OCID 進入 RUNNING 狀態..."
-          oci compute instance wait-for-state --instance-id "$INSTANCE_OCID" --wait-for-state "RUNNING" --wait-interval-seconds 15
-          echo "✅ 實例現在處於 RUNNING 狀態"
+          oci compute instance wait-for-state --instance-id "${{ steps.create-vm-script.outputs.instance_ocid }}" --wait-for-state "RUNNING" --wait-interval-seconds 15
 
       - name: 獲取虛擬機器公網 IP
-        if: steps.create-vm-script.outputs.success == 'true'
+        if: steps.check-vm-exists.outputs.exists == 'false' && steps.create-vm-script.outputs.success == 'true'
         id: get-ip
         run: |
-          INSTANCE_OCID="${{ steps.create-vm-script.outputs.instance_ocid }}"
-          PUBLIC_IP=$(oci compute instance list-vnics --instance-id "$INSTANCE_OCID" --query 'data[0]."public-ip"' --raw-output)
-          if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "null" ]; then
-            echo "❌ 無法獲取有效的公網IP地址"
-            echo "public_ip=unknown" >> $GITHUB_OUTPUT
-          else
-            echo "✅ 虛擬機器公網 IP: $PUBLIC_IP"
-            echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
-          fi
+          PUBLIC_IP=$(oci compute instance list-vnics --instance-id "${{ steps.create-vm-script.outputs.instance_ocid }}" --query 'data[0]."public-ip"' --raw-output)
+          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
           
   notify:
     name: Send Telegram Notification
@@ -132,16 +154,25 @@ jobs:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: html
+          # <-- 變更點 4：重構通知邏輯以處理三種情況
           message: |
+            ${{ needs.create-vm.outputs.vm_exists == 'true' && format('
+            <b>OCI 虛擬機器建立 - 操作取消</b>
+            • <b>觸發方式:</b> 手動觸發
+            • <b>執行時間:</b> {0}
+            • <b>狀態:</b> 🟡 已跳過
+            • <b>原因:</b> 名為 "{1}" 的虛擬機器已存在。
+            • <b>區域:</b> {2}
+            • <b>詳情:</b> <a href="https://github.com/{3}/actions/runs/{4}">查看日誌</a>', needs.create-vm.outputs.time, needs.create-vm.outputs.checked_vm_name, env.OCI_REGION, github.repository, github.run_id) || format('
             <b>OCI 虛擬機器建立結果</b>
-            • <b>觸發方式:</b> ${{ github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務' }}
-            • <b>執行時間:</b> ${{ needs.create-vm.outputs.time }}
-            • <b>狀態:</b> ${{ needs.create-vm.outputs.creation_status == 'true' && '✅ 成功' || '❌ 失敗' }}
-            • <b>嘗試次數:</b> ${{ needs.create-vm.outputs.attempt_count }}
-            • <b>訊息:</b> ${{ needs.create-vm.outputs.creation_status == 'true' && 'VM 創建成功' || needs.create-vm.outputs.error_message }}
-            • <b>區域:</b> ${{ env.OCI_REGION }}
-            • <b>詳情:</b> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">查看日誌</a>
-            ${{ needs.create-vm.outputs.creation_status == 'true' && format('
+            • <b>觸發方式:</b> {0}
+            • <b>執行時間:</b> {1}
+            • <b>狀態:</b> {2}
+            • <b>嘗試次數:</b> {3}
+            • <b>訊息:</b> {4}
+            • <b>區域:</b> {5}
+            • <b>詳情:</b> <a href="https://github.com/{6}/actions/runs/{7}">查看日誌</a>
+            {8}', github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務', needs.create-vm.outputs.time, needs.create-vm.outputs.creation_status == 'true' && '✅ 成功' || '❌ 失敗', needs.create-vm.outputs.attempt_count, needs.create-vm.outputs.creation_status == 'true' && 'VM 創建成功' || needs.create-vm.outputs.error_message, env.OCI_REGION, github.repository, github.run_id, needs.create-vm.outputs.creation_status == 'true' && format('
             <b>VM 資訊</b>
             • <b>虛擬機器名稱:</b> {0}
-            • <b>公網 IP:</b> {1}', needs.create-vm.outputs.vm_name, needs.create-vm.outputs.public_ip) || '' }}
+            • <b>公網 IP:</b> {1}', needs.create-vm.outputs.vm_name, needs.create-vm.outputs.public_ip) || '') }}
