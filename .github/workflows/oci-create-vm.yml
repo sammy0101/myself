@@ -2,6 +2,7 @@ name: '[Scheduled] Create OCI A1 Flex VM'
 
 on:
   schedule:
+    # 每天 UTC 時間 0 點和 12 點各運行一次
     - cron: '0 0,12 * * *'
   workflow_dispatch:
     inputs:
@@ -63,8 +64,10 @@ jobs:
           VM_NAME=""
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             VM_NAME="${{ github.event.inputs.vm-name }}"
+            echo "使用手動觸發的名稱: $VM_NAME"
           else
-            VM_NAME="scheduled-a1-vm-$(date +'%Y%m%d-%H%M')"
+            VM_NAME="a1-flex-vm"
+            echo "為定時任務使用固定名稱: $VM_NAME"
           fi
           echo "vm_name=$VM_NAME" >> "$GITHUB_OUTPUT"
 
@@ -132,7 +135,7 @@ jobs:
         id: get-ip
         run: |
           PUBLIC_IP=$(oci compute instance list-vnics --instance-id "${{ steps.create-vm-script.outputs.instance_ocid }}" --query 'data[0]."public-ip"' --raw-output)
-          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+          echo "public_ip=$PUBLIC_IP" >> "$GITHUB_OUTPUT"
 
   notify:
     name: Send Telegram Notification
@@ -149,12 +152,12 @@ jobs:
           message: |
             ${{ needs.create-vm.outputs.vm_exists == 'true' && format('
             <b>OCI 虛擬機器建立 - 操作取消</b>
-            • <b>觸發方式:</b> 手動觸發
-            • <b>執行時間:</b> {0}
+            • <b>觸發方式:</b> {0}
+            • <b>執行時間:</b> {1}
             • <b>狀態:</b> 🟡 已跳過
-            • <b>原因:</b> 名為 "{1}" 的虛擬機器已存在或檢查時出錯。
-            • <b>區域:</b> {2}
-            • <b>詳情:</b> <a href="https://github.com/{3}/actions/runs/{4}">查看日誌</a>', needs.create-vm.outputs.time, needs.create-vm.outputs.checked_vm_name, env.OCI_REGION, github.repository, github.run_id) || format('
+            • <b>原因:</b> 名為 "{2}" 的虛擬機器已存在或檢查時出錯。
+            • <b>區域:</b> {3}
+            • <b>詳情:</b> <a href="https://github.com/{4}/actions/runs/{5}">查看日誌</a>', github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務', needs.create-vm.outputs.time, needs.create-vm.outputs.checked_vm_name, env.OCI_REGION, github.repository, github.run_id) || format('
             <b>OCI 虛擬機器建立結果</b>
             • <b>觸發方式:</b> {0}
             • <b>執行時間:</b> {1}
