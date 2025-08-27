@@ -42,31 +42,42 @@ jobs:
         id: get-current-time
         run: echo "time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
 
-      # (OCI CLI 安裝配置步驟不變)
       - name: 設置 Python and OCI CLI
-        # ... 此處省略了安裝步驟，保持您現有的即可 ...
+        # (保持您現有的安裝配置步驟)
+        run: |
+          pip install oci-cli
+          mkdir -p ~/.oci
+          cat > ~/.oci/config << EOF
+          [DEFAULT]
+          user=${{ secrets.OCI_USER_ID }}
+          fingerprint=${{ secrets.OCI_FINGERPRINT }}
+          key_file=~/.oci/oci_api_key.pem
+          tenancy=${{ secrets.OCI_TENANCY }}
+          region=${{ env.OCI_REGION }}
+          EOF
+          echo "${{ secrets.OCI_API_KEY }}" > ~/.oci/oci_api_key.pem
+          chmod 600 ~/.oci/config ~/.oci/oci_api_key.pem
 
-      # <-- 變更點 1：新增「決定 VM 名稱」的步驟
       - name: 決定 VM 名稱
         id: determine-vm-name
         run: |
           VM_NAME=""
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             VM_NAME="${{ github.event.inputs.vm-name }}"
-            echo "使用手動觸發的名稱: $VM_NAME"
           else
             VM_NAME="scheduled-a1-vm-$(date +'%Y%m%d-%H%M')"
-            echo "為定時任務生成唯一名稱: $VM_NAME"
           fi
           echo "vm_name=$VM_NAME" >> "$GITHUB_OUTPUT"
 
-      # <-- 變更點 2：檢查邏輯簡化，總是執行
+      # <-- 變更點：加固了此步驟的錯誤處理
       - name: 檢查同名 VM 是否已存在
         id: check-vm-exists
         run: |
           VM_NAME_TO_CHECK="${{ steps.determine-vm-name.outputs.vm_name }}"
           echo "正在檢查 VM 名稱: $VM_NAME_TO_CHECK"
           
+          # 暫時禁用 "exit on error"，手動處理錯誤
+          set +e
           EXISTING_VM_OCID=$(oci compute instance list \
             --compartment-id "${{ env.OCI_COMPARTMENT_ID }}" \
             --display-name "$VM_NAME_TO_CHECK" \
@@ -74,8 +85,14 @@ jobs:
             --lifecycle-state PROVISIONING \
             --lifecycle-state STARTING \
             --query 'data[0].id' --raw-output)
-            
-          if [ -n "$EXISTING_VM_OCID" ] && [ "$EXISTING_VM_OCID" != "null" ]; then
+          exit_code=$?
+          set -e # 重新啟用
+
+          # 檢查 oci 命令本身是否成功
+          if [ $exit_code -ne 0 ]; then
+            echo "⚠️  OCI CLI 查詢命令失敗，無法檢查 VM 是否存在。為安全起見，將跳過創建。"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "$EXISTING_VM_OCID" ] && [ "$EXISTING_VM_OCID" != "null" ]; then
             echo "❌ 發現已存在的同名 VM: $VM_NAME_TO_CHECK"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
@@ -83,19 +100,29 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # (後續步驟的 if 條件保持不變)
+      - name: 生成 cloud-init 腳本
+        if: steps.check-vm-exists.outputs.exists == 'false'
+        run: |
+          cat > cloud-init.txt << EOF
+          #cloud-config
+          # ... (內容不變)
+          EOF
+
       - name: 執行創建 VM 的腳本
         id: create-vm-script
         if: steps.check-vm-exists.outputs.exists == 'false'
         env:
-          # <-- 變更點 3：總是傳遞已確定的 VM 名稱
           INPUT_VM_NAME: ${{ steps.determine-vm-name.outputs.vm_name }}
         run: |
           chmod +x ./scripts/create_vm.sh
           ./scripts/create_vm.sh
       
       # ... 其他步驟 (等待、獲取IP) ...
+      - name: 等待實例達到 RUNNING 狀態
+      # ...
+      - name: 獲取虛擬機器公網 IP
+      # ...
 
   notify:
-    # (notify job 的邏輯不變，它依然可以正確處理 vm_exists 的情況)
+    # (notify job 保持不變)
     # ...
