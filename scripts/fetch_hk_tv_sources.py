@@ -16,9 +16,7 @@ from pebble import ProcessPool
 CONFIG = {
     "TIMEOUT": 10,
     "MAX_WORKERS": 20,
-    # --- ↓↓↓ 這就是之前出錯的那一行，現已修正 ↓↓↓ ---
     "CACHE_DIR": "cache",
-    # --- ↑↑↑ 修正結束 ↑↑↑ ---
     "CACHE_EXPIRATION": 3600,
     "CUSTOM_SOURCES_FILE": "custom_sources.txt",
     "OUTPUT_M3U_FILE": "hk_tv_sources.m3u",
@@ -50,9 +48,9 @@ def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str]:
                 playlist = m3u8.loads(content, uri=url)
                 if playlist.is_variant:
                     if not playlist.playlists: return False, 9999, "M3U8無效 (無子播放列表)"
-                    uri_to_test = playlist.playlists.uri
+                    uri_to_test = playlist.playlists[0].uri
                 elif playlist.segments:
-                    uri_to_test = playlist.segments.uri
+                    uri_to_test = playlist.segments[0].uri
                 else:
                     return False, 9999, "M3U8無效 (空播放列表)"
                 seg_response = requests.head(uri_to_test, timeout=robust_timeout, headers=headers)
@@ -67,7 +65,7 @@ def run_connectivity_test(source: Dict[str, Any]) -> Tuple[bool, int, str]:
     except requests.exceptions.Timeout:
         return False, 9999, "連接逾時"
     except requests.exceptions.RequestException as e:
-        return False, 9999, f"請求錯誤: {str(e).splitlines()[:50]}"
+        return False, 9999, f"請求錯誤: {str(e).splitlines()[0][:50]}"
     except Exception as e:
         return False, 9999, f"未知錯誤: {str(e)[:50]}"
 
@@ -200,7 +198,9 @@ class HKTVSourceFetcher:
     def _remove_duplicates(self) -> List[Dict[str, Any]]:
         unique_sources = {}
         for source in self.sources:
-            normalized_url = source['url'].split('?').rstrip('/')
+            # --- ↓↓↓ 這就是之前出錯的那一行，現已修正 ↓↓↓ ---
+            normalized_url = source['url'].split('?')[0].rstrip('/')
+            # --- ↑↑↑ 修正結束 ↑↑↑ ---
             if normalized_url not in unique_sources:
                 unique_sources[normalized_url] = source
         return list(unique_sources.values())
