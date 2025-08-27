@@ -72,7 +72,7 @@ class HKTVSourceFetcher:
         self.headers = {'User-Agent': CONFIG["USER_AGENT"]}
         self.category_order = ['TVB', 'ViuTV', 'HOY TV', 'RTHK', '新闻', '体育', '电影', '国际', '儿童', '其他']
         self.channel_categories = {
-            'TVB': ['TVB', '無綫', '无线', '翡翠', '明珠', 'J2'], 'ViuTV': ['ViuTV', 'Viu'],
+            'TVB': ['TVB', '無綫', '無線', '翡翠', '明珠', 'J2'], 'ViuTV': ['ViuTV', 'Viu'],
             'HOY TV': ['HOY', '開電視', '开电视', '有線', '有线', '奇妙', '77台', '78台'], 'RTHK': ['RTHK', '香港电台', '港台'],
             '新闻': ['新聞', '新闻', 'NEWS', '資訊', '財經', '财经'], '体育': ['體育', '体育', 'SPORTS', '賽馬', '赛马'],
             '电影': ['電影', '电影', 'MOVIE', '影院', '戲劇', '戏剧'], '国际': ['國際', '国际', 'WORLD', 'BBC', 'CNN', '凤凰衛視', '鳳凰衛視'],
@@ -92,10 +92,9 @@ class HKTVSourceFetcher:
                 for line in f:
                     line = line.strip()
                     if not line or line.startswith('#'): continue
-                    # 在這裡為每個自訂來源設定一個基礎名稱
                     parsed_url = urlparse(line)
                     name = f"CustomSource-{parsed_url.netloc}"
-                    custom_sources.append({"url": line, "name": name, "filter_hk": True}) # 預設篩選香港頻道
+                    custom_sources.append({"url": line, "name": name, "filter_hk": True})
         except Exception as e:
             logging.error(f"讀取自訂來源檔案時出錯: {e}")
         logging.info(f"從自訂檔案載入了 {len(custom_sources)} 個來源")
@@ -152,14 +151,10 @@ class HKTVSourceFetcher:
     
     def fetch_all_sources(self):
         logging.info(f"開始從 {CONFIG['CUSTOM_SOURCES_FILE']} 獲取所有直播源...")
-        
-        # 現在，all_source_configs 直接就是 custom_sources
         all_source_configs = self.custom_sources
-
         if not all_source_configs:
             logging.warning(f"{CONFIG['CUSTOM_SOURCES_FILE']} 為空或不存在，沒有可獲取的來源。")
-            return [] # 直接返回空列表，停止後續操作
-
+            return []
         with ThreadPoolExecutor(max_workers=CONFIG["MAX_WORKERS"]) as executor:
             futures = [executor.submit(self._fetch_from_source, src['url'], src['name'], src.get('filter_hk', True)) for src in all_source_configs]
             for future in as_completed(futures):
@@ -171,7 +166,6 @@ class HKTVSourceFetcher:
         logging.info(f"總共獲取到 {len(enhanced_sources)} 個唯一的香港頻道")
         
         tested_sources = self._test_sources_connectivity_with_pebble(enhanced_sources)
-
         logging.info(f"連接測試後剩餘 {len(tested_sources)} 個有效頻道")
         self._generate_output_files(tested_sources)
         return tested_sources
@@ -179,6 +173,106 @@ class HKTVSourceFetcher:
     def _test_sources_connectivity_with_pebble(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         logging.info("開始深度測試頻道連接性 (使用 PebblePool，可強制超時)...")
         valid_sources = []
-        
         with ProcessPool(max_workers=CONFIG["MAX_WORKERS"]) as pool:
-            future_map = {pool.schedule(run_connectivity_test, arg
+            # --- ↓↓↓ 這就是之前出錯的那一行，現已修正 ↓↓↓ ---
+            future_map = {pool.schedule(run_connectivity_test, args=(source,), timeout=CONFIG["TASK_TIMEOUT"]): source for source in sources}
+            # --- ↑↑↑ 修正結束 ↑↑↑ ---
+            total = len(sources)
+            for i, future in enumerate(as_completed(future_map), 1):
+                source = future_map[future]
+                try:
+                    is_valid, response_time, status = future.result()
+                    if is_valid:
+                        source['response_time'] = response_time
+                        valid_sources.append(source)
+                        logging.info(f"[{i}/{total}] ✓ {source['name']} - {response_time}ms ({status})")
+                    else:
+                        logging.warning(f"[{i}/{total}] ✗ {source['name']} - {status}")
+                except TimeoutError:
+                    logging.warning(f"[{i}/{total}] ✗ {source['name']} - 測試嚴重逾時 (>{CONFIG['TASK_TIMEOUT']}s)，已被終止")
+                except Exception as e:
+                    logging.error(f"[{i}/{total}] ✗ {source['name']} - 測試時發生嚴重錯誤: {e}")
+        return valid_sources
+    
+    def _remove_duplicates(self) -> List[Dict[str, Any]]:
+        unique_sources = {}
+        for source in self.sources:
+            normalized_url = source['url'].split('?')[0].rstrip('/')
+            if normalized_url not in unique_sources:
+                unique_sources[normalized_url] = source
+        return list(unique_sources.values())
+
+    def _determine_category(self, name: str, group: str) -> str:
+        text_to_check = (name + group).upper()
+        for category, keywords in self.channel_categories.items():
+            if any(keyword.upper() in text_to_check for keyword in keywords):
+                return category
+        return '其他'
+
+    def _determine_resolution(self, name: str) -> str:
+        name_upper = name.upper()
+        if '4K' in name_upper or 'UHD' in name_upper: return '4K'
+        if '1080' in name_upper or 'FHD' in name_upper: return '1080p'
+        if '720' in name_upper or 'HD' in name_upper: return '720p'
+        if '480' in name_upper or 'SD' in name_upper: return '4-80p'
+        return '未知'
+
+    def _enhance_metadata(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        for source in sources:
+            name = source['name']
+            group = source.get('group', '')
+            source['category'] = self._determine_category(name, group)
+            source['resolution'] = self._determine_resolution(name)
+        return sources
+        
+    def _sort_sources(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        category_index = {category: idx for idx, category in enumerate(self.category_order)}
+        def sort_key(source):
+            cat = source['category']
+            return (category_index.get(cat, len(self.category_order)), source['name'])
+        return sorted(sources, key=sort_key)
+
+    def _generate_output_files(self, sources: List[Dict[str, Any]]):
+        if not sources:
+            logging.warning("沒有有效的來源可供生成檔案。")
+            return
+        sorted_sources = self._sort_sources(sources)
+        m3u_lines = ["#EXTM3U"]
+        for source in sorted_sources:
+            params = source.get("params", {})
+            m3u_lines.append(f'#EXTINF:-1 tvg-id="{params.get("tvg-id", "")}" tvg-name="{source["name"]}" tvg-logo="{params.get("tvg-logo", "")}" group-title="{source["category"]}",{source["name"]}')
+            m3u_lines.append(source["url"])
+        with open(CONFIG["OUTPUT_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
+        txt_lines = [f"# 香港電視直播源", f"# 更新時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"]
+        channels_by_category = {}
+        for source in sorted_sources:
+            cat = source['category']
+            channels_by_category.setdefault(cat, []).append(source)
+        for category in self.category_order:
+            if category in channels_by_category:
+                txt_lines.append(f"\n# {category}")
+                for channel in channels_by_category[category]:
+                    hd_flag = "[HD]" if channel['resolution'] in ['1080p', '720p'] else ""
+                    time_info = f"[{channel.get('response_time', 'N/A')}ms]"
+                    txt_lines.append(f"{channel['name']}{hd_flag}{time_info},{channel['url']}")
+        with open(CONFIG["OUTPUT_TXT_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(txt_lines))
+        logging.info(f"已生成 {CONFIG['OUTPUT_M3U_FILE']} 和 {CONFIG['OUTPUT_TXT_FILE']}")
+        with open(CONFIG["BACKUP_M3U_FILE"], "w", encoding="utf-8") as f: f.write("\n".join(m3u_lines))
+
+def main():
+    fetcher = HKTVSourceFetcher()
+    valid_sources = fetcher.fetch_all_sources()
+    if not valid_sources:
+        logging.warning("未能從網路獲取任何有效來源，嘗試從備份檔案恢復。")
+        backup_file = CONFIG["BACKUP_M3U_FILE"]
+        if os.path.exists(backup_file):
+            with open(backup_file, "r", encoding="utf-8") as f: content = f.read()
+            sources = fetcher._parse_m3u_content(content, "備份", filter_hk=False)
+            enhanced = fetcher._enhance_metadata(sources)
+            fetcher._generate_output_files(enhanced)
+            logging.info(f"已從 {backup_file} 成功恢復並生成檔案。")
+        else:
+            logging.error("無法獲取任何直播源，且備份檔案不存在，請檢查網路連線或來源設定。")
+
+if __name__ == "__main__":
+    main()
