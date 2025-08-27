@@ -1,40 +1,45 @@
 # 香港電視直播源
-# 更新時間: 2025-08-27 15:20:04
+# 更新時間: 2025-08-27 15:58:25
 
 # TVB
-TVB Plus[174ms][437KB/s],http://s1.an94tv.cfd/aktv/tvbplus/AKTV.m3u8
-TVBS网路新闻[80ms][1287KB/s],https://raw.githubusercontent.com/ChiSheng9/iptv/master/TV31.m3u8
-Tvbs 55頻道[78ms][432KB/s],http://s1.an94tv.cfd/zhongtian/tvbs55/AKTV.m3u8
-Tvbs 56頻道[78ms][412KB/s],http://s1.an94tv.cfd/zhongtian/tvbs56/AKTV.m3u8
-[HD]tvbplus[HD][1288ms][749KB/s],https://stream1.freetv.fun/98f8d72ac1e36f0754f5ffbe2be02dc15727ab560b18903a36a7ad4655d931a3.ctv
-[HD]明珠[HD][1277ms][351KB/s],https://stream1.freetv.fun/bd65d6374c3c3c8ea7096fc423bea1a52858c6e9f2e61a8ffaf70b03ede938b1.ctv
-「HK」翡翠台[300ms][409KB/s],http://r.jdshipin.com/n90gt
-明珠剧集台(北美)[131ms][405KB/s],http://s1.an94tv.cfd/aktv/CH-19/AKTV.m3u8
-明珠台[79ms][215KB/s],http://s1.an94tv.cfd/aktv/CH-2/AKTV.m3u8
-杭州明珠[576ms][180KB/s],https://stream1.freetv.fun/hang-zhou-ming-zhu-2.ctv
-翡翠一台(北美)[91ms][385KB/s],http://s1.an94tv.cfd/aktv/CH-8/AKTV.m3u8
-翡翠剧集台(北美)[92ms][436KB/s],http://s1.an94tv.cfd/aktv/CH-18/AKTV.m3u8
-翡翠台[91ms][439KB/s],http://s1.an94tv.cfd/aktv/CH-0/AKTV.m3u8
-翡翠娛樂台(北美)[78ms][442KB/s],http://s1.an94tv.cfd/aktv/CH-7/AKTV.m3u8
-翡翠综合台(北美)[77ms][438KB/s],http://s1.an94tv.cfd/aktv/CH-17/AKTV.m3u8
-黃金翡翠台[76ms][409KB/s],http://s1.an94tv.cfd/aktv/CH-6/AKTV.m3u8
+TVB Plus[97ms][462KB/s],http://s1.an94tv.cfd/aktv/tvbplus/AKTV.m3u8
+TVBS网路新闻[57ms][1617KB/s],https://raw.githubusercontent.com/ChiSheng9/iptv/master/TV31.m3u8
+Tvbs 55頻道[70ms][287KB/s],http://s1.an94tv.cfd/zhongtian/tvbs55/AKTV.m3u8
+Tvbs 56頻道[77ms][485KB/s],http://s1.an94tv.cfd/zhongtian/tvbs56/AKTV.m3u8
+[HD]tvbplus[HD][1413ms][569KB/s],https://stream1.freetv.fun/98f8d72ac1e36f0754f5ffbe2be02dc15727ab560b18903a36a7ad4655d931a3.ctv
+[HD]明珠[HD][1137ms][602KB/s],https://stream1.freetv.fun/bd65d6374c3c3c8ea7096fc423bea1a52858c6e9f2e61a8ffaf70b03ede938b1.ctv
+[HD]翡翠[HD][1031ms][1083KB/s],https://stream1.freetv.fun/96be57df137f3e952c37d15c81c54511223f65ab2929549598ef3c601f7f0add.ctv
+「HK」翡翠台[377ms][437KB/s],http://r.jdshipin.com/n90gt
+明珠剧集台(北美)[71ms][459KB/s],http://s1.an94tv.cfd/aktv/CH-19/AKTV.m3u8
+明珠台[316ms][422KB/s],http://s1.an94tv.cfd/aktv/CH-2/AKTV.m3u8
+杭州明珠[574ms][197KB/s],https://stream1.freetv.fun/hang-zhou-ming-zhu-2.ctv
+翡翠一台(北美)[83ms][476KB/s],http://s1.an94tv.cfd/aktv/CH-8/AKTV.m3u8
+翡翠剧集台(北美)[75ms][473KB/s],http://s1.an94tv.cfd/aktv/CH-18/AKTV.m3u8
+翡翠台[594ms][531KB/s],http://cdn9.163189.xyz/smt1.1.php?id=jade_twn
+翡翠台[141ms][486KB/s],http://s1.an94tv.cfd/aktv/CH-0/AKTV.m3u8
+翡翠娛樂台(北美)[73ms][459KB/s],http://s1.an94tv.cfd/aktv/CH-7/AKTV.m3u8
+翡翠综合台(北美)[258ms][483KB/s],http://s1.an94tv.cfd/aktv/CH-17/AKTV.m3u8
+黃金翡翠台[70ms][277KB/s],http://s1.an94tv.cfd/aktv/CH-6/AKTV.m3u8
 
 # ViuTV
-[BD]viutv1[1297ms][780KB/s],https://stream1.freetv.fun/627716b0d37b80e77aab34fc2860e50929ed1a7c05181198d38dbcac83796070.ctv
+[BD]viutv1[1404ms][578KB/s],https://stream1.freetv.fun/627716b0d37b80e77aab34fc2860e50929ed1a7c05181198d38dbcac83796070.ctv
+
+# HOY TV
+HOY TV[777ms][182KB/s],https://stream1.freetv.fun/hoy-tv-3.m3u8
 
 # RTHK
-鳳凰衛視香港台[78ms][412KB/s],http://s1.an94tv.cfd/aktv/CH-5/AKTV.m3u8
+港台电视 31[911ms][175KB/s],https://stream1.freetv.fun/gang-tai-dian-shi--31-2.m3u8
+鳳凰衛視香港台[71ms][278KB/s],http://s1.an94tv.cfd/aktv/CH-5/AKTV.m3u8
 
 # 新闻
-[HD]rhk 32[HD][1606ms][546KB/s],https://stream1.freetv.fun/291cb82ed8f9c88a1b9abeb35edb948416db46f5ec08ef0f25e95f4a927ceb37.ctv
-鳳凰衛視資訊台[83ms][407KB/s],http://s1.an94tv.cfd/aktv/CH-4/AKTV.m3u8
+[HD]rhk 32[HD][1431ms][561KB/s],https://stream1.freetv.fun/291cb82ed8f9c88a1b9abeb35edb948416db46f5ec08ef0f25e95f4a927ceb37.ctv
+鳳凰衛視資訊台[70ms][490KB/s],http://s1.an94tv.cfd/aktv/CH-4/AKTV.m3u8
 
 # 电影
-美亞電影台(HK)[130ms][409KB/s],http://s1.an94tv.cfd/aktv/hk/AKTV.m3u8
+美亞電影台(HK)[74ms][466KB/s],http://s1.an94tv.cfd/aktv/hk/AKTV.m3u8
 
 # 国际
-鳳凰衛視中文台[79ms][389KB/s],http://s1.an94tv.cfd/aktv/CH-3/AKTV.m3u8
+鳳凰衛視中文台[215ms][481KB/s],http://s1.an94tv.cfd/aktv/CH-3/AKTV.m3u8
 
 # 其他
-Animax (HK)[181ms][433KB/s],http://s1.an94tv.cfd/aktv/animaxhk/AKTV.m3u8
-[HD]凤凰香港[geo-blocked][HD][1379ms][338KB/s],https://stream1.freetv.fun/ada32bf1237524edb183dcdef8285a2da3dd390b3d59be112c09d1a9c38c1077.ctv
+Animax (HK)[76ms][463KB/s],http://s1.an94tv.cfd/aktv/animaxhk/AKTV.m3u8

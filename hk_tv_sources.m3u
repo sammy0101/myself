@@ -11,11 +11,13 @@ http://s1.an94tv.cfd/zhongtian/tvbs56/AKTV.m3u8
 https://stream1.freetv.fun/98f8d72ac1e36f0754f5ffbe2be02dc15727ab560b18903a36a7ad4655d931a3.ctv
 #EXTINF:-1 tvg-id="" tvg-name="[HD]明珠" tvg-logo="https://epg.pw/media/images/channel/2024/12/26/large/20241226141232820122_81.png" group-title="TVB",[HD]明珠
 https://stream1.freetv.fun/bd65d6374c3c3c8ea7096fc423bea1a52858c6e9f2e61a8ffaf70b03ede938b1.ctv
+#EXTINF:-1 tvg-id="368366" tvg-name="[HD]翡翠" tvg-logo="https://epg.pw/media/images/channel/2023/07/20/large/20230720173151124119_90.png" group-title="TVB",[HD]翡翠
+https://stream1.freetv.fun/96be57df137f3e952c37d15c81c54511223f65ab2929549598ef3c601f7f0add.ctv
 #EXTINF:-1 tvg-id="" tvg-name="「HK」翡翠台" tvg-logo="" group-title="TVB",「HK」翡翠台
 http://r.jdshipin.com/n90gt
 #EXTINF:-1 tvg-id="aktv/CH-19" tvg-name="明珠剧集台(北美)" tvg-logo="" group-title="TVB",明珠剧集台(北美)
 http://s1.an94tv.cfd/aktv/CH-19/AKTV.m3u8
-#EXTINF:-1 tvg-id="" tvg-name="明珠台" tvg-logo="https://gh.catmak.name/https://raw.githubusercontent.com/fanmingming/live/main/tv/明珠台.png" group-title="TVB",明珠台
+#EXTINF:-1 tvg-id="" tvg-name="明珠台" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/明珠台.png" group-title="TVB",明珠台
 http://s1.an94tv.cfd/aktv/CH-2/AKTV.m3u8
 #EXTINF:-1 tvg-id="" tvg-name="杭州明珠" tvg-logo="https://gh.catmak.name/https://raw.githubusercontent.com/fanmingming/live/main/tv/杭州明珠.png" group-title="TVB",杭州明珠
 https://stream1.freetv.fun/hang-zhou-ming-zhu-2.ctv
@@ -23,6 +25,8 @@ https://stream1.freetv.fun/hang-zhou-ming-zhu-2.ctv
 http://s1.an94tv.cfd/aktv/CH-8/AKTV.m3u8
 #EXTINF:-1 tvg-id="aktv/CH-18" tvg-name="翡翠剧集台(北美)" tvg-logo="" group-title="TVB",翡翠剧集台(北美)
 http://s1.an94tv.cfd/aktv/CH-18/AKTV.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="翡翠台" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/翡翠台.png" group-title="TVB",翡翠台
+http://cdn9.163189.xyz/smt1.1.php?id=jade_twn
 #EXTINF:-1 tvg-id="aktv/CH-0" tvg-name="翡翠台" tvg-logo="" group-title="TVB",翡翠台
 http://s1.an94tv.cfd/aktv/CH-0/AKTV.m3u8
 #EXTINF:-1 tvg-id="aktv/CH-7" tvg-name="翡翠娛樂台(北美)" tvg-logo="" group-title="TVB",翡翠娛樂台(北美)
@@ -33,6 +37,10 @@ http://s1.an94tv.cfd/aktv/CH-17/AKTV.m3u8
 http://s1.an94tv.cfd/aktv/CH-6/AKTV.m3u8
 #EXTINF:-1 tvg-id="" tvg-name="[BD]viutv1" tvg-logo="https://epg.pw/media/images/channel/2023/07/20/large/20230720193225282526_84.png" group-title="ViuTV",[BD]viutv1
 https://stream1.freetv.fun/627716b0d37b80e77aab34fc2860e50929ed1a7c05181198d38dbcac83796070.ctv
+#EXTINF:-1 tvg-id="" tvg-name="HOY TV" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/HOY TV.png" group-title="HOY TV",HOY TV
+https://stream1.freetv.fun/hoy-tv-3.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="港台电视 31" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/港台电视 31.png" group-title="RTHK",港台电视 31
+https://stream1.freetv.fun/gang-tai-dian-shi--31-2.m3u8
 #EXTINF:-1 tvg-id="aktv/CH-5" tvg-name="鳳凰衛視香港台" tvg-logo="" group-title="RTHK",鳳凰衛視香港台
 http://s1.an94tv.cfd/aktv/CH-5/AKTV.m3u8
 #EXTINF:-1 tvg-id="" tvg-name="[HD]rhk 32" tvg-logo="https://epg.pw/media/images/channel/2023/07/19/large/20230719083827856598_33.png" group-title="新闻",[HD]rhk 32
@@ -45,5 +53,3 @@ http://s1.an94tv.cfd/aktv/hk/AKTV.m3u8
 http://s1.an94tv.cfd/aktv/CH-3/AKTV.m3u8
 #EXTINF:-1 tvg-id="aktv/animaxhk" tvg-name="Animax (HK)" tvg-logo="" group-title="其他",Animax (HK)
 http://s1.an94tv.cfd/aktv/animaxhk/AKTV.m3u8
-#EXTINF:-1 tvg-id="" tvg-name="[HD]凤凰香港[geo-blocked]" tvg-logo="https://epg.pw/media/images/channel/2023/07/20/large/20230720101153992346_85.png" group-title="其他",[HD]凤凰香港[geo-blocked]
-https://stream1.freetv.fun/ada32bf1237524edb183dcdef8285a2da3dd390b3d59be112c09d1a9c38c1077.ctv
