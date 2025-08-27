@@ -9,14 +9,12 @@
 # --- 註解/暫時禁用 ---
 # 在行首加上 #，這一行會被完全忽略，就像不存在一樣
 
-https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.m3u
-https://aktv.space/live.m3u
-https://iptv-org.github.io/iptv/countries/hk.m3u
-https://epg.pw/test_channels_hong_kong.m3u
-https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u
+
+https://iptv-org.github.io/iptv/countries/hk.m3u (香港專屬列表)
+https://iptv-org.github.io/iptv/streams/hk.m3u (另一個香港列表)
+https://live.fanmingming.com/tv/m3u/ipv6.m3u (作者推薦，質量較高)
 https://raw.githubusercontent.com/YueChan/Live/main/IPTV.m3u
-https://raw.githubusercontent.com/BigBigGrandG/IPTV-URL/release/Gather.m3u
-https://raw.githubusercontent.com/DataShare-duo/MovieLiveUrl/refs/heads/main/movie_live.m3u
-https://raw.githubusercontent.com/hujingguang/ChinaIPTV/main/cnTV_AutoUpdate.m3u8
-https://raw.githubusercontent.com/imDazui/Tvlist-awesome-m3u-m3u8/master/m3u/%E5%8F%B0%E6%B9%BE%E9%A6%99%E6%B8%AF%E6%BE%B3%E9%97%A82023.m3u
-https://github.com/iptv-org/iptv/raw/refs/heads/master/streams/hk.m3u
+https://raw.githubusercontent.com/joevess/IPTV/main/sources/iptv.m3u (綜合列表，需要您的腳本篩選)
+https://raw.githubusercontent.com/joevess/IPTV/main/countries/hk.m3u (香港專屬)
+https://raw.githubusercontent.com/M3U-IPTV-Playlist/M3U-IPTV-Playlist/main/M3U-IPTV-Playlist.m3u
+https://epg.pw/test_channels_hong_kong.m3u
