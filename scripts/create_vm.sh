@@ -29,7 +29,7 @@ log "將要創建的虛擬機器名稱: $VM_NAME"
 MAX_RETRIES=${MAX_RETRIES:-5}
 RETRY_DELAY=${RETRY_DELAY:-600}
 # <-- 變更點：統一使用全大寫的 JITTER_RANGE
-JITTER_RANGE=${JITTER_RANGE:-60}
+JITTER_RANGE=${JITTER_RANGE:-120}
 log "策略: 共 $MAX_RETRIES 次嘗試，基礎延遲 ${RETRY_DELAY}s，隨機延遲 ${JITTER_RANGE}s。"
 
 LAST_ERROR_MESSAGE="已達最大重試次數，但未捕獲到詳細錯誤。"
