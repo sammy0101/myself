@@ -1,39 +1,17 @@
 # 香港電視直播源
-# 更新時間: 2025-08-29 00:51:14
+# 更新時間: 2025-08-31 00:58:29
 
 # TVB
-TVB Plus[94ms][456KB/s],http://s1.an94tv.cfd/aktv/tvbplus/AKTV.m3u8
-TVBS网路新闻[45ms][1434KB/s],https://raw.githubusercontent.com/ChiSheng9/iptv/master/TV31.m3u8
-Tvbs 55頻道[84ms][469KB/s],http://s1.an94tv.cfd/zhongtian/tvbs55/AKTV.m3u8
-Tvbs 56頻道[83ms][467KB/s],http://s1.an94tv.cfd/zhongtian/tvbs56/AKTV.m3u8
-[HD]翡翠[HD][638ms][4520KB/s],https://stream1.freetv.fun/96be57df137f3e952c37d15c81c54511223f65ab2929549598ef3c601f7f0add.ctv
-「HK」翡翠台[333ms][475KB/s],http://r.jdshipin.com/n90gt
-明珠剧集台(北美)[65ms][460KB/s],http://s1.an94tv.cfd/aktv/CH-19/AKTV.m3u8
-明珠台[83ms][260KB/s],http://s1.an94tv.cfd/aktv/CH-2/AKTV.m3u8
-杭州明珠[300ms][191KB/s],https://stream1.freetv.fun/hang-zhou-ming-zhu-2.ctv
-翡翠一台(北美)[99ms][443KB/s],http://s1.an94tv.cfd/aktv/CH-8/AKTV.m3u8
-翡翠剧集台(北美)[98ms][444KB/s],http://s1.an94tv.cfd/aktv/CH-18/AKTV.m3u8
-翡翠台[259ms][7476KB/s],http://cdn9.163189.xyz/smt1.1.php?id=jade_twn
-翡翠台[330ms][460KB/s],http://s1.an94tv.cfd/aktv/CH-0/AKTV.m3u8
-翡翠娛樂台(北美)[303ms][457KB/s],http://s1.an94tv.cfd/aktv/CH-7/AKTV.m3u8
-翡翠综合台(北美)[196ms][452KB/s],http://s1.an94tv.cfd/aktv/CH-17/AKTV.m3u8
-黃金翡翠台[73ms][465KB/s],http://s1.an94tv.cfd/aktv/CH-6/AKTV.m3u8
+TVBS网路新闻[87ms][1133KB/s],https://raw.githubusercontent.com/ChiSheng9/iptv/master/TV31.m3u8
+[HD]翡翠[HD][637ms][4359KB/s],https://stream1.freetv.fun/96be57df137f3e952c37d15c81c54511223f65ab2929549598ef3c601f7f0add.ctv
+杭州明珠[565ms][154KB/s],https://stream1.freetv.fun/hang-zhou-ming-zhu-2.ctv
+翡翠台[412ms][3993KB/s],http://cdn9.163189.xyz/smt1.1.php?id=jade_twn
 
 # HOY TV
-HOY TV[759ms][174KB/s],https://stream1.freetv.fun/hoy-tv-3.m3u8
+HOY TV[902ms][152KB/s],https://stream1.freetv.fun/hoy-tv-3.m3u8
 
 # RTHK
-港台电视 31[733ms][177KB/s],https://stream1.freetv.fun/gang-tai-dian-shi--31-2.m3u8
-鳳凰衛視香港台[90ms][455KB/s],http://s1.an94tv.cfd/aktv/CH-5/AKTV.m3u8
-
-# 新闻
-鳳凰衛視資訊台[121ms][462KB/s],http://s1.an94tv.cfd/aktv/CH-4/AKTV.m3u8
-
-# 电影
-美亞電影台(HK)[74ms][452KB/s],http://s1.an94tv.cfd/aktv/hk/AKTV.m3u8
+港台电视 31[796ms][152KB/s],https://stream1.freetv.fun/gang-tai-dian-shi--31-2.m3u8
 
 # 国际
-鳳凰衛視中文台[122ms][456KB/s],http://s1.an94tv.cfd/aktv/CH-3/AKTV.m3u8
-
-# 其他
-Animax (HK)[104ms][459KB/s],http://s1.an94tv.cfd/aktv/animaxhk/AKTV.m3u8
+[BD]鳳凰衛視香港[495ms][101KB/s],https://stream1.freetv.fun/5b951aef4004fe76a28e3cbe7fed668e433317b747c28c5ff7d437ba4d97c4d1.m3u8
