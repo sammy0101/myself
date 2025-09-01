@@ -3,6 +3,8 @@
 https://raw.githubusercontent.com/ChiSheng9/iptv/master/TV31.m3u8
 #EXTINF:-1 tvg-id="368366" tvg-name="[HD]翡翠" tvg-logo="https://epg.pw/media/images/channel/2023/07/20/large/20230720173151124119_90.png" group-title="TVB",[HD]翡翠
 https://stream1.freetv.fun/96be57df137f3e952c37d15c81c54511223f65ab2929549598ef3c601f7f0add.ctv
+#EXTINF:-1 tvg-id="" tvg-name="明珠台" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/明珠台.png" group-title="TVB",明珠台
+https://stream1.freetv.fun/ming-zhu-10.m3u8
 #EXTINF:-1 tvg-id="" tvg-name="杭州明珠" tvg-logo="https://gh.catmak.name/https://raw.githubusercontent.com/fanmingming/live/main/tv/杭州明珠.png" group-title="TVB",杭州明珠
 https://stream1.freetv.fun/hang-zhou-ming-zhu-2.ctv
 #EXTINF:-1 tvg-id="" tvg-name="翡翠台" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/翡翠台.png" group-title="TVB",翡翠台
@@ -11,5 +13,3 @@ http://cdn9.163189.xyz/smt1.1.php?id=jade_twn
 https://stream1.freetv.fun/hoy-tv-3.m3u8
 #EXTINF:-1 tvg-id="" tvg-name="港台电视 31" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/港台电视 31.png" group-title="RTHK",港台电视 31
 https://stream1.freetv.fun/gang-tai-dian-shi--31-2.m3u8
-#EXTINF:-1 tvg-id="368343" tvg-name="[BD]鳳凰衛視香港" tvg-logo="https://epg.pw/media/images/channel/2024/06/10/large/20240610235948618467_91.png" group-title="国际",[BD]鳳凰衛視香港
-https://stream1.freetv.fun/5b951aef4004fe76a28e3cbe7fed668e433317b747c28c5ff7d437ba4d97c4d1.m3u8
