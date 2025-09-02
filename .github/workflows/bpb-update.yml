@@ -17,16 +17,14 @@ jobs:
 
       - name: Download latest worker.js from BPB-Worker-Panel
         run: |
-          # 從 bia-pain-bache/BPB-Worker-Panel 的最新發行版中獲取 worker.js 的下載 URL
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases/latest" | grep "browser_download_url.*worker\.js" | cut -d : -f 2,3 | tr -d \")
-          # 下載檔案並命名為 worker.js
           curl -L -o worker.js $LATEST_RELEASE_URL
 
+      # --- 這是修改過的部分 ---
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          # 已將 Worker 名稱更新為您的 'dry-block-0743'
-          name: dry-block-0743
-          scriptPath: worker.js
+          # 使用 'command' 參數來指定 Worker 名稱和要部署的腳本檔案
+          command: deploy --name dry-block-0743 worker.js
