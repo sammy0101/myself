@@ -20,11 +20,10 @@ jobs:
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases/latest" | grep "browser_download_url.*worker\.js" | cut -d : -f 2,3 | tr -d \")
           curl -L -o worker.js $LATEST_RELEASE_URL
 
-      # --- 這是修改過的部分 ---
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          # 使用 'command' 參數來指定 Worker 名稱和要部署的腳本檔案
-          command: deploy --name dry-block-0743 worker.js
+          # 在指令中加入了 --compatibility-date 參數
+          command: deploy --name dry-block-0743 worker.js --compatibility-date 2025-09-02
