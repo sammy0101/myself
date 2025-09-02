@@ -1,3 +1,4 @@
+# .github/workflows/bpb-update.yml
 name: Deploy BPB Worker to Cloudflare
 
 on:
@@ -11,19 +12,11 @@ jobs:
     name: Deploy
     steps:
       - name: Checkout
-        # 需要 checkout 才能讓 runner 讀取到您的 wrangler.toml 檔案
         uses: actions/checkout@v4
 
-      - name: Download latest worker.js from BPB-Worker-Panel
+      - name: Download latest worker.js
         run: |
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" | jq -r '.[0].assets[] | select(.name == "worker.js") | .browser_download_url')
-
-          if [ -z "$LATEST_RELEASE_URL" ]; then
-            echo "::error::Could not find worker.js download URL in the latest release."
-            exit 1
-          fi
-          
-          echo "Downloading from $LATEST_RELEASE_URL"
           curl -L -o worker.js "$LATEST_RELEASE_URL"
 
       - name: Deploy to Cloudflare Workers
@@ -31,5 +24,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          # 指令簡化了！Wrangler 會自動讀取 wrangler.toml 檔案
           command: deploy
