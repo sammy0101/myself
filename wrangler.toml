@@ -1,16 +1,13 @@
-# wrangler.toml (Final Template Version)
+# wrangler.toml (The Final and Absolutely Correct Version)
 
 name = "dry-block-0743"
 main = "worker.js"
 compatibility_date = "2025-09-02"
 
-# 確保部署的是原始的混淆代碼
-[build]
-command = ""
-
-# --- KV 命名空間繫結 ---
-# "binding" 是您在程式碼中使用的變數名，即 "kv"
-# "id" 是一個獨特的佔位符，我們稍後會用真實 ID 替換它
-[[kv_namespaces]]
-binding = "kv"
-id = "__KV_NAMESPACE_ID_PLACEHOLDER__"
+# --- 這是解決問題的關鍵 ---
+# 我們在這裡明確地告訴 Wrangler，我們上傳的檔案是
+# 一個預先建置好的 "service-worker" 格式的腳本。
+# 這會讓 Wrangler 跳過其內建的、會破壞混淆的建置流程，
+# 並將您的 worker.js 檔案原封不動地直接上傳。
+[build.upload]
+format = "service-worker"
