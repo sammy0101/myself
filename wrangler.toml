@@ -1,22 +1,12 @@
-# wrangler.toml (Final Correct Version)
+# wrangler.toml (The Final and Correct Version)
 
-# 您的 Worker 名稱
 name = "dry-block-0743"
-
-# 主程式檔案
 main = "worker.js"
-
-# 相容性日期
 compatibility_date = "2025-09-02"
 
-# --- KV 命名空間繫結 ---
-# 這是您唯一需要聲明的繫結。
-# "binding" 是您在程式碼中使用的變數名。
-# "id" 的值將從名為 KV_NAMESPACE_ID 的 GitHub Secret/環境變數中讀取。
-[[kv_namespaces]]
-binding = "kv" # <--- 請確保這裡的 "MY_KV" 是您程式碼中實際使用的變數名
-id = "${KV_NAMESPACE_ID}"
-
-# 就是這樣！您不需要 [secrets] 區塊。
-# 只要您的密鑰 (例如 UUID) 已經在 Cloudflare 儀表板上設定好了，
-# Wrangler 就會自動保留它，不會將它刪除。
+# [build] 區塊是解決混淆代碼問題的關鍵。
+# 我們在這裡提供一個空的 build 指令，
+# 這會告訴 Wrangler：「不需要做任何建置或捆綁，
+# worker.js 檔案本身就是最終產物，請直接上傳它」。
+[build]
+command = ""
