@@ -1,4 +1,4 @@
-# wrangler.toml (Final Secure Version)
+# wrangler.toml (Final Correct Version)
 
 # 您的 Worker 名稱
 name = "dry-block-0743"
@@ -10,17 +10,13 @@ main = "worker.js"
 compatibility_date = "2025-09-02"
 
 # --- KV 命名空間繫結 ---
-# "binding" 是您在程式碼中使用的變數名
-# "id" 的值將從名為 KV_NAMESPACE_ID 的 GitHub Secret/環境變數中讀取
+# 這是您唯一需要聲明的繫結。
+# "binding" 是您在程式碼中使用的變數名。
+# "id" 的值將從名為 KV_NAMESPACE_ID 的 GitHub Secret/環境變數中讀取。
 [[kv_namespaces]]
-binding = "kv" # <--- 請將 MY_KV 換成您實際的變數名
+binding = "kv" # <--- 請確保這裡的 "MY_KV" 是您程式碼中實際使用的變數名
 id = "${KV_NAMESPACE_ID}"
 
-# --- 敏感變數 (Secrets) ---
-# 如果您有其他需要在儀表板上設定的密鑰
-# 請將它們的名字列在下面，Wrangler 會確保它們的繫結不被移除
-# [secrets]
-# A_SECRET_KEY
-# ANOTHER_SECRET_KEY
-UUID
-TR_PASS
+# 就是這樣！您不需要 [secrets] 區塊。
+# 只要您的密鑰 (例如 UUID) 已經在 Cloudflare 儀表板上設定好了，
+# Wrangler 就會自動保留它，不會將它刪除。
