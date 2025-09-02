@@ -1,27 +1,48 @@
 # .github/workflows/bpb-update.yml
-name: Deploy BPB Worker to Cloudflare
+
+name: Update Cloudflare Worker Script Only
 
 on:
+  # 定時排程：設定為每天 22:00 UTC，即香港時間早上 6:00。
   schedule:
     - cron: '0 22 * * *'
+  
+  # 允許您隨時從 GitHub 的 "Actions" 分頁手動觸發此工作流程來立即更新。
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-script:
     runs-on: ubuntu-latest
-    name: Deploy
+    name: Download and Deploy Script
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download latest worker.js
+      # 步驟一：下載最新的 worker.js 檔案
+      - name: Download latest worker.js from BPB-Worker-Panel
         run: |
+          echo "Fetching the chronologically latest release..."
+          # 從 GitHub API 取得所有發行版的列表，並從中選擇最新的那一個 (.[0])，
+          # 然後找到名為 "worker.js" 的附件並提取其下載 URL。
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" | jq -r '.[0].assets[] | select(.name == "worker.js") | .browser_download_url')
-          curl -L -o worker.js "$LATEST_RELEASE_URL"
 
-      - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: deploy
+          # 檢查是否成功獲取到 URL，如果沒有則報錯並中止
+          if [ -z "$LATEST_RELEASE_URL" ]; then
+            echo "::error::Could not find worker.js download URL in the latest release."
+            exit 1
+          fi
+          
+          echo "Found download URL: $LATEST_RELEASE_URL"
+          echo "Downloading worker.js..."
+          # 使用獲取到的 URL 下載檔案
+          curl -L -o worker.js "$LATEST_RELEASE_URL"
+          echo "Download complete."
+
+      # 步驟二：使用 Cloudflare API 直接上傳程式碼
+      # 這個方法只會更新腳本內容，不會影響任何在儀表板上的設定
+      - name: Upload Worker Script via Cloudflare API
+        run: |
+          echo "Uploading script to Cloudflare Worker: dry-block-0743"
+          # -X PUT：指定使用 PUT 方法來更新資源
+          # --data-binary "@worker.js"：將 worker.js 檔案的內容作為請求的主體 (body)
+          curl -X PUT "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/workers/scripts/dry-block-0743" \
+             -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+             -H "Content-Type: application/javascript" \
+             --data-binary "@worker.js"
