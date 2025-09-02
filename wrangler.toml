@@ -13,3 +13,5 @@ compatibility_date = "2025-09-02"
 # 它的值必須預先在 Cloudflare 儀表板設定好
 [secrets]
 # SECRET_KEY
+UUID
+TR_PASS
