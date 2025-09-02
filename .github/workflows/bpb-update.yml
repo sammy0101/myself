@@ -1,4 +1,4 @@
-# .github/workflows/bpb-update.yml (Final Correct Version)
+# .github/workflows/bpb-update.yml (Final Foolproof Version)
 
 name: Deploy Worker with Full Configuration
 
@@ -11,9 +11,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy
-    
-    # 我們將 env 區塊從這裡移除，因為它沒有被 wrangler-action 讀取到
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,14 +20,23 @@ jobs:
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" | jq -r '.[0].assets[] | select(.name == "worker.js") | .browser_download_url')
           curl -L -o worker.js "$LATEST_RELEASE_URL"
 
-      # --- 這是修改過的核心部分 ---
+      # --- 這是新增的關鍵步驟 ---
+      - name: Substitute KV ID in wrangler.toml
+        run: |
+          echo "Substituting KV Namespace ID in wrangler.toml..."
+          # 使用 sed 指令，直接在檔案中進行文本替換
+          # s/FIND/REPLACE/g 的意思是找到 FIND 並替換為 REPLACE
+          # 我們需要用 \ 來轉義 $ 符號，讓 sed 將它視為普通字符
+          sed -i "s/\${KV_NAMESPACE_ID}/${{ secrets.KV_NAMESPACE_ID }}/g" wrangler.toml
+          
+          echo "--- wrangler.toml content after substitution ---"
+          # 打印出修改後的檔案內容，以便在日誌中驗證替換是否成功
+          cat wrangler.toml
+          echo "------------------------------------------------"
+
+      # --- 部署步驟保持不變，但不再需要 env 區塊 ---
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
-          # 直接從 secrets 讀取，更清晰
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-        # 關鍵：將環境變數定義在 step 的內部
-        # 這樣可以確保 wrangler-action 在執行時一定能讀取到它
-        env:
-          KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID }}
