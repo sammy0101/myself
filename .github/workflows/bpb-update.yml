@@ -3,11 +3,8 @@
 name: Update Cloudflare Worker Script Only
 
 on:
-  # 定時排程：設定為每天 22:00 UTC，即香港時間早上 6:00。
   schedule:
     - cron: '0 22 * * *'
-  
-  # 允許您隨時從 GitHub 的 "Actions" 分頁手動觸發此工作流程來立即更新。
   workflow_dispatch:
 
 jobs:
@@ -15,34 +12,54 @@ jobs:
     runs-on: ubuntu-latest
     name: Download and Deploy Script
     steps:
-      # 步驟一：下載最新的 worker.js 檔案
       - name: Download latest worker.js from BPB-Worker-Panel
         run: |
-          echo "Fetching the chronologically latest release..."
-          # 從 GitHub API 取得所有發行版的列表，並從中選擇最新的那一個 (.[0])，
-          # 然後找到名為 "worker.js" 的附件並提取其下載 URL。
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" | jq -r '.[0].assets[] | select(.name == "worker.js") | .browser_download_url')
 
-          # 檢查是否成功獲取到 URL，如果沒有則報錯並中止
           if [ -z "$LATEST_RELEASE_URL" ]; then
             echo "::error::Could not find worker.js download URL in the latest release."
             exit 1
           fi
           
-          echo "Found download URL: $LATEST_RELEASE_URL"
-          echo "Downloading worker.js..."
-          # 使用獲取到的 URL 下載檔案
+          echo "Downloading from $LATEST_RELEASE_URL"
           curl -L -o worker.js "$LATEST_RELEASE_URL"
-          echo "Download complete."
+          
+          # 增加一個檢查，確保下載下來的檔案不是空的
+          if [ ! -s worker.js ]; then
+            echo "::error::Downloaded worker.js file is empty."
+            exit 1
+          fi
+          echo "Download complete. File size:"
+          ls -l worker.js
 
-      # 步驟二：使用 Cloudflare API 直接上傳程式碼
-      # 這個方法只會更新腳本內容，不會影響任何在儀表板上的設定
+      # --- 這是修改過的核心部分 ---
       - name: Upload Worker Script via Cloudflare API
         run: |
           echo "Uploading script to Cloudflare Worker: dry-block-0743"
-          # -X PUT：指定使用 PUT 方法來更新資源
-          # --data-binary "@worker.js"：將 worker.js 檔案的內容作為請求的主體 (body)
-          curl -X PUT "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/workers/scripts/dry-block-0743" \
+          # 使用 -f 或 --fail 讓 curl 在收到 4xx/5xx 錯誤時以非零狀態碼退出
+          # 將 API 的回傳結果儲存到一個變數中
+          RESPONSE=$(curl -X PUT "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/workers/scripts/dry-block-0743" \
              -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
              -H "Content-Type: application/javascript" \
-             --data-binary "@worker.js"
+             --data-binary "@worker.js" \
+             --fail --silent --show-error)
+
+          # 檢查 curl 指令是否成功執行
+          if [ $? -ne 0 ]; then
+            echo "::error::Curl command failed. See error output above."
+            # 即使 curl 失敗，也嘗試印出可能的回應內容
+            echo "API Response (if any): $RESPONSE"
+            exit 1
+          fi
+
+          # 將 API 的回傳結果印到日誌中，方便除錯
+          echo "Cloudflare API Response: $RESPONSE"
+
+          # 透過 jq 檢查回傳的 JSON 中 "success" 欄位是否為 true
+          SUCCESS=$(echo $RESPONSE | jq .success)
+          if [ "$SUCCESS" != "true" ]; then
+            echo "::error::Cloudflare API returned an error."
+            exit 1
+          fi
+          
+          echo "Successfully updated the worker script."
