@@ -1,10 +1,8 @@
 name: Deploy BPB Worker to Cloudflare
 
 on:
-  # 定時排程：設定為每天 22:00 UTC，即香港時間早上 6:00。
   schedule:
     - cron: '0 22 * * *'
-  # 允許您隨時從 GitHub 的 "Actions" 分頁手動觸發此工作流程來立即更新。
   workflow_dispatch:
 
 jobs:
@@ -13,13 +11,11 @@ jobs:
     name: Deploy
     steps:
       - name: Checkout
+        # 需要 checkout 才能讓 runner 讀取到您的 wrangler.toml 檔案
         uses: actions/checkout@v4
 
       - name: Download latest worker.js from BPB-Worker-Panel
         run: |
-          echo "Fetching the chronologically latest release..."
-          # 修改 API URL，從 /releases/latest 改為 /releases
-          # 修改 jq 指令，從回傳的列表中選取第一個元素 (.[0])
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" | jq -r '.[0].assets[] | select(.name == "worker.js") | .browser_download_url')
 
           if [ -z "$LATEST_RELEASE_URL" ]; then
@@ -27,14 +23,13 @@ jobs:
             exit 1
           fi
           
-          echo "Found download URL: $LATEST_RELEASE_URL"
-          echo "Downloading worker.js..."
+          echo "Downloading from $LATEST_RELEASE_URL"
           curl -L -o worker.js "$LATEST_RELEASE_URL"
-          echo "Download complete."
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: deploy --name dry-block-0743 worker.js --compatibility-date 2025-09-02
+          # 指令簡化了！Wrangler 會自動讀取 wrangler.toml 檔案
+          command: deploy
