@@ -1,25 +1,15 @@
 # wrangler.toml
-
-# 這是您的 Worker 名稱，必須和 Cloudflare 上的一致
 name = "dry-block-0743"
-
-# 這是您的 Worker 主程式檔案的路徑
 main = "worker.js"
-
-# 相容性日期，確保您的 Worker 執行環境穩定
 compatibility_date = "2025-09-02"
 
-# [IMPORTANT] 在這裡定義您所有的環境變數和密鑰
-# 這樣 Wrangler 部署時才知道它們的存在，才不會刪除它們
-
-# 如果您有非加密的普通變數，像這樣定義
+# [vars] 用於存放「非敏感」的公開變數
+# 它的值會直接被上傳
 [vars]
-# VARIABLE_ONE = "some_value"
-# ANOTHER_VARIABLE = "another_value"
+# API_URL = "https://example.com"
 
-# 如果您有需要加密的密鑰 (Secrets)，像這樣定義
-# 注意：這裡的值不重要，只是為了讓 Wrangler 知道這個密鑰存在。
-# 實際的密鑰值您仍然需要在 Cloudflare Dashboard 或用 `wrangler secret put` 指令設定一次。
-# [secrets]
-# MY_SECRET_TOKEN
-# ANOTHER_SECRET
+# [secrets] 用於聲明「敏感」的密鑰名稱
+# 注意：這裡只寫名字，絕對不要寫值！
+# 它的值必須預先在 Cloudflare 儀表板設定好
+[secrets]
+# SECRET_KEY
