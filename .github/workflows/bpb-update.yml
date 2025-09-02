@@ -12,54 +12,28 @@ jobs:
     runs-on: ubuntu-latest
     name: Download and Deploy Script
     steps:
-      - name: Download latest worker.js from BPB-Worker-Panel
+      - name: Download latest worker.js
         run: |
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" | jq -r '.[0].assets[] | select(.name == "worker.js") | .browser_download_url')
-
           if [ -z "$LATEST_RELEASE_URL" ]; then
             echo "::error::Could not find worker.js download URL in the latest release."
             exit 1
           fi
-          
           echo "Downloading from $LATEST_RELEASE_URL"
           curl -L -o worker.js "$LATEST_RELEASE_URL"
-          
-          # 增加一個檢查，確保下載下來的檔案不是空的
           if [ ! -s worker.js ]; then
             echo "::error::Downloaded worker.js file is empty."
             exit 1
           fi
-          echo "Download complete. File size:"
-          ls -l worker.js
+          echo "Download complete."
 
       # --- 這是修改過的核心部分 ---
-      - name: Upload Worker Script via Cloudflare API
+      - name: Upload Worker Script via Cloudflare API (Multipart format)
         run: |
           echo "Uploading script to Cloudflare Worker: dry-block-0743"
-          # 使用 -f 或 --fail 讓 curl 在收到 4xx/5xx 錯誤時以非零狀態碼退出
-          # 將 API 的回傳結果儲存到一個變數中
-          RESPONSE=$(curl -X PUT "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/workers/scripts/dry-block-0743" \
-             -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
-             -H "Content-Type: application/javascript" \
-             --data-binary "@worker.js" \
-             --fail --silent --show-error)
-
-          # 檢查 curl 指令是否成功執行
-          if [ $? -ne 0 ]; then
-            echo "::error::Curl command failed. See error output above."
-            # 即使 curl 失敗，也嘗試印出可能的回應內容
-            echo "API Response (if any): $RESPONSE"
-            exit 1
-          fi
-
-          # 將 API 的回傳結果印到日誌中，方便除錯
-          echo "Cloudflare API Response: $RESPONSE"
-
-          # 透過 jq 檢查回傳的 JSON 中 "success" 欄位是否為 true
-          SUCCESS=$(echo $RESPONSE | jq .success)
-          if [ "$SUCCESS" != "true" ]; then
-            echo "::error::Cloudflare API returned an error."
-            exit 1
-          fi
-          
-          echo "Successfully updated the worker script."
+          # 使用 multipart/form-data 格式上傳
+          # -F 指定一個表單欄位。我們需要兩個：一個是元數據，一個是腳本檔案本身。
+          curl -X PUT "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/workers/scripts/dry-block-0743" \
+            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+            -F 'metadata={"main_module": "worker.js"}' \
+            -F "script=@worker.js;type=application/javascript+module"
