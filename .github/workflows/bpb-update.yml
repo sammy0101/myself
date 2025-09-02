@@ -1,6 +1,7 @@
-# .github/workflows/bpb-update.yml (The Final and Complete Version)
+# .github/workflows/bpb-update.yml (Final Version with updated workflow name)
 
-name: Deploy Worker with Full Configuration
+# --- 這是修改過的部分 ---
+name: Deploy BPB Worker to Cloudflare
 
 on:
   schedule:
@@ -26,21 +27,13 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           
-          # --- 傳入您的所有配置 ---
-          
-          # 傳入您的祕密 (Secrets)
-          # 在這裡列出您在 Cloudflare 上使用的祕密名字
           secrets: |
             UUID
             TR_PASS
 
-          # 傳入您的 KV 命名空間繫結
-          # 格式為 BINDING_NAME: GITHUB_SECRET_NAME
           kv: |
-            kv: ${{ secrets.KV_NAMESPACE_ID_FOR_KV }}
+            kv: ${{ secrets.KV_NAMESPACE_ID }}
 
-        # 為了讓 action 能讀取到祕密的值，需要在 env 中提供
-        # 環境變數的命名規則是 "SECRET_" + "您在上面 secrets 區塊中寫的名字"
         env:
           SECRET_UUID: ${{ secrets.SECRET_FOR_UUID }}
           SECRET_TR_PASS: ${{ secrets.SECRET_FOR_TR_PASS }}
