@@ -1,6 +1,6 @@
-# .github/workflows/bpb-update.yml
+# .github/workflows/bpb-update.yml (Final Correct Version)
 
-name: Update Cloudflare Worker Script Only
+name: Deploy Worker with Full Configuration
 
 on:
   schedule:
@@ -8,32 +8,34 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-script:
+  deploy:
     runs-on: ubuntu-latest
-    name: Download and Deploy Script
+    name: Deploy
+    
+    # 關鍵：將 GitHub Secrets 映射為環境變數
+    env:
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID }}
+      # 如果您有其他 secrets，也像這樣加在這裡
+      # A_SECRET_KEY: ${{ secrets.A_SECRET_KEY }}
+
     steps:
+      # 步驟一：Checkout 程式碼，這樣才能讀取到 wrangler.toml
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 步驟二：下載最新的 worker.js
       - name: Download latest worker.js
         run: |
           LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" | jq -r '.[0].assets[] | select(.name == "worker.js") | .browser_download_url')
-          if [ -z "$LATEST_RELEASE_URL" ]; then
-            echo "::error::Could not find worker.js download URL in the latest release."
-            exit 1
-          fi
-          echo "Downloading from $LATEST_RELEASE_URL"
           curl -L -o worker.js "$LATEST_RELEASE_URL"
-          if [ ! -s worker.js ]; then
-            echo "::error::Downloaded worker.js file is empty."
-            exit 1
-          fi
-          echo "Download complete."
 
-      # --- 這是修改過的核心部分 ---
-      - name: Upload Worker Script via Cloudflare API (Multipart format)
-        run: |
-          echo "Uploading script to Cloudflare Worker: dry-block-0743"
-          # 使用 multipart/form-data 格式上傳
-          # -F 指定一個表單欄位。我們需要兩個：一個是元數據，一個是腳本檔案本身。
-          curl -X PUT "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/workers/scripts/dry-block-0743" \
-            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
-            -F 'metadata={"main_module": "worker.js"}' \
-            -F "script=@worker.js;type=application/javascript+module"
+      # 步驟三：使用 Wrangler 進行部署
+      # Wrangler 會自動讀取 wrangler.toml 和所有環境變數，進行一次完整的、安全的部署
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          # apiToken 和 accountId 現在從 env 中傳遞，更加清晰
+          apiToken: ${{ env.CF_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
