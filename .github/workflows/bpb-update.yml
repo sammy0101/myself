@@ -15,15 +15,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # --- 這是修改過的部分 ---
       - name: Download latest worker.js from BPB-Worker-Panel
         run: |
-          LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases/latest" | grep "browser_download_url.*worker\.js" | cut -d : -f 2,3 | tr -d \")
-          curl -L -o worker.js $LATEST_RELEASE_URL
+          echo "Fetching latest release information..."
+          # 使用 jq 工具安全地解析 JSON 並提取 worker.js 的下載 URL
+          LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases/latest" | jq -r '.assets[] | select(.name == "worker.js") | .browser_download_url')
+
+          # 增加一個檢查，確保 URL 真的被找到了
+          if [ -z "$LATEST_RELEASE_URL" ]; then
+            echo "::error::Could not find worker.js download URL in the latest release."
+            exit 1
+          fi
+          
+          echo "Found download URL: $LATEST_RELEASE_URL"
+          echo "Downloading worker.js..."
+          # 使用獲取到的 URL 下載檔案
+          curl -L -o worker.js "$LATEST_RELEASE_URL"
+          echo "Download complete."
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          # 在指令中加入了 --compatibility-date 參數
+          # 部署指令保持不變
           command: deploy --name dry-block-0743 worker.js --compatibility-date 2025-09-02
