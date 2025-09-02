@@ -1,4 +1,4 @@
-# .github/workflows/bpb-update.yml (The Absolutely Final and Correct Version)
+# .github/workflows/bpb-update.yml (The Absolutely Final Version with Version Lock)
 
 name: Deploy BPB Worker to Cloudflare
 
@@ -22,26 +22,26 @@ jobs:
 
       - name: Substitute KV ID in wrangler.toml
         run: |
-          # 使用 sed 指令，將 wrangler.toml 檔案中的佔位符替換為真實的 ID
           sed -i "s/__KV_NAMESPACE_ID_PLACEHOLDER__/${{ secrets.KV_NAMESPACE_ID }}/g" wrangler.toml
           echo "--- Patched wrangler.toml ---"
-          # 打印出修改後的檔案內容，以便在日誌中驗證替換是否成功
           cat wrangler.toml
 
       - name: Upload Secrets to Cloudflare
-        # wrangler 指令需要 API Token 來進行認證
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
           echo "Uploading secrets..."
-          # 使用 echo 和管道，安全地將 GitHub Secret 的值傳遞給 wrangler secret put 指令
-          echo "${{ secrets.SECRET_FOR_UUID }}" | npx wrangler secret put UUID
-          echo "${{ secrets.SECRET_FOR_TR_PASS }}" | npx wrangler secret put TR_PASS
+          # 安裝並使用一個穩定的 Wrangler v3 版本來上傳祕密
+          npm install --save-dev wrangler@3.57.0
+          echo "${{ secrets.SECRET_FOR_UUID }}" | npx wrangler@3 secret put UUID
+          echo "${{ secrets.SECRET_FOR_TR_PASS }}" | npx wrangler@3 secret put TR_PASS
           echo "Secrets uploaded."
 
       - name: Deploy to Cloudflare Workers
-        # 現在，祕密已上傳，wrangler.toml 也已正確，我們只需要執行部署
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}```
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          # --- 這是新增的、最關鍵的一行 ---
+          # 鎖定 wrangler 的版本，確保我們的工作環境穩定且可預測
+          wranglerVersion: '3.57.0'
