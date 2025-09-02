@@ -1,0 +1,26 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  release:
+    types: [published] # 當新版本發布時，會觸發此工作流程。
+  workflow_dispatch: # 允許您從「Actions」分頁手動觸發此工作流程。
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download latest worker.js
+        run: |
+          LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases/latest" | grep "browser_download_url.*worker\.js" | cut -d : -f 2,3 | tr -d \")
+          curl -L -o worker.js $LATEST_RELEASE_URL
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          # 將 'your-worker-name' 替換為您在 Cloudflare 上的實際 Worker 名稱。
+          name: dry-block-0743
+          scriptPath: worker.js
