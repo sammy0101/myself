@@ -1,4 +1,4 @@
-# .github/workflows/bpb-update.yml (The Final, Direct API Version)
+# .github/workflows/bpb-update.yml (The Final, Intelligent Version)
 
 name: Deploy BPB Worker to Cloudflare
 
@@ -12,51 +12,77 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      # 步驟一：檢查版本
+      # 這個步驟會同時從 GitHub 獲取最新版本，並從您的 KV 獲取當前已部署的版本
+      - name: Check for New Version
+        id: check_version # 給這個步驟一個 ID，以便後續步驟可以引用它的輸出
+        env:
+          # 將所有需要的祕密都傳入這個步驟
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID }}
+        run: |
+          # 獲取 GitHub 上最新的發行版標籤 (tag)
+          LATEST_TAG=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" | jq -r '.[0].tag_name')
+          
+          # 從您的 KV 中讀取上次部署的版本標籤
+          # 我們使用 --fail 參數，如果讀取失敗（例如第一次運行，鍵不存在），DEPLOYED_TAG 會是空的
+          DEPLOYED_TAG=$(curl -s --fail -X GET "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${KV_NAMESPACE_ID}/values/DEPLOYED_VERSION_TAG" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}") || echo ""
+          
+          echo "Latest available version: ${LATEST_TAG}"
+          echo "Currently deployed version: ${DEPLOYED_TAG}"
+          
+          # 比較版本。如果它們不相等，就設定一個輸出變數 `should_deploy` 為 true
+          if [ "${LATEST_TAG}" != "${DEPLOYED_TAG}" ]; then
+            echo "New version found. Proceeding with deployment."
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "latest_tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          else
+            echo "Worker is already up-to-date. Nothing to do."
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+          fi
 
+      # 步驟二：下載程式碼 (僅在需要部署時執行)
       - name: Download latest worker.js
+        # 這個 if 條件會檢查上一步的輸出，只有在 should_deploy 為 'true' 時才執行
+        if: steps.check_version.outputs.should_deploy == 'true'
         run: |
-          LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" | jq -r '.[0].assets[] | select(.name == "worker.js") | .browser_download_url')
-          curl -L -o worker.js "$LATEST_RELEASE_URL"
+          DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases/tags/${{ steps.check_version.outputs.latest_tag }}" | jq -r '.assets[] | select(.name == "worker.js") | .browser_download_url')
+          curl -L -o worker.js "$DOWNLOAD_URL"
 
-      # --- 這是新增的、最關鍵的步驟 ---
+      # 步驟三：建立元數據檔案 (僅在需要部署時執行)
       - name: Create Metadata File
+        if: steps.check_version.outputs.should_deploy == 'true'
         run: |
-          # 我們在這裡動態地建立一個 metadata.json 檔案。
-          # 這個檔案包含了 Cloudflare API 需要的、關於您 Worker 的所有繫結資訊。
           echo '{
             "main_module": "worker.js",
             "bindings": [
-              {
-                "type": "kv_namespace",
-                "name": "kv",
-                "namespace_id": "${{ secrets.KV_NAMESPACE_ID }}"
-              },
-              {
-                "type": "secret_text",
-                "name": "UUID",
-                "text": "${{ secrets.SECRET_FOR_UUID }}"
-              },
-              {
-                "type": "secret_text",
-                "name": "TR_PASS",
-                "text": "${{ secrets.SECRET_FOR_TR_PASS }}"
-              }
+              { "type": "kv_namespace", "name": "kv", "namespace_id": "${{ secrets.KV_NAMESPACE_ID }}" },
+              { "type": "secret_text", "name": "UUID", "text": "${{ secrets.SECRET_FOR_UUID }}" },
+              { "type": "secret_text", "name": "TR_PASS", "text": "${{ secrets.SECRET_FOR_TR_PASS }}" }
             ]
           }' > metadata.json
-          
-          echo "--- Generated metadata.json ---"
           cat metadata.json
 
-      # --- 使用 curl 直接、完整地部署所有內容 ---
+      # 步驟四：部署 Worker (僅在需要部署時執行)
       - name: Deploy Worker via Cloudflare API
+        if: steps.check_version.outputs.should_deploy == 'true'
         run: |
-          # 這個 curl 指令使用 multipart/form-data 格式，
-          # 將元數據 (metadata.json) 和您的原始混淆代碼 (worker.js)
-          # 在同一個請求中，原封不動地發送給 Cloudflare。
-          # 這將確保您的所有設定都被完整地、原子化地更新。
           curl --fail -X PUT "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/workers/scripts/dry-block-0743" \
             -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
             -F "metadata=@metadata.json;type=application/json" \
             -F "script=@worker.js;type=application/javascript+module"
+
+      # 步驟五：更新 KV 中的版本記錄 (僅在成功部署後執行)
+      - name: Update Deployed Version Tag in KV
+        if: steps.check_version.outputs.should_deploy == 'true'
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID }}
+        run: |
+          echo "Updating deployed version tag to ${{ steps.check_version.outputs.latest_tag }}"
+          curl --fail -X PUT "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${KV_NAMESPACE_ID}/values/DEPLOYED_VERSION_TAG" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -d "${{ steps.check_version.outputs.latest_tag }}"
