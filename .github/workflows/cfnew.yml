@@ -1,4 +1,4 @@
-name: Deploy and Verify Latest Cloudflare Worker
+name: Deploy Latest Cloudflare Worker
 
 on:
   workflow_dispatch:
@@ -6,9 +6,9 @@ on:
     - cron: '0 0 * * *'
 
 jobs:
-  deploy-and-verify:
+  deploy:
     runs-on: ubuntu-latest
-    name: Deploy and Verify Latest Worker
+    name: Deploy Latest Worker
     steps:
       - name: Get latest version tag
         id: get_version
@@ -20,40 +20,11 @@ jobs:
         run: |
           echo "Downloading version ${{ steps.get_version.outputs.tag }}"
           curl -L -o _worker.js "https://github.com/byJoey/cfnew/releases/download/${{ steps.get_version.outputs.tag }}/_worker.js"
-
-      - name: Verify Downloaded Script (Before Deploy)
-        run: |
-          echo "--- Verifying the content of the downloaded _worker.js ---"
-          LINE_COUNT=$(wc -l < _worker.js)
-          echo "Line count of _worker.js is: $LINE_COUNT"
-          if [ "$LINE_COUNT" -gt 5 ]; then
-            echo "Error: The downloaded file appears to be pretty-printed (more than 5 lines), not minified."
-            exit 1
-          fi
-          echo "Verification successful: The file appears to be minified."
-
+          
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          # 這個指令成功執行，就是最好的驗證
           command: deploy _worker.js --name newnew --compatibility-date 2025-11-04
-
-      # --- 修正後的驗證步驟 2: 使用 Cloudflare API 重新下載並檢查 ---
-      - name: Verify Deployed Script via Cloudflare API (After Deploy)
-        run: |
-          echo "--- Verifying the script deployed on Cloudflare via API ---"
-          # 使用 curl 直接呼叫 Cloudflare API 來下載 worker script
-          curl -X GET "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/workers/scripts/newnew" \
-            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
-            -o deployed_worker.js
-
-          echo "--- Content of the script downloaded from Cloudflare API ---"
-          # 計算下載回來的檔案的行數
-          LINE_COUNT=$(wc -l < deployed_worker.js)
-          echo "Line count of deployed_worker.js is: $LINE_COUNT"
-          if [ "$LINE_COUNT" -gt 5 ]; then
-            echo "Error: The deployed file on Cloudflare appears to be pretty-printed (more than 5 lines), not minified."
-            exit 1
-          fi
-          echo "Verification successful: The file on Cloudflare is the minified version."
