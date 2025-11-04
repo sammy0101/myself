@@ -1,4 +1,4 @@
-name: Deploy Latest Cloudflare Worker
+name: Deploy Intensively Obfuscated Cloudflare Worker
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy Latest Worker
+    name: Download, Obfuscate, and Deploy
     steps:
       - name: Get latest version tag
         id: get_version
@@ -20,11 +20,23 @@ jobs:
         run: |
           echo "Downloading version ${{ steps.get_version.outputs.tag }}"
           curl -L -o _worker.js "https://github.com/byJoey/cfnew/releases/download/${{ steps.get_version.outputs.tag }}/_worker.js"
+
+      # --- 核心步驟：使用 javascript-obfuscator 進行強力混淆 ---
+      - name: Intensively Obfuscate Script
+        run: |
+          echo "Installing javascript-obfuscator..."
+          # 安裝混淆工具
+          npm install javascript-obfuscator -g
           
+          echo "Obfuscating the script..."
+          # 執行混淆，並將結果輸出到新檔案 _worker.obfuscated.js
+          # 即使 Cloudflare 美化了這個檔案，它依然是高度混淆、難以閱讀的
+          javascript-obfuscator _worker.js --output _worker.obfuscated.js --compact true --control-flow-flattening true --dead-code-injection false --string-array true --string-array-encoding 'base64' --unicode-escape-sequence false
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          # 這個指令成功執行，就是最好的驗證
-          command: deploy _worker.js --name newnew --compatibility-date 2025-11-04
+          # 注意：我們部署的是經過二次強力混淆後的 _worker.obfuscated.js 檔案
+          command: deploy _worker.obfuscated.js --name newnew --compatibility-date 2025-11-04
