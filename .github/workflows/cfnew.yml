@@ -1,4 +1,4 @@
-name: Deploy cfnew
+name: Deploy and Verify Latest Cloudflare Worker
 
 on:
   workflow_dispatch:
@@ -21,11 +21,9 @@ jobs:
           echo "Downloading version ${{ steps.get_version.outputs.tag }}"
           curl -L -o _worker.js "https://github.com/byJoey/cfnew/releases/download/${{ steps.get_version.outputs.tag }}/_worker.js"
 
-      # --- 驗證步驟 1: 檢查本地下載的檔案 ---
       - name: Verify Downloaded Script (Before Deploy)
         run: |
           echo "--- Verifying the content of the downloaded _worker.js ---"
-          # 計算檔案的行數。一個標準的混淆檔案通常只有 1 行。
           LINE_COUNT=$(wc -l < _worker.js)
           echo "Line count of _worker.js is: $LINE_COUNT"
           if [ "$LINE_COUNT" -gt 5 ]; then
@@ -35,24 +33,22 @@ jobs:
           echo "Verification successful: The file appears to be minified."
 
       - name: Deploy to Cloudflare Workers
-        id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           command: deploy _worker.js --name newnew --compatibility-date 2025-11-04
 
-      # --- 驗證步驟 2: 從 Cloudflare 下載剛部署的 Worker 並檢查 ---
-      - name: Verify Deployed Script (After Deploy)
-        # 為了執行 wrangler 指令，我們需要提供 API Token
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      # --- 修正後的驗證步驟 2: 使用 Cloudflare API 重新下載並檢查 ---
+      - name: Verify Deployed Script via Cloudflare API (After Deploy)
         run: |
-          echo "--- Verifying the script deployed on Cloudflare ---"
-          # 使用 wrangler 將剛剛部署的 worker 下載回來
-          npx wrangler worker download newnew --out deployed_worker.js
-          
-          echo "--- Content of the script downloaded from Cloudflare ---"
+          echo "--- Verifying the script deployed on Cloudflare via API ---"
+          # 使用 curl 直接呼叫 Cloudflare API 來下載 worker script
+          curl -X GET "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/workers/scripts/newnew" \
+            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+            -o deployed_worker.js
+
+          echo "--- Content of the script downloaded from Cloudflare API ---"
           # 計算下載回來的檔案的行數
           LINE_COUNT=$(wc -l < deployed_worker.js)
           echo "Line count of deployed_worker.js is: $LINE_COUNT"
