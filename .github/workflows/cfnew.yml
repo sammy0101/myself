@@ -1,0 +1,24 @@
+name: Deploy Latest Cloudflare Worker
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Latest Worker
+    steps:
+      - name: Download latest Worker script from GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo byJoey/cfnew --pattern '_worker.js' --output _worker.js
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          name: newnew  # <--- 在這裡新增您要的名稱
