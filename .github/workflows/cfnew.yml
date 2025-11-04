@@ -13,7 +13,6 @@ jobs:
       - name: Get latest version tag
         id: get_version
         run: |
-          # 改為從 tags API 獲取最新的標籤，GitHub API 返回的 tags 預設是按日期倒序的
           LATEST_TAG=$(curl --silent "https://api.github.com/repos/byJoey/cfnew/tags" | jq -r '.[0].name')
           echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
@@ -27,4 +26,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          name: newnew # <--- 您可以在這裡自定義您的 Worker 名稱
+          # 這裡已將 Worker 名稱修改為 newnew
+          command: deploy _worker.js --name newnew
