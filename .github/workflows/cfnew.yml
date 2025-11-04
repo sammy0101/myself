@@ -1,42 +1,86 @@
-name: Deploy Intensively Obfuscated Cloudflare Worker
+name: 自動同步 byJoey/cfnew 的 Worker
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 1 * * *" # 每天凌晨1點運行
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: '是否強制更新（忽略版本檢查）'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write # 給予 workflow 寫倉庫的權限
 
 jobs:
-  deploy:
+  sync:
     runs-on: ubuntu-latest
-    name: Download, Obfuscate, and Deploy
     steps:
-      - name: Get latest version tag
-        id: get_version
-        run: |
-          LATEST_TAG=$(curl --silent "https://api.github.com/repos/byJoey/cfnew/tags" | jq -r '.[0].name')
-          echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+      - name: 檢出您的倉庫
+        uses: actions/checkout@v4
 
-      - name: Download latest Worker script
+      - name: 檢查並同步最新 Worker
+        env:
+          # 我們不再需要 GITHUB_TOKEN，因為 Cloudflare API 是公開的
+          REPO_API_URL: https://api.github.com/repos/byJoey/cfnew/tags
+          TARGET_FILE: _worker.js
         run: |
-          echo "Downloading version ${{ steps.get_version.outputs.tag }}"
-          curl -L -o _worker.js "https://github.com/byJoey/cfnew/releases/download/${{ steps.get_version.outputs.tag }}/_worker.js"
+          # 日誌函數
+          log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
 
-      # --- 核心步驟：使用 javascript-obfuscator 進行強力混淆 ---
-      - name: Intensively Obfuscate Script
-        run: |
-          echo "Installing javascript-obfuscator..."
-          # 安裝混淆工具
-          npm install javascript-obfuscator -g
+          log "開始檢查 byJoey/cfnew 更新..."
+
+          # 獲取本地記錄的版本號
+          LOCAL_VERSION=$(cat version.txt 2>/dev/null || echo "0.0.0")
+          log "本地版本: $LOCAL_VERSION"
+
+          # 獲取最新的 Tag 資訊
+          log "獲取最新 Tag..."
+          # 這裡我們改用 tags API，因為作者沒有建立 Releases
+          LATEST_TAG=$(curl -s "$REPO_API_URL" | jq -r '.[0].name')
+
+          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" == "null" ]; then
+            log "ERROR: 無法從 byJoey/cfnew 獲取最新版本號"
+            exit 1
+          fi
+          log "最新版本: $LATEST_TAG"
+
+          # 判斷是否需要更新
+          FORCE_UPDATE=${{ github.event.inputs.force_update || 'false' }}
+          if [ "$LOCAL_VERSION" == "$LATEST_TAG" ] && [ "$FORCE_UPDATE" != "true" ]; then
+            log "已是最新版本，無需同步"
+            # 為了讓後續步驟知道我們沒有更新，建立一個輸出
+            echo "updated=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           
-          echo "Obfuscating the script..."
-          # 執行混淆，並將結果輸出到新檔案 _worker.obfuscated.js
-          # 即使 Cloudflare 美化了這個檔案，它依然是高度混淆、難以閱讀的
-          javascript-obfuscator _worker.js --output _worker.obfuscated.js --compact true --control-flow-flattening true --dead-code-injection false --string-array true --string-array-encoding 'base64' --unicode-escape-sequence false
+          # 組合下載連結
+          DOWNLOAD_URL="https://github.com/byJoey/cfnew/releases/download/${LATEST_TAG}/${TARGET_FILE}"
 
-      - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
+          log "發現新版本，開始下載 $DOWNLOAD_URL..."
+          curl -L -o "$TARGET_FILE" "$DOWNLOAD_URL"
+          if [ $? -ne 0 ]; then
+            log "ERROR: 下載 $TARGET_FILE 失敗"
+            exit 1
+          fi
+
+          log "更新本地 version.txt 檔案..."
+          echo "$LATEST_TAG" > version.txt
+          
+          # 建立輸出，方便 commit message 使用
+          echo "updated=true" >> $GITHUB_OUTPUT
+          echo "tag_name=$LATEST_TAG" >> $GITHUB_OUTPUT
+          log "同步完成，新版本為: $LATEST_TAG"
+        id: check_update # 給這個步驟一個ID，方便後續引用
+
+      - name: 提交更新到您的倉庫
+        # 只有在 check_update 步驟的輸出 updated 為 true 時才執行
+        if: steps.check_update.outputs.updated == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          # 注意：我們部署的是經過二次強力混淆後的 _worker.obfuscated.js 檔案
-          command: deploy _worker.obfuscated.js --name newnew --compatibility-date 2025-11-04
+          commit_message: "🔄 自動同步 Worker 版本: ${{ steps.check_update.outputs.tag_name }}"
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
