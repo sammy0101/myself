@@ -1,4 +1,4 @@
-name: Deploy and Verify Latest Cloudflare Worker
+name: Deploy cfnew
 
 on:
   workflow_dispatch:
