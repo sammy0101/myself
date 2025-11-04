@@ -26,5 +26,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          # 這裡已將 Worker 名稱修改為 newnew
-          command: deploy _worker.js --name newnew
+          # 加上 --compatibility-date 參數來解決錯誤
+          command: deploy _worker.js --name newnew --compatibility-date 2025-11-04
