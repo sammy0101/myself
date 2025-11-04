@@ -10,15 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy Latest Worker
     steps:
-      - name: Download latest Worker script from GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Get latest version tag
+        id: get_version
         run: |
-          gh release download --repo byJoey/cfnew --pattern '_worker.js' --output _worker.js
+          # 改為從 tags API 獲取最新的標籤，GitHub API 返回的 tags 預設是按日期倒序的
+          LATEST_TAG=$(curl --silent "https://api.github.com/repos/byJoey/cfnew/tags" | jq -r '.[0].name')
+          echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
+      - name: Download latest Worker script
+        run: |
+          echo "Downloading version ${{ steps.get_version.outputs.tag }}"
+          curl -L -o _worker.js "https://github.com/byJoey/cfnew/releases/download/${{ steps.get_version.outputs.tag }}/_worker.js"
+          
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          name: newnew  # <--- 在這裡新增您要的名稱
+          name: newnew # <--- 您可以在這裡自定義您的 Worker 名稱
