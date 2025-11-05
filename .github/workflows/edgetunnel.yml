@@ -2,11 +2,13 @@ name: 同步 cmliu/edgetunnel Worker
 
 on:
   schedule:
-    - cron: "0 2,14 * * *" # 每日執行兩次
-  workflow_dispatch:
+    # --- 核心修改點 ---
+    # 設定為 16:00 UTC，這對應到香港/台灣時間 (UTC+8) 的次日 00:00
+    - cron: "0 16 * * *"
+  workflow_dispatch: # 允許手動觸發
 
 permissions:
-  contents: write
+  contents: write # 給予 workflow 寫倉庫的權限
 
 jobs:
   sync:
@@ -17,19 +19,26 @@ jobs:
 
       - name: 下載最新的 _worker.js
         run: |
+          # 日誌函數，方便在 Actions 紀錄中查看進度
           log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
+          
           DOWNLOAD_URL="https://raw.githubusercontent.com/cmliu/edgetunnel/beta2.0/_worker.js"
+          
           log "開始從 $DOWNLOAD_URL 下載..."
           curl -L -o "_worker.js" "$DOWNLOAD_URL"
+          
+          # 檢查下載是否成功
           if [ $? -ne 0 ]; then
             log "ERROR: 下載 _worker.js 失敗"
             exit 1
           fi
+          
           log "下載成功。"
 
       - name: 提交更新到您的倉庫
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "🔄 自動同步 _worker.js"
+          # 使用指定的使用者資訊
           commit_user_name: GitHub Actions Bot
           commit_user_email: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
