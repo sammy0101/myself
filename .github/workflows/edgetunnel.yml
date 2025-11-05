@@ -2,7 +2,6 @@ name: 同步 cmliu/edgetunnel Worker
 
 on:
   schedule:
-    # --- 核心修改點 ---
     # 設定為 16:00 UTC，這對應到香港/台灣時間 (UTC+8) 的次日 00:00
     - cron: "0 16 * * *"
   workflow_dispatch: # 允許手動觸發
@@ -22,7 +21,8 @@ jobs:
           # 日誌函數，方便在 Actions 紀錄中查看進度
           log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
           
-          DOWNLOAD_URL="https://raw.githubusercontent.com/cmliu/edgetunnel/beta2.0/_worker.js"
+          # --- 核心修改點: 更新下載連結到 main 分支 ---
+          DOWNLOAD_URL="https://raw.githubusercontent.com/cmliu/edgetunnel/main/_worker.js"
           
           log "開始從 $DOWNLOAD_URL 下載..."
           curl -L -o "_worker.js" "$DOWNLOAD_URL"
