@@ -1,42 +1,38 @@
-name: 部署 cmliu/edgetunnel Worker
+name: 同步 cmliu/edgetunnel Worker
 
 on:
   schedule:
-    # --- 核心修改點 ---
-    # 這裡的設定表示在 UTC 時間的 02:00 和 14:00 各執行一次
-    # 這大約對應於亞洲時區的上午10點和晚上10點
+    # 每日執行兩次 (UTC 02:00 和 14:00)
     - cron: "0 2,14 * * *"
   workflow_dispatch: # 允許手動觸發
 
+permissions:
+  contents: write # 給予 workflow 寫倉庫的權限
+
 jobs:
-  deploy:
+  sync:
     runs-on: ubuntu-latest
-    name: 下載並部署到 Cloudflare
     steps:
+      - name: 檢出您的倉庫
+        uses: actions/checkout@v4
+
       - name: 下載最新的 _worker.js
         run: |
           # 日誌函數
           log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
-
-          # GitHub 檔案頁面的 URL 必須轉換成 raw 內容的 URL
           DOWNLOAD_URL="https://raw.githubusercontent.com/cmliu/edgetunnel/beta2.0/_worker.js"
-
           log "開始從 $DOWNLOAD_URL 下載..."
-          
-          # 使用 curl 下載檔案並存成本地的 _worker.js
           curl -L -o "_worker.js" "$DOWNLOAD_URL"
-          
           if [ $? -ne 0 ]; then
             log "ERROR: 下載 _worker.js 失敗"
             exit 1
           fi
-          
           log "下載成功。"
 
-      - name: 部署到 Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
+      - name: 提交更新到您的倉庫
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          # 這裡我們組合了之前所有成功的指令參數
-          command: deploy _worker.js --name llwwss --compatibility-date 2024-03-20
+          commit_message: "🔄 自動同步 cmliu/edgetunnel/_worker.js"
+          # 使用指定的使用者資訊，以確保能觸發 Cloudflare 的部署
+          commit_user_name: GitHub Actions Bot
+          commit_user_email: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
