@@ -1,4 +1,4 @@
-name: 自動同步 byJoey/cfnew 的 Pages (自適應 ZIP 名稱)
+name: 自動同步 byJoey/cfnew
 
 on:
   push:
