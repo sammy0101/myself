@@ -1,4 +1,4 @@
-name: 自動同步 byJoey/cfnew 的 Worker
+name: 自動同步 byJoey/cfnew 的 Pages (自適應 ZIP 名稱)
 
 on:
   push:
@@ -25,9 +25,8 @@ jobs:
 
       - name: 檢查並同步最新 Worker
         env:
-          # 我們不再需要 GITHUB_TOKEN，因為 Cloudflare API 是公開的
-          REPO_API_URL: https://api.github.com/repos/byJoey/cfnew/tags
-          TARGET_FILE: _worker.js
+          # --- 核心修改點: 改用 releases API ---
+          REPO_API_URL: https://api.github.com/repos/byJoey/cfnew/releases
         run: |
           # 日誌函數
           log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
@@ -38,13 +37,13 @@ jobs:
           LOCAL_VERSION=$(cat version.txt 2>/dev/null || echo "0.0.0")
           log "本地版本: $LOCAL_VERSION"
 
-          # 獲取最新的 Tag 資訊
-          log "獲取最新 Tag..."
-          # 這裡我們改用 tags API，因為作者沒有建立 Releases
-          LATEST_TAG=$(curl -s "$REPO_API_URL" | jq -r '.[0].name')
+          # 獲取最新的 Release 完整資訊
+          log "獲取最新 Release 資訊..."
+          LATEST_RELEASE_INFO=$(curl -s "$REPO_API_URL" | jq '.[0]')
+          LATEST_TAG=$(echo "$LATEST_RELEASE_INFO" | jq -r '.tag_name')
 
           if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" == "null" ]; then
-            log "ERROR: 無法從 byJoey/cfnew 獲取最新版本號"
+            log "ERROR: 無法從 byJoey/cfnew 獲取最新版本資訊"
             exit 1
           fi
           log "最新版本: $LATEST_TAG"
@@ -53,32 +52,48 @@ jobs:
           FORCE_UPDATE=${{ github.event.inputs.force_update || 'false' }}
           if [ "$LOCAL_VERSION" == "$LATEST_TAG" ] && [ "$FORCE_UPDATE" != "true" ]; then
             log "已是最新版本，無需同步"
-            # 為了讓後續步驟知道我們沒有更新，建立一個輸出
             echo "updated=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           
-          # 組合下載連結
-          DOWNLOAD_URL="https://github.com/byJoey/cfnew/releases/download/${LATEST_TAG}/${TARGET_FILE}"
+          # --- 核心修改點: 動態發現目標 ZIP 檔案 ---
+          log "動態發現目標 ZIP 檔案..."
+          # 篩選出附件中，結尾是 .zip 且名稱不是 "Source code" 開頭的檔案
+          TARGET_ASSET_INFO=$(echo "$LATEST_RELEASE_INFO" | jq '.assets[] | select(.name | endswith(".zip") and (startswith("Source code") | not))')
+          
+          # 從篩選出的資訊中，提取檔案名稱和下載連結
+          TARGET_FILE=$(echo "$TARGET_ASSET_INFO" | jq -r '.name')
+          DOWNLOAD_URL=$(echo "$TARGET_ASSET_INFO" | jq -r '.browser_download_url')
 
-          log "發現新版本，開始下載 $DOWNLOAD_URL..."
-          curl -L -o "$TARGET_FILE" "$DOWNLOAD_URL"
+          if [ -z "$TARGET_FILE" ] || [ "$TARGET_FILE" == "null" ]; then
+            log "ERROR: 在版本 $LATEST_TAG 中未找到目標 ZIP 檔案！"
+            exit 1
+          fi
+          log "成功發現目標檔案: $TARGET_FILE"
+          log "下載連結: $DOWNLOAD_URL"
+
+          log "發現新版本，開始下載..."
+          wget -q -O "$TARGET_FILE" "$DOWNLOAD_URL"
           if [ $? -ne 0 ]; then
             log "ERROR: 下載 $TARGET_FILE 失敗"
             exit 1
           fi
 
+          log "解壓縮 $TARGET_FILE..."
+          unzip -o "$TARGET_FILE"
+
+          log "清理已下載的 ZIP 檔案..."
+          rm "$TARGET_FILE"
+
           log "更新本地 version.txt 檔案..."
           echo "$LATEST_TAG" > version.txt
           
-          # 建立輸出，方便 commit message 使用
           echo "updated=true" >> $GITHUB_OUTPUT
           echo "tag_name=$LATEST_TAG" >> $GITHUB_OUTPUT
           log "同步完成，新版本為: $LATEST_TAG"
-        id: check_update # 給這個步驟一個ID，方便後續引用
+        id: check_update
 
       - name: 提交更新到您的倉庫
-        # 只有在 check_update 步驟的輸出 updated 為 true 時才執行
         if: steps.check_update.outputs.updated == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
