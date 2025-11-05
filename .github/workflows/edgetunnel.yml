@@ -1,1 +1,42 @@
+name: 部署 cmliu/edgetunnel Worker
 
+on:
+  schedule:
+    # --- 核心修改點 ---
+    # 這裡的設定表示在 UTC 時間的 02:00 和 14:00 各執行一次
+    # 這大約對應於亞洲時區的上午10點和晚上10點
+    - cron: "0 2,14 * * *"
+  workflow_dispatch: # 允許手動觸發
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: 下載並部署到 Cloudflare
+    steps:
+      - name: 下載最新的 _worker.js
+        run: |
+          # 日誌函數
+          log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
+
+          # GitHub 檔案頁面的 URL 必須轉換成 raw 內容的 URL
+          DOWNLOAD_URL="https://raw.githubusercontent.com/cmliu/edgetunnel/beta2.0/_worker.js"
+
+          log "開始從 $DOWNLOAD_URL 下載..."
+          
+          # 使用 curl 下載檔案並存成本地的 _worker.js
+          curl -L -o "_worker.js" "$DOWNLOAD_URL"
+          
+          if [ $? -ne 0 ]; then
+            log "ERROR: 下載 _worker.js 失敗"
+            exit 1
+          fi
+          
+          log "下載成功。"
+
+      - name: 部署到 Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          # 這裡我們組合了之前所有成功的指令參數
+          command: deploy _worker.js --name llwwss --compatibility-date 2024-03-20
