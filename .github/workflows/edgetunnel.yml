@@ -2,12 +2,11 @@ name: 同步 cmliu/edgetunnel Worker
 
 on:
   schedule:
-    # 每日執行兩次 (UTC 02:00 和 14:00)
-    - cron: "0 2,14 * * *"
-  workflow_dispatch: # 允許手動觸發
+    - cron: "0 2,14 * * *" # 每日執行兩次
+  workflow_dispatch:
 
 permissions:
-  contents: write # 給予 workflow 寫倉庫的權限
+  contents: write
 
 jobs:
   sync:
@@ -18,7 +17,6 @@ jobs:
 
       - name: 下載最新的 _worker.js
         run: |
-          # 日誌函數
           log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
           DOWNLOAD_URL="https://raw.githubusercontent.com/cmliu/edgetunnel/beta2.0/_worker.js"
           log "開始從 $DOWNLOAD_URL 下載..."
@@ -33,6 +31,5 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "🔄 自動同步 cmliu/edgetunnel/_worker.js"
-          # 使用指定的使用者資訊，以確保能觸發 Cloudflare 的部署
           commit_user_name: GitHub Actions Bot
           commit_user_email: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
