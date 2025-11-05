@@ -181,8 +181,8 @@ export default {
                     const UD = Math.floor(((now - today.getTime()) / 86400000) * 24 * 1099511627776 / 2);
                     let pagesSum = UD, workersSum = UD, total = 24 * 1099511627776;
                     if (config_JSON.CF.Usage.success) {
-                        pagesSum = config_JSON.CF.Usage.pages_sum;
-                        workersSum = config_JSON.CF.Usage.workers_sum;
+                        pagesSum = config_JSON.CF.Usage.pages;
+                        workersSum = config_JSON.CF.Usage.workers;
                         total = 1024 * 100;
                     }
                     const responseHeaders = {
@@ -222,7 +222,7 @@ export default {
                                 //   - 域名: hj.xmm1993.top:2096#备注 或 example.com
                                 //   - IPv4: 166.0.188.128:443#Los Angeles 或 166.0.188.128
                                 //   - IPv6: [2606:4700::]:443#CMCC 或 [2606:4700::]
-                                const regex = /^(\[[\da-fA-F:]+\]|[\da-fA-F:.]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(?::(\d+))?(?:#(.+))?$/;
+                                const regex = /^(\[[\da-fA-F:]+\]|[\d.]+|[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*)(?::(\d+))?(?:#(.+))?$/;
                                 const match = 原始地址.match(regex);
 
                                 let 节点地址, 节点端口 = "443", 节点备注;
