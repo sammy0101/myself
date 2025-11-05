@@ -25,7 +25,6 @@ jobs:
 
       - name: 檢查並同步最新 Worker
         env:
-          # --- 核心修改點: 改用 releases API ---
           REPO_API_URL: https://api.github.com/repos/byJoey/cfnew/releases
         run: |
           # 日誌函數
@@ -56,12 +55,10 @@ jobs:
             exit 0
           fi
           
-          # --- 核心修改點: 動態發現目標 ZIP 檔案 ---
+          # 動態發現目標 ZIP 檔案
           log "動態發現目標 ZIP 檔案..."
-          # 篩選出附件中，結尾是 .zip 且名稱不是 "Source code" 開頭的檔案
           TARGET_ASSET_INFO=$(echo "$LATEST_RELEASE_INFO" | jq '.assets[] | select(.name | endswith(".zip") and (startswith("Source code") | not))')
           
-          # 從篩選出的資訊中，提取檔案名稱和下載連結
           TARGET_FILE=$(echo "$TARGET_ASSET_INFO" | jq -r '.name')
           DOWNLOAD_URL=$(echo "$TARGET_ASSET_INFO" | jq -r '.browser_download_url')
 
@@ -94,8 +91,11 @@ jobs:
         id: check_update
 
       - name: 提交更新到您的倉庫
+        # 只有在 check_update 步驟的輸出 updated 為 true 時才執行
         if: steps.check_update.outputs.updated == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "🔄 自動同步 Worker 版本: ${{ steps.check_update.outputs.tag_name }}"
-          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          # --- 核心修改點: 指定提交者資訊，以觸發 Cloudflare Pages 部署 ---
+          commit_user_name: GitHub Actions Bot # 您可以自訂這個名稱
+          commit_user_email: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
