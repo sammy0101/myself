@@ -22,7 +22,7 @@ jobs:
           log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
           
           # --- 核心修改點: 更新下載連結到 main 分支 ---
-          DOWNLOAD_URL="https://raw.githubusercontent.com/cmliu/edgetunnel/main/_worker.js"
+          DOWNLOAD_URL="https://github.com/cmliu/edgetunnel/blob/beta2.0/_worker.js"
           
           log "開始從 $DOWNLOAD_URL 下載..."
           curl -L -o "_worker.js" "$DOWNLOAD_URL"
