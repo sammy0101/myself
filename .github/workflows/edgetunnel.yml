@@ -30,6 +30,6 @@ jobs:
       - name: 提交更新到您的倉庫
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "🔄 自動同步 cmliu/edgetunnel/_worker.js"
+          commit_message: "🔄 自動同步 _worker.js"
           commit_user_name: GitHub Actions Bot
           commit_user_email: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
