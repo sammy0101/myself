@@ -327,10 +327,11 @@ function handleConnection(ws, request, FIXED_UUID) {
         const port = (bytes[offset1] << 8) | bytes[offset1 + 1];
         const addrType = bytes[offset1 + 2];
         const offset2 = offset1 + 3;
-        const { host, length } = parseAddress(bytes, offset2, addrType === 1 ? 1 : addrType === 2 ? 2 : 4);
+        const addressType = addrType === 3 ? 4 : addrType === 2 ? 3 : 1;
+        const { host, length } = parseAddress(bytes, offset2, addressType);
         const payload = bytes.slice(length);
         if (host.includes(atob('c3BlZWQuY2xvdWRmbGFyZS5jb20='))) throw new Error('Access');
-        const sock = await createConnection(host, port);
+        const sock = await createConnection(host, port, addressType, 'V');
         await sock.opened;
         const w = sock.writable.getWriter();
         if (payload.length) await w.write(payload);
@@ -345,13 +346,13 @@ function handleConnection(ws, request, FIXED_UUID) {
         const socks5Data = bytes.slice(58);
         if (socks5Data.byteLength < 6) throw new Error("invalid SOCKS5 request data");
         if (socks5Data[0] !== 1) throw new Error("unsupported command, only TCP (CONNECT) is allowed");
-
-        const { host, length } = parseAddress(socks5Data, 2, socks5Data[1]);
-        if (!host) throw new Error(`address is empty, addressType is ${socks5Data[1]}`);
+        const addressType = socks5Data[1]
+        const { host, length } = parseAddress(socks5Data, 2, addressType);
+        if (!host) throw new Error(`address is empty, addressType is ${addressType}`);
         if (host.includes(atob('c3BlZWQuY2xvdWRmbGFyZS5jb20='))) throw new Error('Access');
 
         const port = (socks5Data[length] << 8) | socks5Data[length + 1];
-        const sock = await createConnection(host, port);
+        const sock = await createConnection(host, port, addressType, 'T');
         await sock.opened;
         const w = sock.writable.getWriter();
         const payload = socks5Data.slice(length + 4);
@@ -359,7 +360,8 @@ function handleConnection(ws, request, FIXED_UUID) {
         return { socket: sock, writer: w, reader: sock.readable.getReader(), info: { host, port } };
     }
 
-    async function createConnection(host, port) {
+    async function createConnection(host, port, addressType, 协议类型) {
+        console.log(JSON.stringify({ configJSON: { 协议类型: 协议类型, 目标类型: addressType, 目标地址: host, 目标端口: port, 反代IP: 反代IP, 代理类型: 启用SOCKS5反代, 全局代理: 启用SOCKS5全局反代, 代理账号: 我的SOCKS5账号 } }));
         async function useSocks5Pattern(address) {
             return SOCKS5白名单.some(pattern => {
                 let regexPattern = pattern.replace(/\*/g, '.*');
@@ -370,7 +372,7 @@ function handleConnection(ws, request, FIXED_UUID) {
         启用SOCKS5全局反代 = (await useSocks5Pattern(host)) || 启用SOCKS5全局反代;
         let sock;
         if (启用SOCKS5反代 == 'socks5' && 启用SOCKS5全局反代) {
-            sock = await socks5Connect(host, port);
+            sock = await socks5Connect(host, port, addressType);
         } else if (启用SOCKS5反代 == 'http' && 启用SOCKS5全局反代) {
             sock = await httpConnect(host, port);
         } else {
@@ -379,7 +381,7 @@ function handleConnection(ws, request, FIXED_UUID) {
                 await sock.opened;
             } catch {
                 if (启用SOCKS5反代 == 'socks5') {
-                    sock = await socks5Connect(host, port);
+                    sock = await socks5Connect(host, port, addressType);
                 } else if (启用SOCKS5反代 == 'http') {
                     sock = await httpConnect(host, port);
                 } else {
@@ -552,8 +554,7 @@ function parseAddress(bytes, offset, addrType) {
             host = Array.from(bytes.slice(offset, offset + length)).join('.');
             endOffset = offset + length;
             break;
-        case 2:
-        case 3:
+        case 3: // Domain name
             length = bytes[offset];
             host = new TextDecoder().decode(bytes.slice(offset + 1, offset + 1 + length));
             endOffset = offset + 1 + length;
@@ -631,31 +632,39 @@ async function httpConnect(addressRemote, portRemote) {
     return sock;
 }
 
-async function socks5Connect(targetHost, targetPort) {
+async function socks5Connect(addressRemote, portRemote, addressType = 3) {
     const { username, password, hostname, port } = parsedSocks5Address;
-    const sock = connect({
-        hostname: hostname,
-        port: port
-    });
-    await sock.opened;
-    const w = sock.writable.getWriter();
-    const r = sock.readable.getReader();
-    await w.write(new Uint8Array([5, 2, 0, 2]));
-    const auth = (await r.read()).value;
-    if (auth[1] === 2 && username) {
-        const user = new TextEncoder().encode(username);
-        const pass = new TextEncoder().encode(password);
-        await w.write(new Uint8Array([1, user.length, ...user, pass.length, ...pass]));
-        await r.read();
+    const socket = connect({ hostname, port });
+    const writer = socket.writable.getWriter();
+    const reader = socket.readable.getReader();
+    const encoder = new TextEncoder();
+
+    // SOCKS5 握手: VER(5) + NMETHODS(2) + METHODS(0x00,0x02)
+    await writer.write(new Uint8Array([5, 2, 0, 2]));
+    let res = (await reader.read()).value;
+    if (res[0] !== 0x05 || res[1] === 0xff) return;
+
+    // 如果需要用户名密码认证
+    if (res[1] === 0x02) {
+        if (!username || !password) return;
+        await writer.write(new Uint8Array([1, username.length, ...encoder.encode(username), password.length, ...encoder.encode(password)]));
+        res = (await reader.read()).value;
+        if (res[0] !== 0x01 || res[1] !== 0x00) return;
     }
-    const domain = new TextEncoder().encode(targetHost);
-    await w.write(new Uint8Array([5, 1, 0, 3, domain.length, ...domain,
-        targetPort >> 8, targetPort & 0xff
-    ]));
-    await r.read();
-    w.releaseLock();
-    r.releaseLock();
-    return sock;
+
+    // 构建目标地址 (ATYP + DST.ADDR)
+    const DSTADDR = addressType === 1 ? new Uint8Array([1, ...addressRemote.split('.').map(Number)])
+        : addressType === 3 ? new Uint8Array([3, addressRemote.length, ...encoder.encode(addressRemote)])
+            : new Uint8Array([4, ...addressRemote.split(':').flatMap(x => [parseInt(x.slice(0, 2), 16), parseInt(x.slice(2), 16)])]);
+
+    // 发送连接请求: VER(5) + CMD(1=CONNECT) + RSV(0) + DSTADDR + DST.PORT
+    await writer.write(new Uint8Array([5, 1, 0, ...DSTADDR, portRemote >> 8, portRemote & 0xff]));
+    res = (await reader.read()).value;
+    if (res[1] !== 0x00) return;
+
+    writer.releaseLock();
+    reader.releaseLock();
+    return socket;
 }
 
 //////////////////////////////////////////////////功能性函数///////////////////////////////////////////////
@@ -1204,7 +1213,7 @@ async function SOCKS5可用性验证(代理协议 = 'socks5', 代理参数) {
     const { username, password, hostname, port } = parsedSocks5Address;
     const 完整代理参数 = username && password ? `${username}:${password}@${hostname}:${port}` : `${hostname}:${port}`;
     try {
-        const tcpSocket = 代理协议 == 'socks5' ? await socks5Connect('check.socks5.090227.xyz', 80) : await httpConnect('check.socks5.090227.xyz', 80);
+        const tcpSocket = 代理协议 == 'socks5' ? await socks5Connect('check.socks5.090227.xyz', 80, 3) : await httpConnect('check.socks5.090227.xyz', 80);
         if (!tcpSocket) return { success: false, error: '无法连接到代理服务器', proxy: 代理协议 + "://" + 完整代理参数 };
         try {
             const writer = tcpSocket.writable.getWriter(), encoder = new TextEncoder();
