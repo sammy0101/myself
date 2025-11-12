@@ -22,7 +22,7 @@ jobs:
           log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
           
           # --- 核心修改點: 更新為正確的 raw 下載連結 ---
-          DOWNLOAD_URL="https://github.com/cmliu/edgetunnel/raw/main/_worker.js"
+          DOWNLOAD_URL="https://github.com/cmliu/edgetunnel/raw/refs/heads/main/_worker.js"
           
           log "開始從 $DOWNLOAD_URL 下載..."
           curl -L -o "_worker.js" "$DOWNLOAD_URL"
