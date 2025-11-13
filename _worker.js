@@ -1230,7 +1230,6 @@ async function 读取config_JSON(env, host, userID, 重置配置 = false) {
         传输协议: "ws",
         跳过证书验证: true,
         优选订阅生成: {
-            地区优选: true, // 新增地区优选开关
             local: true, // true: 基于本地的优选地址  false: 优选订阅生成器
             本地IP库: {
                 随机IP: true, // 当 随机IP 为true时生效，启用随机IP的数量，否则使用KV内的ADD.txt
@@ -1332,18 +1331,9 @@ async function 读取config_JSON(env, host, userID, 重置配置 = false) {
 }
 
 async function 生成随机IP(request, count = 16) {
-    const asnMap = { '9808': 'cmcc', '4837': 'cu', '4134': 'ct' };
-    let asn = request.cf.asn;
-    let cidr_url;
-
-    // 检查地区优选开关
-    if (config_JSON.优选订阅生成.地区优选) {
-        cidr_url = asnMap[asn] ? `https://raw.githubusercontent.com/cmliu/cmliu/main/CF-CIDR/${asnMap[asn]}.txt` : 'https://raw.githubusercontent.com/cmliu/cmliu/main/CF-CIDR.txt';
-    } else {
-        cidr_url = 'https://raw.githubusercontent.com/cmliu/cmliu/main/CF-CIDR.txt';
-        asn = null; // 清除asn，避免cfname被错误设置
-    }
-    const cfname = asn && config_JSON.优选订阅生成.地区优选 ? ({ '9808': 'CF移动优选', '4837': 'CF联通优选', '4134': 'CF电信优选' }[asn] || 'CF官方优选') : 'CF官方优选';
+    const asnMap = { '9808': 'cmcc', '4837': 'cu', '4134': 'ct' }, asn = request.cf.asn;
+    const cidr_url = asnMap[asn] ? `https://raw.githubusercontent.com/cmliu/cmliu/main/CF-CIDR/${asnMap[asn]}.txt` : 'https://raw.githubusercontent.com/cmliu/cmliu/main/CF-CIDR.txt';
+    const cfname = { '9808': 'CF移动优选', '4837': 'CF联通优选', '4134': 'CF电信优选' }[asn] || 'CF官方优选';
     let cidrList = [];
     try { const res = await fetch(cidr_url); cidrList = res.ok ? await 整理成数组(await res.text()) : ['104.16.0.0/13']; } catch { cidrList = ['104.16.0.0/13']; }
 
@@ -1835,4 +1825,3 @@ async function html1101(host, 访问IP) {
 </body>
 </html>`;
 }
-
