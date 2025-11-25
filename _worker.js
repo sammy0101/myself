@@ -177,8 +177,12 @@ export default {
                     if (本地优选IP == 'null') 本地优选IP = (await 生成随机IP(request, config_JSON.优选订阅生成.本地IP库.随机数量, config_JSON.优选订阅生成.本地IP库.指定端口))[1];
                     return new Response(本地优选IP, { status: 200, headers: { 'Content-Type': 'text/plain;charset=utf-8', 'asn': request.cf.asn } });
                 } else if (访问路径 === 'admin/cf.json') {// CF配置文件
-                    return new Response(JSON.stringify(request.cf, null, 2), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
-                }
+    // 强制伪装国家代码为 CN，解除在线优选的地区限制
+    let fakeCF = JSON.parse(JSON.stringify(request.cf || {}));
+    fakeCF.country = 'CN';
+    fakeCF.city = 'Shanghai'; // 可选：伪装城市
+    return new Response(JSON.stringify(fakeCF, null, 2), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+}
 
                 await 请求日志记录(env, request, 访问IP, 'Admin_Login', config_JSON);
                 return fetch(Pages静态页面 + '/admin');
@@ -1459,3 +1463,4 @@ async function html1101(host, 访问IP) {
 </body>
 </html>`;
 }
+
