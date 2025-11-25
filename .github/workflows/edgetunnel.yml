@@ -1,9 +1,9 @@
 name: 同步 cmliu/edgetunnel Worker
 
 on:
-#  schedule:
+  schedule:
     # 設定為 16:00 UTC，這對應到香港/台灣時間 (UTC+8) 的次日 00:00
-#    - cron: "0 16 * * *"
+    - cron: "0 16 * * *"
   workflow_dispatch: # 允許手動觸發
 
 permissions:
