@@ -1,0 +1,47 @@
+name: Sync CF-CIDR File
+
+on:
+  schedule:
+    # 每天北京時間 4:00 執行 (UTC 20:00)
+    # 你可以根據需要修改 cron 表達式
+    - cron: '0 20 * * *'
+  workflow_dispatch: # 允許手動點擊按鈕執行
+
+jobs:
+  sync-file:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 給予寫入權限以便提交更改
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main  # 確保這是你倉庫的主分支名稱 (main 或 master)
+
+      - name: Download CF-CIDR.txt
+        run: |
+          # 下載文件並覆蓋當前目錄下的 CF-CIDR.txt
+          # 如果你想放在特定資料夾，可以在這裡加上路徑，例如: wget -O rule/CF-CIDR.txt ...
+          wget -O CF-CIDR.txt https://github.com/cmliu/cmliu/raw/refs/heads/main/CF-CIDR.txt
+          
+          # 檢查文件是否下載成功
+          if [ ! -f CF-CIDR.txt ]; then
+            echo "Download failed!"
+            exit 1
+          fi
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 檢查是否有變更
+          git add CF-CIDR.txt
+          if git diff --staged --quiet; then
+            echo "No changes detected."
+          else
+            git commit -m "Auto-sync: Update CF-CIDR.txt from upstream"
+            git push
+            echo "Changes pushed successfully."
+          fi
