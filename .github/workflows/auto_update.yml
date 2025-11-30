@@ -1,0 +1,39 @@
+name: Update Shadowrocket Rules
+
+on:
+  schedule:
+    # 每天國際標準時間 20:00 (台灣時間凌晨 04:00) 執行
+    - cron: '0 20 * * *'
+  workflow_dispatch: # 允許手動點擊執行
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 賦予寫入權限以提交更改
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+
+      - name: Run update script
+        run: |
+          python update_rules.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add Ai.conf
+          # 如果沒有變更，commit 會失敗，所以加個 || exit 0 讓它繼續
+          git commit -m "Auto update Ai.conf rules" || exit 0
+          git push
