@@ -1,0 +1,38 @@
+name: Sync AI Rules for HK
+
+on:
+  schedule:
+    # 每天北京时间早上 8 点运行 (UTC 时间 0 点)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 允许手动点击按钮触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 赋予写权限以便提交更改
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+
+      - name: Run filter script
+        run: |
+          python process.py
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add geosite_ai_hk_proxy.list
+          # 只有当文件发生变化时才提交
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto sync: Filtered HK direct AI domains" && git push)
