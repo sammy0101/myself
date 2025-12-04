@@ -31,7 +31,7 @@ jobs:
 
       # --- 步驟 2: 執行 Shadowrocket 規則更新 ---
       - name: 執行 Shadowrocket 規則腳本
-        run: python update_rules.py
+        run: python Shadowrocket_rules.py
 
       # --- 步驟 3: 編譯 AI 規則 (Mihomo .mrs) ---
       - name: 設定最新版 Mihomo 並編譯 MRS
