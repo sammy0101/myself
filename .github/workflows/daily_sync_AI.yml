@@ -1,0 +1,81 @@
+name: 全自動同步 (AI + Shadowrocket)
+
+on:
+  schedule:
+    # 每天 UTC 0點 (北京/香港時間 早上8點)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 允許手動點擊按鈕觸發
+
+jobs:
+  sync-all:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 給予寫入權限以便提交
+
+    steps:
+      - name: 檢出程式碼 (Checkout)
+        uses: actions/checkout@v3
+
+      - name: 設定 Python 環境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: 安裝依賴套件
+        # 這裡同時安裝兩個腳本需要的套件 (假設 update_rules 也需要 requests)
+        run: pip install requests pyyaml
+
+      # --- 步驟 1: 執行 AI 規則過濾 (生成 list/yaml/json) ---
+      - name: 執行 AI 規則過濾腳本
+        run: python process.py
+
+      # --- 步驟 2: 執行 Shadowrocket 規則更新 ---
+      - name: 執行 Shadowrocket 規則腳本
+        run: python update_rules.py
+
+      # --- 步驟 3: 編譯 AI 規則 (Mihomo .mrs) ---
+      - name: 設定最新版 Mihomo 並編譯 MRS
+        run: |
+          # 獲取最新版 Tag
+          MIHOMO_TAG=$(curl -s "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest" | jq -r .tag_name)
+          echo "正在使用 Mihomo 版本: $MIHOMO_TAG"
+          # 下載
+          wget "https://github.com/MetaCubeX/mihomo/releases/download/$MIHOMO_TAG/mihomo-linux-amd64-$MIHOMO_TAG.gz" -O mihomo.gz
+          gunzip mihomo.gz
+          chmod +x mihomo
+          # 編譯
+          ./mihomo convert-ruleset domain yaml geosite_ai_hk_proxy.yaml geosite_ai_hk_proxy.mrs
+          echo "MRS 編譯完成"
+
+      # --- 步驟 4: 編譯 AI 規則 (Sing-box .srs) ---
+      - name: 設定最新版 Sing-box 並編譯 SRS
+        run: |
+          # 獲取最新版 Tag
+          SB_TAG=$(curl -s "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | jq -r .tag_name)
+          echo "正在使用 Sing-box 版本: $SB_TAG"
+          SB_VER="${SB_TAG#v}" # 去除 v 前綴
+          # 下載
+          wget "https://github.com/SagerNet/sing-box/releases/download/$SB_TAG/sing-box-$SB_VER-linux-amd64.tar.gz" -O sing-box.tar.gz
+          tar -zxf sing-box.tar.gz
+          mv sing-box-$SB_VER-linux-amd64/sing-box .
+          chmod +x sing-box
+          # 編譯
+          ./sing-box rule-set compile geosite_ai_hk_proxy.json -o geosite_ai_hk_proxy.srs
+          echo "SRS 編譯完成"
+
+      # --- 步驟 5: 清理與提交 ---
+      - name: 清理暫存檔
+        run: |
+          rm -f mihomo sing-box sing-box.tar.gz
+          # 根據需要，你也可以在這裡刪除 yaml/json 中間檔案
+
+      - name: 提交並推送所有變更
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 將所有變更加入 (包含 AI 的 list/mrs/srs 和 Shadowrocket 的 conf/list)
+          git add .
+          
+          # 檢查是否有變更，有則提交
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto sync: 更新 AI 與 Shadowrocket 規則" && git push)
