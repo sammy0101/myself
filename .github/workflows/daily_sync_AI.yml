@@ -27,7 +27,7 @@ jobs:
 
       # --- 步驟 1: 執行 AI 規則過濾 (生成 list/yaml/json) ---
       - name: 執行 AI 規則過濾腳本
-        run: python process.py
+        run: python geosite_ai_hk.py
 
       # --- 步驟 2: 執行 Shadowrocket 規則更新 ---
       - name: 執行 Shadowrocket 規則腳本
