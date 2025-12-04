@@ -1,4 +1,4 @@
-name: 同步 cmliu/edgetunnel Worker
+name: Sync cmliu/edgetunnel Worker
 
 on:
   schedule:
