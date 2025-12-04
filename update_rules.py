@@ -19,13 +19,13 @@ AI_EXCLUSIONS = [
     "x.com",             # X (Twitter)
     "x.ai",              # Grok 相關
     "anthropic",         # Claude
-    "poe.com",           # Poe (香港可直连)
+    "poe.com",           # Poe (香港可直連)
     "poecdn",            # Poe CDN
-    "perplexity",        # Perplexity (香港可直连)
-    "bing.com",          # Bing / Copilot (香港可直连)
+    "perplexity",        # Perplexity (香港可直連)
+    "bing.com",          # Bing / Copilot (香港可直連)
     "bing.net",
     "copilot",           # Microsoft Copilot
-    "huggingface.co"     # HuggingFace (通常香港可直连，如下载慢可注释掉此行)
+    "huggingface.co"     # HuggingFace
 ]
 
 def fetch_and_parse(url, policy, exclusions=None):
