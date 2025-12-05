@@ -22,8 +22,8 @@ jobs:
       - name: Download CF-CIDR.txt
         run: |
           # 下載文件並覆蓋當前目錄下的 CF-CIDR.txt
-          # 如果你想放在特定資料夾，可以在這裡加上路徑，例如: wget -O rule/CF-CIDR.txt ...
-          wget -O CF-CIDR.txt https://github.com/cmliu/cmliu/raw/refs/heads/main/CF-CIDR.txt
+          # 來源已更新為: ACL4SSR/CloudflareCIDR.txt
+          wget -O CF-CIDR.txt https://github.com/cmliu/ACL4SSR/raw/refs/heads/main/CloudflareCIDR.txt
           
           # 檢查文件是否下載成功
           if [ ! -f CF-CIDR.txt ]; then
