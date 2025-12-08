@@ -51,7 +51,7 @@ def fetch_and_parse(url, policy, exclusions=None):
             if not domain:
                 continue
 
-            # --- 過濾邏輯 ---\
+            # --- 過濾邏輯 ---
             is_excluded = False
             for kw in exclusions:
                 if kw.lower() in domain.lower():
@@ -60,7 +60,7 @@ def fetch_and_parse(url, policy, exclusions=None):
             
             if is_excluded:
                 continue
-            # ----------------\
+            # ----------------
             
             rules.append(f"DOMAIN-SUFFIX,{domain},{policy}")
             
@@ -74,32 +74,33 @@ def main():
     
     # 1. 讀取並保留 [General] 設定，同時清理舊的 Update 時間戳
     if os.path.exists(conf_file):
-        with open(conf_file, "r", encoding="utf-8") as f:
-            content = f.read()
-            
-            # 根據 [Rule] 切割，只保留前半部分 (Header)
-            if "[Rule]" in content:
-                raw_header = content.split("[Rule]")[0]
-            else:
-                raw_header = content
-            
-            # --- 關鍵修復：清理舊的時間戳 ---
-            clean_lines = []
-            for line in raw_header.splitlines():
-                # 如果這一行不是以 "# Updated:" 開頭，則保留
-                if not line.strip().startswith("# Updated:"):
-                    clean_lines.append(line)
-            
-            header_content = "\n".join(clean_lines)
+        try:
+            with open(conf_file, "r", encoding="utf-8") as f:
+                content = f.read()
+                
+                # 根據 [Rule] 切割，只保留前半部分 (Header)
+                if "[Rule]" in content:
+                    raw_header = content.split("[Rule]")[0]
+                else:
+                    raw_header = content
+                
+                # --- 關鍵修復：清理舊的時間戳 ---
+                clean_lines = []
+                for line in raw_header.splitlines():
+                    # 如果這一行不是以 "# Updated:" 開頭，則保留
+                    if not line.strip().startswith("# Updated:"):
+                        clean_lines.append(line)
+                
+                header_content = "\n".join(clean_lines)
+        except Exception as e:
+            print(f"讀取舊設定檔時發生錯誤: {e}, 將使用預設 Header")
+            header_content = ""
     
     # 如果沒有 Header 或檔案不存在，給予預設值
     if not header_content or "[General]" not in header_content:
         if "[General]" not in header_content:
             print("Header not found or incomplete, adding default [General].")
             header_content = "[General]\nbypass-system = true\n" + header_content
-        else:
-             # 如果原本就有 General 但被前面清理邏輯弄空了 (不太可能)，保持原樣
-             pass
 
     # 2. 下載並解析規則
     ai_rules = fetch_and_parse(urls["AI"]["url"], urls["AI"]["policy"], exclusions=AI_EXCLUSIONS)
@@ -124,7 +125,7 @@ def main():
     new_content += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
     new_content += "\n".join(ads_rules) + "\n"
 
-    # 兜底規則
+    # 兜底規則 (可選，如果您希望最後一條是 DIRECT)
     new_content += "\n# Final Match\n"
     new_content += "FINAL,DIRECT\n" 
 
@@ -136,4 +137,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```[[1](https://www.google.com/url?sa=E&q=https%3A%2F%2Fgithub.com%2Fsammy0101%2Fmyself%2Fraw%2Frefs%2Fheads%2Fmain%2FShadowrocket_rules.py)]
