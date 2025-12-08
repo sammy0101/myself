@@ -51,7 +51,7 @@ def fetch_and_parse(url, policy, exclusions=None):
             if not domain:
                 continue
 
-            # --- 過濾邏輯 ---
+            # --- 過濾邏輯 ---\
             is_excluded = False
             for kw in exclusions:
                 if kw.lower() in domain.lower():
@@ -60,7 +60,7 @@ def fetch_and_parse(url, policy, exclusions=None):
             
             if is_excluded:
                 continue
-            # ----------------
+            # ----------------\
             
             rules.append(f"DOMAIN-SUFFIX,{domain},{policy}")
             
@@ -69,31 +69,51 @@ def fetch_and_parse(url, policy, exclusions=None):
     return rules
 
 def main():
-    # --- 修改處：檔案名稱變更為 ai_ad.conf ---
     conf_file = "ai_ad.conf"
-    header = ""
+    header_content = ""
     
-    # 1. 讀取並保留 [General] 設定
+    # 1. 讀取並保留 [General] 設定，同時清理舊的 Update 時間戳
     if os.path.exists(conf_file):
         with open(conf_file, "r", encoding="utf-8") as f:
             content = f.read()
+            
+            # 根據 [Rule] 切割，只保留前半部分 (Header)
             if "[Rule]" in content:
-                header = content.split("[Rule]")[0]
+                raw_header = content.split("[Rule]")[0]
             else:
-                header = content
-                if "[General]" not in header:
-                    header = "[General]\nbypass-system = true\n\n"
-    else:
-        print(f"{conf_file} not found, creating new header.")
-        header = "[General]\nbypass-system = true\n\n"
+                raw_header = content
+            
+            # --- 關鍵修復：清理舊的時間戳 ---
+            clean_lines = []
+            for line in raw_header.splitlines():
+                # 如果這一行不是以 "# Updated:" 開頭，則保留
+                if not line.strip().startswith("# Updated:"):
+                    clean_lines.append(line)
+            
+            header_content = "\n".join(clean_lines)
+    
+    # 如果沒有 Header 或檔案不存在，給予預設值
+    if not header_content or "[General]" not in header_content:
+        if "[General]" not in header_content:
+            print("Header not found or incomplete, adding default [General].")
+            header_content = "[General]\nbypass-system = true\n" + header_content
+        else:
+             # 如果原本就有 General 但被前面清理邏輯弄空了 (不太可能)，保持原樣
+             pass
 
     # 2. 下載並解析規則
     ai_rules = fetch_and_parse(urls["AI"]["url"], urls["AI"]["policy"], exclusions=AI_EXCLUSIONS)
     ads_rules = fetch_and_parse(urls["Ads"]["url"], urls["Ads"]["policy"])
 
-    # 3. 組合新內容 (AI 在前，Ads 在後)
-    new_content = header.strip() + "\n\n"
-    new_content += f"# Updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    # 3. 組合新內容
+    # Header
+    new_content = header_content.strip() + "\n\n"
+    
+    # 插入唯一的最新時間戳
+    current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    new_content += f"# Updated: {current_time}\n"
+    
+    # 開始規則區段
     new_content += "[Rule]\n"
     
     # AI (Proxy)
@@ -112,7 +132,8 @@ def main():
     with open(conf_file, "w", encoding="utf-8") as f:
         f.write(new_content)
     
-    print(f"Successfully updated {conf_file}")
+    print(f"Successfully updated {conf_file} with timestamp: {current_time}")
 
 if __name__ == "__main__":
     main()
+```[[1](https://www.google.com/url?sa=E&q=https%3A%2F%2Fgithub.com%2Fsammy0101%2Fmyself%2Fraw%2Frefs%2Fheads%2Fmain%2FShadowrocket_rules.py)]
