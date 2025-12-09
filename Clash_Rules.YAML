@@ -38,6 +38,7 @@ proxy-groups:
     type: select
     proxies:
       - 🚀 節點選擇
+      - DIRECT
 
   - name: 🔒 國內服務
     type: select
