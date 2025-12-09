@@ -39,16 +39,16 @@ proxy-groups:
     proxies:
       - 🚀 節點選擇
 
-  - name: 🐟 漏網之魚
-    type: select
-    proxies:
-      - 🚀 節點選擇
-
   - name: 🔒 國內服務
     type: select
     proxies:
       - DIRECT
       - 🚀 節點選擇
+
+  - name: 🏠 私有網絡
+    type: select
+    proxies:
+      - DIRECT
 
   - name: 🛑 廣告攔截
     type: select
@@ -56,44 +56,72 @@ proxy-groups:
       - REJECT
       - DIRECT
 
+  - name: 🐟 漏網之魚
+    type: select
+    proxies:
+      - 🚀 節點選擇
+
 rule-providers:
   my-ai:
     type: http
-    behavior: classical
+    behavior: domain
+    format: mrs
     url: "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.mrs"
-    path: ./ruleset/my-ai.yaml
+    path: ./ruleset/my-ai.mrs
     interval: 86400
 
   meta-non-cn:
     type: http
     behavior: domain
+    format: mrs
     url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-!cn.mrs"
-    path: ./ruleset/non-cn.yaml
+    path: ./ruleset/non-cn.mrs
     interval: 86400
 
   meta-cn:
     type: http
     behavior: domain
+    format: mrs
     url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.mrs"
-    path: ./ruleset/cn.yaml
+    path: ./ruleset/cn.mrs
     interval: 86400
 
   meta-ads:
     type: http
     behavior: domain
+    format: mrs
     url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ads-all.mrs"
-    path: ./ruleset/ads.yaml
+    path: ./ruleset/ads.mrs
+    interval: 86400
+
+  meta-private:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/private.mrs"
+    path: ./ruleset/private.mrs
     interval: 86400
 
   meta-ip-cn:
     type: http
     behavior: ipcidr
+    format: mrs
     url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs"
-    path: ./ruleset/ip-cn.yaml
+    path: ./ruleset/ip-cn.mrs
+    interval: 86400
+
+  meta-ip-private:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/private.mrs"
+    path: ./ruleset/ip-private.mrs
     interval: 86400
 
 rules:
   - RULE-SET,meta-ads,🛑 廣告攔截
+  - RULE-SET,meta-private,🏠 私有網絡
+  - RULE-SET,meta-ip-private,🏠 私有網絡
   - RULE-SET,my-ai,💬 AI 服務
   - RULE-SET,meta-cn,🔒 國內服務
   - RULE-SET,meta-ip-cn,🔒 國內服務
