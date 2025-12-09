@@ -36,7 +36,7 @@
     { "type": "selector", "tag": "🔒 國內服務", "outbounds": ["DIRECT", "🚀 節點選擇"] },
     { "type": "selector", "tag": "🏠 私有網絡", "outbounds": ["DIRECT"] },
     { "type": "selector", "tag": "🛑 廣告攔截", "outbounds": ["REJECT", "DIRECT"] },
-    { "type": "selector", "tag": "🐟 漏網之魚", "outbounds": ["🚀 節點選擇"] },
+    { "type": "selector", "tag": "🐟 漏網之魚", "outbounds": ["🚀 節點選擇", "DIRECT"] },
     { "type": "direct", "tag": "DIRECT" },
     { "type": "block", "tag": "REJECT" }
   ],
