@@ -41,7 +41,9 @@
     { "type": "selector", "tag": "🐟 漏網之魚", "outbounds": ["🚀 節點選擇", "direct"] },
     
     { "type": "direct", "tag": "direct" },
+    { "type": "direct", "tag": "DIRECT" }, 
     { "type": "block", "tag": "block" },
+    { "type": "block", "tag": "REJECT" },
     { "type": "dns", "tag": "dns-out" }
   ],
   "route": {
