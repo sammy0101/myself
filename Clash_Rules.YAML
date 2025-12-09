@@ -61,6 +61,7 @@ proxy-groups:
     type: select
     proxies:
       - 🚀 節點選擇
+      - DIRECT
 
 rule-providers:
   my-ai:
