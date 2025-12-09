@@ -51,16 +51,16 @@ proxy-groups:
     proxies:
       - DIRECT
 
-  - name: 🛑 廣告攔截
-    type: select
-    proxies:
-      - REJECT
-      - DIRECT
-
   - name: 🐟 漏網之魚
     type: select
     proxies:
       - 🚀 節點選擇
+      - DIRECT
+
+  - name: 🛑 廣告攔截
+    type: select
+    proxies:
+      - REJECT
       - DIRECT
 
 rule-providers:
