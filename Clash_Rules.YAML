@@ -60,35 +60,35 @@ rule-providers:
   my-ai:
     type: http
     behavior: classical
-    url: "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.list"
+    url: "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.mrs"
     path: ./ruleset/my-ai.yaml
     interval: 86400
 
   meta-non-cn:
     type: http
     behavior: domain
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-!cn.list"
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-!cn.mrs"
     path: ./ruleset/non-cn.yaml
     interval: 86400
 
   meta-cn:
     type: http
     behavior: domain
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.list"
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.mrs"
     path: ./ruleset/cn.yaml
     interval: 86400
 
   meta-ads:
     type: http
     behavior: domain
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ads-all.list"
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ads-all.mrs"
     path: ./ruleset/ads.yaml
     interval: 86400
 
   meta-ip-cn:
     type: http
     behavior: ipcidr
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.list"
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs"
     path: ./ruleset/ip-cn.yaml
     interval: 86400
 
