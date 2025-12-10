@@ -17,8 +17,17 @@ urls = {
 
 # 設定要從 AI 代理列表中剔除的關鍵字 (香港可直連的網站)
 AI_EXCLUSIONS = [
-    "x.com", "x.ai", "anthropic", "poe.com", "poecdn", 
-    "perplexity", "bing.com", "bing.net", "copilot", "huggingface.co"
+    "x.com",             # X (Twitter)
+    "x.ai",              # Grok 相關
+    "grok.com",          # Grok
+    "anthropic",         # Claude
+    "poe.com",           # Poe (香港可直連)
+    "poecdn",            # Poe CDN
+    "perplexity",        # Perplexity (香港可直連)
+    "bing.com",          # Bing / Copilot (香港可直連)
+    "bing.net",
+    "copilot",           # Microsoft Copilot
+    "huggingface.co"     # HuggingFace
 ]
 
 def fetch_and_parse(url, policy, exclusions=None):
