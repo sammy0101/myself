@@ -27,7 +27,7 @@ AI_EXCLUSIONS = [
     "bing.com",          # Bing / Copilot (香港可直連)
     "bing.net",
     "copilot",           # Microsoft Copilot
-    "huggingface.co"     # HuggingFace
+    "huggingface.co",    # HuggingFace
     "hf.co",
     "hf.space"
 ]
