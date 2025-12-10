@@ -10,6 +10,7 @@ SOURCE_URL = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/ge
 HK_DIRECT_KEYWORDS = [
     "x.com",             # X (Twitter)
     "x.ai",              # Grok 相關
+    "grok.com",          # Grok
     "anthropic",         # Claude
     "poe.com",           # Poe (香港可直連)
     "poecdn",            # Poe CDN
