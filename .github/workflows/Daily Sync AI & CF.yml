@@ -1,4 +1,4 @@
-name: Daily Sync All (CF First)
+name: Daily Sync All
 
 on:
   schedule:
