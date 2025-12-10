@@ -50,8 +50,8 @@
     { "type": "selector", "tag": "🌐 非中國", "outbounds": ["🚀 節點選擇", "direct"] },
     { "type": "selector", "tag": "🔒 國內服務", "outbounds": ["direct", "🚀 節點選擇"] },
     { "type": "selector", "tag": "🏠 私有網絡", "outbounds": ["direct"] },
-    { "type": "selector", "tag": "🛑 廣告攔截", "outbounds": ["block", "direct"] },
     { "type": "selector", "tag": "🐟 漏網之魚", "outbounds": ["🚀 節點選擇", "direct"] },
+    { "type": "selector", "tag": "🛑 廣告攔截", "outbounds": ["block", "direct"] },
     
     { "type": "direct", "tag": "direct" },
     { "type": "direct", "tag": "DIRECT" },
