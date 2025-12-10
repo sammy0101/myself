@@ -22,57 +22,75 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # 這裡新增了 PyYAML 解決報錯
+          # 安裝所有腳本需要的依賴
           pip install requests pytz PyYAML
 
-      - name: 執行 Python 腳本更新清單
-        run: python geosite_ai_hk.py
-        # 這一步會產生新的 geosite_ai_hk_proxy.list
+      # ----------------------------------------------------------------
+      # 執行兩個 Python 腳本
+      # ----------------------------------------------------------------
+      - name: 執行 Python 更新腳本
+        run: |
+          echo "Start running geosite_ai_hk.py..."
+          python geosite_ai_hk.py
+          
+          echo "Start running Shadowrocket_rules.py..."
+          python Shadowrocket_rules.py
 
       # ----------------------------------------------------------------
-      # 下載工具並編譯 MRS 與 SRS
+      # 下載最新版工具並編譯 (針對 geosite_ai_hk 產生的 list)
       # ----------------------------------------------------------------
-      - name: 下載編譯工具 (Mihomo & Sing-box)
+      - name: 下載最新版編譯工具 (Mihomo & Sing-box)
         run: |
-          # 下載 Mihomo (用於編譯 MRS)
-          wget -O mihomo.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.1/mihomo-linux-amd64-v1.18.1.gz
+          echo "正在抓取最新版本資訊..."
+
+          # 1. 自動取得 Mihomo 最新版
+          MIHOMO_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep "browser_download_url" | grep "linux-amd64" | grep ".gz" | grep -v "compatible" | head -n 1 | cut -d '"' -f 4)
+          
+          if [ -z "$MIHOMO_URL" ]; then
+            echo "錯誤：找不到 Mihomo 下載連結"
+            exit 1
+          fi
+          
+          echo "下載 Mihomo: $MIHOMO_URL"
+          wget -O mihomo.gz "$MIHOMO_URL"
           gunzip mihomo.gz
           chmod +x mihomo
 
-          # 下載 Sing-box (用於編譯 SRS)
-          wget -O sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.10.1/sing-box-1.10.1-linux-amd64.tar.gz
+          # 2. 自動取得 Sing-box 最新版
+          SINGBOX_URL=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | grep "browser_download_url" | grep "linux-amd64.tar.gz" | head -n 1 | cut -d '"' -f 4)
+          
+          if [ -z "$SINGBOX_URL" ]; then
+            echo "錯誤：找不到 Sing-box 下載連結"
+            exit 1
+          fi
+
+          echo "下載 Sing-box: $SINGBOX_URL"
+          wget -O sing-box.tar.gz "$SINGBOX_URL"
           tar -xzf sing-box.tar.gz
           mv sing-box-*/sing-box .
           chmod +x sing-box
 
       - name: 編譯 MRS 規則
         run: |
-          # 將 .list (純域名) 編譯成 .mrs
           echo "Compiling MRS..."
-          # 確保檔案存在再執行
           if [ -f "geosite_ai_hk_proxy.list" ]; then
             ./mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
           else
-            echo "Error: geosite_ai_hk_proxy.list not found!"
-            exit 1
+            echo "Warning: geosite_ai_hk_proxy.list not found, skipping MRS compilation."
           fi
 
       - name: 編譯 SRS 規則
         run: |
           echo "Compiling SRS..."
-          # 1. 建立臨時 JSON (Sing-box 編譯必須要 JSON 格式來源)
+          # 建立臨時 JSON (Sing-box 需要 JSON 格式)
           python -c "
           import json
           import os
           if os.path.exists('geosite_ai_hk_proxy.list'):
               try:
                   with open('geosite_ai_hk_proxy.list', 'r') as f:
-                      # 讀取非註解的行
                       domains = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-                  
-                  # 構建 Sing-box Rule-set 格式
                   data = {'version': 1, 'rules': [{'domain': domains}]}
-                  
                   with open('geosite_ai_hk_proxy_temp.json', 'w') as f:
                       json.dump(data, f, indent=2)
                   print('Temporary JSON created.')
@@ -80,10 +98,9 @@ jobs:
                   print(f'Error converting to JSON: {e}')
                   exit(1)
           else:
-              print('List file not found for SRS compilation.')
+              print('List file not found, skipping SRS logic.')
           "
 
-          # 2. 將臨時 JSON 編譯成 .srs
           if [ -f "geosite_ai_hk_proxy_temp.json" ]; then
             ./sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy_temp.json
             rm geosite_ai_hk_proxy_temp.json
@@ -92,15 +109,17 @@ jobs:
       - name: 清理工具
         run: |
           rm -rf mihomo sing-box sing-box.tar.gz sing-box-*
-      # ----------------------------------------------------------------
 
+      # ----------------------------------------------------------------
+      # 提交所有變更
+      # ----------------------------------------------------------------
       - name: 提交變更 (Commit & Push)
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # 加入所有變更
+          # 加入所有檔案 (包含兩個腳本產生的所有 list, conf, mrs, srs)
           git add .
           
-          # 檢查是否有變更，有則提交並加上香港時間
+          # 檢查變更並提交 (香港時間)
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto sync: $(TZ=Asia/Hong_Kong date +'%Y-%m-%d %H:%M')" && git push)
