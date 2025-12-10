@@ -1,88 +1,94 @@
-name: 全自動同步 (AI + Shadowrocket)
+name: Daily Sync AI Rules
 
 on:
   schedule:
-    # 每天 UTC 0點 (北京/香港時間 早上8點)
-    - cron: '0 0 * * *'
-  workflow_dispatch: # 允許手動點擊按鈕觸發
+    # 每天 UTC 20:00 (香港時間 04:00) 執行，可自行調整
+    - cron: '0 20 * * *'
+  workflow_dispatch:
 
 jobs:
-  sync-all:
+  update_rules:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # 給予寫入權限
-
+    
     steps:
-      - name: 檢出程式碼 (Checkout)
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: 設定 Python 環境
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.10'
 
-      - name: 安裝依賴套件
-        run: pip install requests pyyaml
-
-      # --- 步驟 1: 執行 AI 規則過濾 (暫時生成 yaml/json 用於編譯) ---
-      - name: 執行 AI 規則過濾腳本
-        run: python geosite_ai_hk.py
-
-      # --- 步驟 2: 執行 Shadowrocket 規則更新 ---
-      - name: 執行 Shadowrocket 規則腳本
-        run: python Shadowrocket_rules.py
-
-      # --- 步驟 3: 編譯 AI 規則 (Mihomo .mrs) ---
-      - name: 設定最新版 Mihomo 並編譯 MRS
+      - name: Install dependencies
         run: |
-          # 獲取最新版 Tag
-          MIHOMO_TAG=$(curl -s "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest" | jq -r .tag_name)
-          echo "正在使用 Mihomo 版本: $MIHOMO_TAG"
-          
-          # 下載並解壓
-          wget "https://github.com/MetaCubeX/mihomo/releases/download/$MIHOMO_TAG/mihomo-linux-amd64-$MIHOMO_TAG.gz" -O mihomo.gz
+          python -m pip install --upgrade pip
+          pip install requests pytz
+
+      - name: 執行 Python 腳本更新清單
+        run: python geosite_ai_hk.py
+        # 這一步會產生新的 geosite_ai_hk_proxy.list
+
+      # ----------------------------------------------------------------
+      # 新增區塊：下載工具並編譯 MRS 與 SRS
+      # ----------------------------------------------------------------
+      - name: 下載編譯工具 (Mihomo & Sing-box)
+        run: |
+          # 下載 Mihomo (用於編譯 MRS)
+          wget -O mihomo.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.1/mihomo-linux-amd64-v1.18.1.gz
           gunzip mihomo.gz
           chmod +x mihomo
-          
-          # 編譯 (使用生成的 yaml)
-          ./mihomo convert-ruleset domain yaml geosite_ai_hk_proxy.yaml geosite_ai_hk_proxy.mrs
-          echo "MRS 編譯完成"
 
-      # --- 步驟 4: 編譯 AI 規則 (Sing-box .srs) ---
-      - name: 設定最新版 Sing-box 並編譯 SRS
-        run: |
-          # 獲取最新版 Tag
-          SB_TAG=$(curl -s "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | jq -r .tag_name)
-          echo "正在使用 Sing-box 版本: $SB_TAG"
-          SB_VER="${SB_TAG#v}"
-          
-          # 下載並解壓
-          wget "https://github.com/SagerNet/sing-box/releases/download/$SB_TAG/sing-box-$SB_VER-linux-amd64.tar.gz" -O sing-box.tar.gz
-          tar -zxf sing-box.tar.gz
-          mv sing-box-$SB_VER-linux-amd64/sing-box .
+          # 下載 Sing-box (用於編譯 SRS)
+          wget -O sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.10.1/sing-box-1.10.1-linux-amd64.tar.gz
+          tar -xzf sing-box.tar.gz
+          mv sing-box-*/sing-box .
           chmod +x sing-box
-          
-          # 編譯 (使用生成的 json)
-          ./sing-box rule-set compile geosite_ai_hk_proxy.json -o geosite_ai_hk_proxy.srs
-          echo "SRS 編譯完成"
 
-      # --- 步驟 5: 重點！清理中間檔案 ---
-      - name: 清理暫存檔 (.yaml, .json, 工具)
+      - name: 編譯 MRS 規則
         run: |
-          # 刪除編譯工具和壓縮包
-          rm -f mihomo sing-box sing-box.tar.gz mihomo.gz
-          
-          # 刪除編譯過程產生但你不需要保留的 yaml 和 json 檔案
-          rm -f geosite_ai_hk_proxy.yaml geosite_ai_hk_proxy.json
+          # 將 .list (純域名) 編譯成 .mrs
+          echo "Compiling MRS..."
+          ./mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
 
-      # --- 步驟 6: 提交剩餘檔案 ---
-      - name: 提交並推送變更
+      - name: 編譯 SRS 規則
+        run: |
+          echo "Compiling SRS..."
+          # 1. 建立臨時 JSON (Sing-box 編譯必須要 JSON 格式來源)
+          python -c "
+          import json
+          try:
+              with open('geosite_ai_hk_proxy.list', 'r') as f:
+                  # 讀取非註解的行
+                  domains = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+              
+              # 構建 Sing-box Rule-set 格式
+              data = {'version': 1, 'rules': [{'domain': domains}]}
+              
+              with open('geosite_ai_hk_proxy_temp.json', 'w') as f:
+                  json.dump(data, f, indent=2)
+              print('Temporary JSON created.')
+          except Exception as e:
+              print(f'Error: {e}')
+          "
+
+          # 2. 將臨時 JSON 編譯成 .srs
+          ./sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy_temp.json
+          
+          # 3. 刪除臨時 JSON (如果你不想保留它)
+          rm geosite_ai_hk_proxy_temp.json
+
+      - name: 清理工具
+        run: |
+          rm -rf mihomo sing-box sing-box.tar.gz sing-box-*
+      # ----------------------------------------------------------------
+
+      - name: 提交變更 (Commit & Push)
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # 加入所有剩餘檔案 (此時 yaml/json 已經被刪了，不會被加入)
+          # 加入所有變更 (包含 list, mrs, srs)
           git add .
           
-          # 檢查是否有變更，有則提交
+          # 檢查是否有變更，有則提交並加上香港時間
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto sync: $(TZ=Asia/Hong_Kong date +'%Y-%m-%d %H:%M')" && git push)
