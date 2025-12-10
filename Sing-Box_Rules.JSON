@@ -17,9 +17,23 @@
   },
   "dns": {
     "servers": [
-      { "tag": "google", "address": "8.8.8.8", "detour": "🚀 節點選擇" },
-      { "tag": "local", "address": "223.5.5.5", "detour": "direct" },
-      { "tag": "block", "address": "rcode://success" }
+      {
+        "tag": "google",
+        "type": "udp",
+        "server": "8.8.8.8",
+        "detour": "🚀 節點選擇"
+      },
+      {
+        "tag": "local",
+        "type": "udp",
+        "server": "223.5.5.5",
+        "detour": "direct"
+      },
+      {
+        "tag": "block",
+        "type": "built_in",
+        "address": "rcode://refused"
+      }
     ],
     "rules": [
       { "outbound": "any", "server": "local" },
@@ -36,7 +50,10 @@
       "type": "tun",
       "tag": "tun-in",
       "interface_name": "tun0",
-      "address": [ "172.19.0.1/30", "fd00::1/126" ],
+      "address": [
+        "172.19.0.1/30",
+        "fd00::1/126"
+      ],
       "stack": "system",
       "auto_route": true,
       "strict_route": true,
