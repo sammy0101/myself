@@ -1,0 +1,131 @@
+name: Daily Sync All
+
+on:
+  schedule:
+    # 每天 UTC 20:00 (香港時間 04:00) 執行
+    - cron: '0 20 * * *'
+  workflow_dispatch: # 允許手動執行
+
+jobs:
+  sync-all:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 給予寫入權限
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # --- 1. 共用前置準備 ---
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      # ========================================================
+      # 任務 1: CF-CIDR 更新 (優先執行)
+      # ========================================================
+      - name: [CF] 下載 CF-CIDR.txt
+        run: |
+          wget -O CF-CIDR.txt https://github.com/cmliu/ACL4SSR/raw/refs/heads/main/CloudflareCIDR.txt
+          
+          if [ ! -f CF-CIDR.txt ]; then
+            echo "Download failed!"
+            exit 1
+          fi
+
+      - name: [CF] 提交變更 (Commit)
+        run: |
+          # 加入暫存區
+          git add CF-CIDR.txt
+          
+          # 檢查是否有變更
+          if git diff --staged --quiet; then
+            echo "No CF-CIDR changes detected."
+          else
+            # 獲取香港時間
+            current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
+            # 提交
+            git commit -m "🔄 自動同步 CF-CIDR.txt (📅 $current_time)"
+            echo "CF-CIDR committed."
+          fi
+
+      # ========================================================
+      # 任務 2: AI 規則更新 & 編譯 (後執行)
+      # ========================================================
+      - name: [AI] 安裝依賴
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pytz PyYAML
+
+      - name: [AI] 執行 Python 更新腳本
+        run: |
+          echo "Running geosite_ai_hk.py..."
+          python geosite_ai_hk.py || echo "geosite_ai_hk.py failed"
+          
+          echo "Running Shadowrocket_rules.py..."
+          python Shadowrocket_rules.py || echo "Shadowrocket_rules.py failed"
+
+      - name: [AI] 檢查規則變更
+        id: check_ai_changes
+        run: |
+          # 此時 CF-CIDR 已經處理完畢(已commit或無變更)，git status 只會顯示 AI 腳本造成的變更
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "AI rules changed."
+            echo "ai_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No AI rule changes."
+            echo "ai_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: [AI] 下載編譯工具 & 編譯規則
+        if: steps.check_ai_changes.outputs.ai_changed == 'true'
+        run: |
+          echo "下載編譯工具..."
+          # 下載 Mihomo
+          MIHOMO_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep "browser_download_url" | grep "linux-amd64" | grep ".gz" | grep -v "compatible" | head -n 1 | cut -d '"' -f 4)
+          wget -O mihomo.gz "$MIHOMO_URL" && gunzip mihomo.gz && chmod +x mihomo
+          
+          # 下載 Sing-box
+          SINGBOX_URL=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | grep "browser_download_url" | grep "linux-amd64.tar.gz" | head -n 1 | cut -d '"' -f 4)
+          wget -O sing-box.tar.gz "$SINGBOX_URL" && tar -xzf sing-box.tar.gz && mv sing-box-*/sing-box . && chmod +x sing-box
+
+          echo "編譯 MRS..."
+          if [ -f "geosite_ai_hk_proxy.list" ]; then
+            touch config.yaml
+            timeout 60s ./mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
+            rm config.yaml
+          fi
+
+          echo "編譯 SRS..."
+          if [ -f "geosite_ai_hk_proxy.json" ]; then
+             ./sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
+          fi
+
+          # 清理工具
+          rm -rf mihomo sing-box sing-box.tar.gz sing-box-* config.yaml
+
+      - name: [AI] 提交變更 (Commit)
+        if: steps.check_ai_changes.outputs.ai_changed == 'true'
+        run: |
+          current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
+          
+          # 將所有剩餘變更(AI相關)加入
+          git add .
+          git commit -m "🔄 自動同步 AI 規則 (📅 $current_time)"
+          echo "AI Rules committed."
+
+      # ========================================================
+      # 最終推送
+      # ========================================================
+      - name: Push All Changes
+        run: |
+          # 一次性推送所有 Commit
+          git push
