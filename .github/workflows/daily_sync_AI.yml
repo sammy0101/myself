@@ -22,11 +22,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # 安裝所有腳本需要的依賴，包含 PyYAML
           pip install requests pytz PyYAML
 
       # ----------------------------------------------------------------
-      # 執行 Python 腳本 (產生 list 和 conf)
+      # 1. 執行 Python 腳本
       # ----------------------------------------------------------------
       - name: 執行 Python 更新腳本
         run: |
@@ -37,111 +36,76 @@ jobs:
           python Shadowrocket_rules.py
 
       # ----------------------------------------------------------------
-      # 下載最新版編譯工具 (Mihomo & Sing-box)
+      # 2. 檢查是否有變更 (關鍵步驟)
+      # ----------------------------------------------------------------
+      - name: 檢查規則是否有變動
+        id: check_changes
+        run: |
+          # 使用 git status 檢查是否有檔案被修改
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "偵測到檔案變更，準備進行編譯..."
+            echo "rules_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "所有規則均未變更，跳過後續步驟。"
+            echo "rules_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # ----------------------------------------------------------------
+      # 3. 下載編譯工具 (只有在 rules_changed 為 true 時執行)
       # ----------------------------------------------------------------
       - name: 下載最新版編譯工具
+        if: steps.check_changes.outputs.rules_changed == 'true'
         run: |
           echo "正在抓取最新版本資訊..."
-
-          # 1. 自動取得 Mihomo 最新版
+          # Mihomo
           MIHOMO_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep "browser_download_url" | grep "linux-amd64" | grep ".gz" | grep -v "compatible" | head -n 1 | cut -d '"' -f 4)
+          wget -O mihomo.gz "$MIHOMO_URL" && gunzip mihomo.gz && chmod +x mihomo
           
-          if [ -z "$MIHOMO_URL" ]; then
-            echo "錯誤：找不到 Mihomo 下載連結"
-            exit 1
-          fi
-          
-          echo "下載 Mihomo: $MIHOMO_URL"
-          wget -O mihomo.gz "$MIHOMO_URL"
-          gunzip mihomo.gz
-          chmod +x mihomo
-
-          # 2. 自動取得 Sing-box 最新版
+          # Sing-box
           SINGBOX_URL=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | grep "browser_download_url" | grep "linux-amd64.tar.gz" | head -n 1 | cut -d '"' -f 4)
-          
-          if [ -z "$SINGBOX_URL" ]; then
-            echo "錯誤：找不到 Sing-box 下載連結"
-            exit 1
-          fi
-
-          echo "下載 Sing-box: $SINGBOX_URL"
-          wget -O sing-box.tar.gz "$SINGBOX_URL"
-          tar -xzf sing-box.tar.gz
-          mv sing-box-*/sing-box .
-          chmod +x sing-box
+          wget -O sing-box.tar.gz "$SINGBOX_URL" && tar -xzf sing-box.tar.gz && mv sing-box-*/sing-box . && chmod +x sing-box
 
       # ----------------------------------------------------------------
-      # 編譯 MRS (Mihomo Rule Set)
+      # 4. 編譯 MRS (只有在 rules_changed 為 true 時執行)
       # ----------------------------------------------------------------
       - name: 編譯 MRS 規則
+        if: steps.check_changes.outputs.rules_changed == 'true'
         run: |
           echo "Compiling MRS..."
           if [ -f "geosite_ai_hk_proxy.list" ]; then
-            # 關鍵修正：建立一個空的 config.yaml
-            # 這會防止 Mihomo 進入初始化模式 (Server Mode) 而導致卡住
             touch config.yaml
-            
-            # 執行轉換，並設定 60秒超時防止卡死
             timeout 60s ./mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
-            
-            # 清理假設定檔
             rm config.yaml
-            
-            echo "MRS compilation finished."
-          else
-            echo "Warning: geosite_ai_hk_proxy.list not found, skipping MRS compilation."
+            echo "MRS compiled."
           fi
 
       # ----------------------------------------------------------------
-      # 編譯 SRS (Sing-box Rule Set)
+      # 5. 編譯 SRS (只有在 rules_changed 為 true 時執行)
       # ----------------------------------------------------------------
       - name: 編譯 SRS 規則
+        if: steps.check_changes.outputs.rules_changed == 'true'
         run: |
           echo "Compiling SRS..."
-          # 1. 建立臨時 JSON (Sing-box 編譯必須要 JSON 格式來源)
-          python -c "
-          import json
-          import os
-          if os.path.exists('geosite_ai_hk_proxy.list'):
-              try:
-                  with open('geosite_ai_hk_proxy.list', 'r') as f:
-                      # 讀取非註解的行
-                      domains = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-                  
-                  # 構建 Sing-box Rule-set 格式
-                  data = {'version': 1, 'rules': [{'domain': domains}]}
-                  
-                  with open('geosite_ai_hk_proxy_temp.json', 'w') as f:
-                      json.dump(data, f, indent=2)
-                  print('Temporary JSON created.')
-              except Exception as e:
-                  print(f'Error converting to JSON: {e}')
-                  exit(1)
-          else:
-              print('List file not found for SRS compilation.')
-          "
-
-          # 2. 將臨時 JSON 編譯成 .srs
-          if [ -f "geosite_ai_hk_proxy_temp.json" ]; then
-            ./sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy_temp.json
-            rm geosite_ai_hk_proxy_temp.json
-            echo "SRS compilation finished."
+          # 使用 Python 腳本生成的 json 直接編譯
+          if [ -f "geosite_ai_hk_proxy.json" ]; then
+             ./sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
+             echo "SRS compiled."
+          else
+             echo "JSON not found, skipping SRS."
           fi
 
       - name: 清理工具
-        run: |
-          rm -rf mihomo sing-box sing-box.tar.gz sing-box-* config.yaml
+        if: steps.check_changes.outputs.rules_changed == 'true'
+        run: rm -rf mihomo sing-box sing-box.tar.gz sing-box-* config.yaml
 
       # ----------------------------------------------------------------
-      # 提交變更
+      # 6. 提交變更 (只有在 rules_changed 為 true 時執行)
       # ----------------------------------------------------------------
       - name: 提交變更 (Commit & Push)
+        if: steps.check_changes.outputs.rules_changed == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
-          # 加入所有變更 (包含新產生的 list, conf, mrs, srs)
           git add .
-          
-          # 檢查是否有變更，有則提交並加上香港時間
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto sync: $(TZ=Asia/Hong_Kong date +'%Y-%m-%d %H:%M')" && git push)
+          git commit -m "Auto sync: $(TZ=Asia/Hong_Kong date +'%Y-%m-%d %H:%M')"
+          git push
