@@ -1,4 +1,4 @@
-name: Daily Sync All
+name: Daily Sync All (CF First)
 
 on:
   schedule:
@@ -32,7 +32,7 @@ jobs:
       # ========================================================
       # 任務 1: CF-CIDR 更新 (優先執行)
       # ========================================================
-      - name: [CF] 下載 CF-CIDR.txt
+      - name: "[CF] 下載 CF-CIDR.txt"  # 已修復：加上雙引號
         run: |
           wget -O CF-CIDR.txt https://github.com/cmliu/ACL4SSR/raw/refs/heads/main/CloudflareCIDR.txt
           
@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
 
-      - name: [CF] 提交變更 (Commit)
+      - name: "[CF] 提交變更 (Commit)"  # 已修復：加上雙引號
         run: |
           # 加入暫存區
           git add CF-CIDR.txt
@@ -60,12 +60,12 @@ jobs:
       # ========================================================
       # 任務 2: AI 規則更新 & 編譯 (後執行)
       # ========================================================
-      - name: [AI] 安裝依賴
+      - name: "[AI] 安裝依賴"  # 已修復：加上雙引號
         run: |
           python -m pip install --upgrade pip
           pip install requests pytz PyYAML
 
-      - name: [AI] 執行 Python 更新腳本
+      - name: "[AI] 執行 Python 更新腳本"  # 已修復：加上雙引號
         run: |
           echo "Running geosite_ai_hk.py..."
           python geosite_ai_hk.py || echo "geosite_ai_hk.py failed"
@@ -73,7 +73,7 @@ jobs:
           echo "Running Shadowrocket_rules.py..."
           python Shadowrocket_rules.py || echo "Shadowrocket_rules.py failed"
 
-      - name: [AI] 檢查規則變更
+      - name: "[AI] 檢查規則變更"  # 已修復：加上雙引號
         id: check_ai_changes
         run: |
           # 此時 CF-CIDR 已經處理完畢(已commit或無變更)，git status 只會顯示 AI 腳本造成的變更
@@ -85,7 +85,7 @@ jobs:
             echo "ai_changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: [AI] 下載編譯工具 & 編譯規則
+      - name: "[AI] 下載編譯工具 & 編譯規則"  # 已修復：加上雙引號
         if: steps.check_ai_changes.outputs.ai_changed == 'true'
         run: |
           echo "下載編譯工具..."
@@ -112,7 +112,7 @@ jobs:
           # 清理工具
           rm -rf mihomo sing-box sing-box.tar.gz sing-box-* config.yaml
 
-      - name: [AI] 提交變更 (Commit)
+      - name: "[AI] 提交變更 (Commit)"  # 已修復：加上雙引號
         if: steps.check_ai_changes.outputs.ai_changed == 'true'
         run: |
           current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
