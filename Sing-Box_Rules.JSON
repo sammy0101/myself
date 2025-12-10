@@ -3,18 +3,6 @@
     "level": "info",
     "timestamp": true
   },
-  "experimental": {
-    "clash_api": {
-      "external_controller": "127.0.0.1:9090",
-      "external_ui": "ui",
-      "secret": "",
-      "default_mode": "rule"
-    },
-    "cache_file": {
-      "enabled": true,
-      "store_fakeip": true
-    }
-  },
   "dns": {
     "servers": [
       {
@@ -66,7 +54,9 @@
     { "type": "selector", "tag": "🐟 漏網之魚", "outbounds": ["🚀 節點選擇", "direct"] },
     
     { "type": "direct", "tag": "direct" },
+    { "type": "direct", "tag": "DIRECT" },
     { "type": "block", "tag": "block" },
+    { "type": "block", "tag": "REJECT" },
     { "type": "dns", "tag": "dns-out" }
   ],
   "route": {
