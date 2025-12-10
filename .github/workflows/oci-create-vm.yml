@@ -1,4 +1,4 @@
-name: '[Scheduled] Create OCI A1 Flex VM'
+name: 'Create OCI A1 Flex VM'
 
 on:
   schedule:
