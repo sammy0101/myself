@@ -48,7 +48,7 @@ def main():
         # 如果不是直連域名，則保留
         if not is_direct:
             # 清理可能的修飾符，保留純網域 (MetaCubeX 源通常包含 +, 或 ' )
-            clean_domain = line.replace("+,", "").replace("'", "")
+            clean_domain = line.replace("+.", "").replace("'", "")
             domain_list.append(clean_domain)
 
     print(f"過濾後剩餘網域數量: {len(domain_list)}")
