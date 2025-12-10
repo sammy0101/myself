@@ -19,6 +19,8 @@ HK_DIRECT_KEYWORDS = [
     "bing.net",
     "copilot",           # Microsoft Copilot
     "huggingface.co"     # HuggingFace
+    "hf.co",
+    "hf.space"
 ]
 
 def smart_write(filename, new_content):
