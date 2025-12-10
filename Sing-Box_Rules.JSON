@@ -9,9 +9,9 @@
       { "tag": "local", "address": "223.5.5.5", "detour": "direct" }
     ],
     "rules": [
-      { "outbound": "any", "server": "local" },
       { "rule_set": "rs-cn", "server": "local" },
-      { "rule_set": "rs-private", "server": "local" }
+      { "rule_set": "rs-private", "server": "local" },
+      { "rule_set": "rs-ai", "server": "google" }
     ],
     "strategy": "ipv4_only"
   },
@@ -37,8 +37,8 @@
     { "type": "selector", "tag": "🌐 非中國", "outbounds": ["🚀 節點選擇", "direct"] },
     { "type": "selector", "tag": "🔒 國內服務", "outbounds": ["direct", "🚀 節點選擇"] },
     { "type": "selector", "tag": "🏠 私有網絡", "outbounds": ["direct"] },
-    { "type": "selector", "tag": "🐟 漏網之魚", "outbounds": ["🚀 節點選擇", "direct"] },
     { "type": "selector", "tag": "🛑 廣告攔截", "outbounds": ["block", "direct"] },
+    { "type": "selector", "tag": "🐟 漏網之魚", "outbounds": ["🚀 節點選擇", "direct"] },
     
     { "type": "direct", "tag": "direct" },
     { "type": "block", "tag": "block" },
