@@ -22,24 +22,24 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # 安裝所有腳本需要的依賴
+          # 安裝所有腳本需要的依賴，包含 PyYAML
           pip install requests pytz PyYAML
 
       # ----------------------------------------------------------------
-      # 執行兩個 Python 腳本
+      # 執行 Python 腳本 (產生 list 和 conf)
       # ----------------------------------------------------------------
       - name: 執行 Python 更新腳本
         run: |
-          echo "Start running geosite_ai_hk.py..."
+          echo "Step 1: Running geosite_ai_hk.py..."
           python geosite_ai_hk.py
           
-          echo "Start running Shadowrocket_rules.py..."
+          echo "Step 2: Running Shadowrocket_rules.py..."
           python Shadowrocket_rules.py
 
       # ----------------------------------------------------------------
-      # 下載最新版工具並編譯 (針對 geosite_ai_hk 產生的 list)
+      # 下載最新版編譯工具 (Mihomo & Sing-box)
       # ----------------------------------------------------------------
-      - name: 下載最新版編譯工具 (Mihomo & Sing-box)
+      - name: 下載最新版編譯工具
         run: |
           echo "正在抓取最新版本資訊..."
 
@@ -70,27 +70,47 @@ jobs:
           mv sing-box-*/sing-box .
           chmod +x sing-box
 
+      # ----------------------------------------------------------------
+      # 編譯 MRS (Mihomo Rule Set)
+      # ----------------------------------------------------------------
       - name: 編譯 MRS 規則
         run: |
           echo "Compiling MRS..."
           if [ -f "geosite_ai_hk_proxy.list" ]; then
-            ./mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
+            # 關鍵修正：建立一個空的 config.yaml
+            # 這會防止 Mihomo 進入初始化模式 (Server Mode) 而導致卡住
+            touch config.yaml
+            
+            # 執行轉換，並設定 60秒超時防止卡死
+            timeout 60s ./mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
+            
+            # 清理假設定檔
+            rm config.yaml
+            
+            echo "MRS compilation finished."
           else
             echo "Warning: geosite_ai_hk_proxy.list not found, skipping MRS compilation."
           fi
 
+      # ----------------------------------------------------------------
+      # 編譯 SRS (Sing-box Rule Set)
+      # ----------------------------------------------------------------
       - name: 編譯 SRS 規則
         run: |
           echo "Compiling SRS..."
-          # 建立臨時 JSON (Sing-box 需要 JSON 格式)
+          # 1. 建立臨時 JSON (Sing-box 編譯必須要 JSON 格式來源)
           python -c "
           import json
           import os
           if os.path.exists('geosite_ai_hk_proxy.list'):
               try:
                   with open('geosite_ai_hk_proxy.list', 'r') as f:
+                      # 讀取非註解的行
                       domains = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+                  
+                  # 構建 Sing-box Rule-set 格式
                   data = {'version': 1, 'rules': [{'domain': domains}]}
+                  
                   with open('geosite_ai_hk_proxy_temp.json', 'w') as f:
                       json.dump(data, f, indent=2)
                   print('Temporary JSON created.')
@@ -98,28 +118,30 @@ jobs:
                   print(f'Error converting to JSON: {e}')
                   exit(1)
           else:
-              print('List file not found, skipping SRS logic.')
+              print('List file not found for SRS compilation.')
           "
 
+          # 2. 將臨時 JSON 編譯成 .srs
           if [ -f "geosite_ai_hk_proxy_temp.json" ]; then
             ./sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy_temp.json
             rm geosite_ai_hk_proxy_temp.json
+            echo "SRS compilation finished."
           fi
 
       - name: 清理工具
         run: |
-          rm -rf mihomo sing-box sing-box.tar.gz sing-box-*
+          rm -rf mihomo sing-box sing-box.tar.gz sing-box-* config.yaml
 
       # ----------------------------------------------------------------
-      # 提交所有變更
+      # 提交變更
       # ----------------------------------------------------------------
       - name: 提交變更 (Commit & Push)
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # 加入所有檔案 (包含兩個腳本產生的所有 list, conf, mrs, srs)
+          # 加入所有變更 (包含新產生的 list, conf, mrs, srs)
           git add .
           
-          # 檢查變更並提交 (香港時間)
+          # 檢查是否有變更，有則提交並加上香港時間
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto sync: $(TZ=Asia/Hong_Kong date +'%Y-%m-%d %H:%M')" && git push)
