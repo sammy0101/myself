@@ -36,7 +36,7 @@ jobs:
           python Shadowrocket_rules.py
 
       # ----------------------------------------------------------------
-      # 2. 檢查是否有變更 (關鍵步驟)
+      # 2. 檢查是否有變更 (智慧比對)
       # ----------------------------------------------------------------
       - name: 檢查規則是否有變動
         id: check_changes
@@ -86,7 +86,6 @@ jobs:
         if: steps.check_changes.outputs.rules_changed == 'true'
         run: |
           echo "Compiling SRS..."
-          # 使用 Python 腳本生成的 json 直接編譯
           if [ -f "geosite_ai_hk_proxy.json" ]; then
              ./sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
              echo "SRS compiled."
@@ -99,7 +98,7 @@ jobs:
         run: rm -rf mihomo sing-box sing-box.tar.gz sing-box-* config.yaml
 
       # ----------------------------------------------------------------
-      # 6. 提交變更 (只有在 rules_changed 為 true 時執行)
+      # 6. 提交變更 (修改了提交訊息格式)
       # ----------------------------------------------------------------
       - name: 提交變更 (Commit & Push)
         if: steps.check_changes.outputs.rules_changed == 'true'
@@ -107,5 +106,9 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add .
-          git commit -m "Auto sync: $(TZ=Asia/Hong_Kong date +'%Y-%m-%d %H:%M')"
+          
+          # 修改這裡：使用你指定的格式
+          # 格式範例：🔄 自動同步 AI 規則 (📅 2025-12-10 19:02)
+          git commit -m "🔄 自動同步 AI 規則 (📅 $(TZ=Asia/Hong_Kong date +'%Y-%m-%d %H:%M'))"
+          
           git push
