@@ -2,7 +2,7 @@ name: Daily Sync AI Rules
 
 on:
   schedule:
-    # 每天 UTC 20:00 (香港時間 04:00) 執行，可自行調整
+    # 每天 UTC 20:00 (香港時間 04:00) 執行
     - cron: '0 20 * * *'
   workflow_dispatch:
 
@@ -22,14 +22,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pytz
+          # 這裡新增了 PyYAML 解決報錯
+          pip install requests pytz PyYAML
 
       - name: 執行 Python 腳本更新清單
         run: python geosite_ai_hk.py
         # 這一步會產生新的 geosite_ai_hk_proxy.list
 
       # ----------------------------------------------------------------
-      # 新增區塊：下載工具並編譯 MRS 與 SRS
+      # 下載工具並編譯 MRS 與 SRS
       # ----------------------------------------------------------------
       - name: 下載編譯工具 (Mihomo & Sing-box)
         run: |
@@ -48,7 +49,13 @@ jobs:
         run: |
           # 將 .list (純域名) 編譯成 .mrs
           echo "Compiling MRS..."
-          ./mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
+          # 確保檔案存在再執行
+          if [ -f "geosite_ai_hk_proxy.list" ]; then
+            ./mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
+          else
+            echo "Error: geosite_ai_hk_proxy.list not found!"
+            exit 1
+          fi
 
       - name: 編譯 SRS 規則
         run: |
@@ -56,26 +63,31 @@ jobs:
           # 1. 建立臨時 JSON (Sing-box 編譯必須要 JSON 格式來源)
           python -c "
           import json
-          try:
-              with open('geosite_ai_hk_proxy.list', 'r') as f:
-                  # 讀取非註解的行
-                  domains = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-              
-              # 構建 Sing-box Rule-set 格式
-              data = {'version': 1, 'rules': [{'domain': domains}]}
-              
-              with open('geosite_ai_hk_proxy_temp.json', 'w') as f:
-                  json.dump(data, f, indent=2)
-              print('Temporary JSON created.')
-          except Exception as e:
-              print(f'Error: {e}')
+          import os
+          if os.path.exists('geosite_ai_hk_proxy.list'):
+              try:
+                  with open('geosite_ai_hk_proxy.list', 'r') as f:
+                      # 讀取非註解的行
+                      domains = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+                  
+                  # 構建 Sing-box Rule-set 格式
+                  data = {'version': 1, 'rules': [{'domain': domains}]}
+                  
+                  with open('geosite_ai_hk_proxy_temp.json', 'w') as f:
+                      json.dump(data, f, indent=2)
+                  print('Temporary JSON created.')
+              except Exception as e:
+                  print(f'Error converting to JSON: {e}')
+                  exit(1)
+          else:
+              print('List file not found for SRS compilation.')
           "
 
           # 2. 將臨時 JSON 編譯成 .srs
-          ./sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy_temp.json
-          
-          # 3. 刪除臨時 JSON (如果你不想保留它)
-          rm geosite_ai_hk_proxy_temp.json
+          if [ -f "geosite_ai_hk_proxy_temp.json" ]; then
+            ./sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy_temp.json
+            rm geosite_ai_hk_proxy_temp.json
+          fi
 
       - name: 清理工具
         run: |
@@ -87,7 +99,7 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # 加入所有變更 (包含 list, mrs, srs)
+          # 加入所有變更
           git add .
           
           # 檢查是否有變更，有則提交並加上香港時間
