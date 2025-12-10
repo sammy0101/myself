@@ -85,4 +85,4 @@ jobs:
           git add .
           
           # 檢查是否有變更，有則提交
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto sync: 更新 AI 與 Shadowrocket 規則" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto sync: $(TZ=Asia/Hong_Kong date +'%Y-%m-%d %H:%M')" && git push)
