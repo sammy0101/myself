@@ -46,7 +46,7 @@
   "outbounds": [
     { "type": "selector", "tag": "🚀 節點選擇", "outbounds": ["⚡ 自動選擇", "direct"] },
     { "type": "urltest", "tag": "⚡ 自動選擇", "outbounds": [], "url": "https://www.gstatic.com/generate_204", "interval": "3m", "tolerance": 50 },
-    { "type": "selector", "tag": "💬 AI 服務", "outbounds": ["🚀 節點選擇"] },
+    { "type": "selector", "tag": "💬 AI 服務", "outbounds": ["⚡ 自動選擇", "🚀 節點選擇"] },
     { "type": "selector", "tag": "🌐 非中國", "outbounds": ["🚀 節點選擇", "direct"] },
     { "type": "selector", "tag": "🔒 國內服務", "outbounds": ["direct", "🚀 節點選擇"] },
     { "type": "selector", "tag": "🏠 私有網絡", "outbounds": ["direct"] },
