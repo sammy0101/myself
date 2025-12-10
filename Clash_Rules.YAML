@@ -32,6 +32,7 @@ proxy-groups:
   - name: 💬 AI 服務
     type: select
     proxies:
+      - ⚡ 自動選擇
       - 🚀 節點選擇
 
   - name: 🌐 非中國
