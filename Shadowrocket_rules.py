@@ -28,6 +28,8 @@ AI_EXCLUSIONS = [
     "bing.net",
     "copilot",           # Microsoft Copilot
     "huggingface.co"     # HuggingFace
+    "hf.co",
+    "hf.space"
 ]
 
 def fetch_and_parse(url, policy, exclusions=None):
