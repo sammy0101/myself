@@ -19,20 +19,17 @@
     "servers": [
       {
         "tag": "google",
-        "type": "udp",
-        "server": "8.8.8.8",
+        "address": "8.8.8.8",
         "detour": "🚀 節點選擇"
       },
       {
         "tag": "local",
-        "type": "udp",
-        "server": "223.5.5.5",
+        "address": "223.5.5.5",
         "detour": "direct"
       },
       {
         "tag": "block",
-        "type": "built_in",
-        "address": "rcode://refused"
+        "address": "rcode://success"
       }
     ],
     "rules": [
@@ -43,22 +40,19 @@
       { "rule_set": ["rs-cn", "rs-private", "ip-cn", "ip-private"], "server": "local" }
     ],
     "final": "google",
-    "strategy": "prefer_ipv4"
+    "strategy": "ipv4_only"
   },
   "inbounds": [
     {
       "type": "tun",
       "tag": "tun-in",
       "interface_name": "tun0",
-      "address": [
-        "172.19.0.1/30",
-        "fd00::1/126"
-      ],
+      "inet4_address": "172.19.0.1/30",
+      "inet6_address": "fd00::1/126",
       "stack": "system",
       "auto_route": true,
       "strict_route": true,
-      "sniff": true,
-      "sniff_override_destination": true
+      "sniff": true
     }
   ],
   "outbounds": [
