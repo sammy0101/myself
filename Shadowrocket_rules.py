@@ -17,19 +17,54 @@ urls = {
 
 # 設定要從 AI 代理列表中剔除的關鍵字 (香港可直連的網站)
 AI_EXCLUSIONS = [
-    "x.com",             # X (Twitter)
-    "x.ai",              # Grok 相關
-    "grok.com",          # Grok
-    "anthropic",         # Claude
-    "poe.com",           # Poe (香港可直連)
-    "poecdn",            # Poe CDN
-    "perplexity",        # Perplexity (香港可直連)
-    "bing.com",          # Bing / Copilot (香港可直連)
-    "bing.net",
-    "copilot",           # Microsoft Copilot
-    "huggingface.co",    # HuggingFace
-    "hf.co",
-    "hf.space"
+    # --- Coding Assistants & IDEs ---
+    "cursor.com",
+    "cursor.sh",
+    "cursorapi.com",
+    "cursor-cdn.com",
+    "trae.ai",          # ByteDance IDE
+    "marscode.com",     # ByteDance/Doubao Coding
+    "coderabbit.ai",
+    "coderabbit.gallery.vsassets.io",
+    
+    # --- Open Models & Inference Providers ---
+    "mistral.ai",       # France / Europe
+    "cohere.ai",
+    "cohere.com",
+    "groq.com",         # Fast Inference
+    "cerebras.ai",
+    "openrouter.ai",    # API Aggregator (Works in HK)
+    "deepmind.google",  # Google DeepMind Info (Info sites usually work)
+    "deepmind.com",
+    
+    # --- AI Platforms & Tools ---
+    "dify.ai",          # LLM App Builder
+    "coze.com",         # ByteDance Coze International
+    "ciciai.com",       # Cici AI
+    "cici.com",
+    "ciciaicdn.com",
+    "poe.com",          # Quora Poe (Works in HK)
+    "huggingface.co",   # (Usually accessible, good to add)
+    
+    # --- Media, Art & Generation ---
+    "elevenlabs.io",    # Voice AI
+    "elevenlabs.com",
+    "clipdrop.co",      # Stability AI Tool
+    "comfy.org",        # ComfyUI
+    "comfyregistry.org",
+    "comfyci.org",
+    "openart.ai",
+    "civitai.com",      # (Usually accessible)
+    
+    # --- Infrastructure & CDNs ---
+    "gateway.ai.cloudflare.com",
+    "pplx-res.cloudinary.com",    # Perplexity Assets
+    "browser-intake-datadoghq.com",
+    "o33249.ingest.sentry.io",
+    
+    # --- Misc/Browsers ---
+    "diabrowser.com",
+    "dola.com",
 ]
 
 def fetch_and_parse(url, policy, exclusions=None):
