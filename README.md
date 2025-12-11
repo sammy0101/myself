@@ -10,14 +10,14 @@
 
 | 文件名稱 | 描述 | 適用軟體/格式 |
 | :--- | :--- | :--- |
-| **[`Clash_Rules.YAML`](./Clash_Rules.YAML)** | Clash 格式的規則配置 |
-| **[`Sing-Box_Rules.JSON`](./Sing-Box_Rules.JSON)** | Sing-Box 格式的規則配置 |
-| **[`geosite_ai_hk_proxy.list`](./geosite_ai_hk_proxy.list)** | 純域名列表 (Domain List) |
-| **[`geosite_ai_hk_proxy.mrs`](./geosite_ai_hk_proxy.mrs)** | Binary 格式規則 (Mihomo) |
-| **[`geosite_ai_hk_proxy.srs`](./geosite_ai_hk_proxy.srs)** | Binary 格式規則 (Sing-Box) |
-| **[`geosite_ai_hk_proxy.yaml`](./geosite_ai_hk_proxy.yaml)** | YAML 格式規則集 |
-| **[`ai_ad.conf`](./ai_ad.conf)** | AI 去廣告Shadowrocket配置 |
-| **[`CF-CIDR.txt`](./CF-CIDR.txt)** | Cloudflare IP CIDR 範圍列表 |
+| **[`Clash_Rules.YAML`](./Clash_Rules.YAML)** | Clash 格式的規則配置 | Clash for Windows, Clash Verge, Clash.Meta |
+| **[`Sing-Box_Rules.JSON`](./Sing-Box_Rules.JSON)** | Sing-Box 格式的規則配置 | Sing-Box, Nekobox |
+| **[`geosite_ai_hk_proxy.list`](./geosite_ai_hk_proxy.list)** | 純域名列表 (Domain List) | Shadowrocket, Quantumult X |
+| **[`geosite_ai_hk_proxy.mrs`](./geosite_ai_hk_proxy.mrs)** | Binary 格式規則 (Mihomo) | Mihomo (Clash.Meta) |
+| **[`geosite_ai_hk_proxy.srs`](./geosite_ai_hk_proxy.srs)** | Binary 格式規則 (Sing-Box) | Sing-Box |
+| **[`geosite_ai_hk_proxy.yaml`](./geosite_ai_hk_proxy.yaml)** | YAML 格式規則集 | Clash 家族 |
+| **[`ai_ad.conf`](./ai_ad.conf)** | AI 去廣告配置 | Shadowrocket |
+| **[`CF-CIDR.txt`](./CF-CIDR.txt)** | Cloudflare IP CIDR 範圍列表 | 通用 IP |
 
 ## 🚀 使用方法
 
