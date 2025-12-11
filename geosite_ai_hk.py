@@ -53,6 +53,11 @@ HK_DIRECT_KEYWORDS = [
     "o33249.ingest.sentry.io",
     "openaiapi-site.azureedge.net",
     "production-openaicom-storage.azureedge.net",
+    "poecdn.net",
+    "chutes.ai",
+    "deepmind.google",
+    "deepmind.com",
+    "grok.x.com",
 ]
 
 def smart_write(filename, new_content):
