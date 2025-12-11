@@ -8,6 +8,15 @@ SOURCE_URL = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/ge
 
 # 2. 香港直連白名單 (包含這些關鍵字的網域將被剔除，即不走代理)
 HK_DIRECT_KEYWORDS = [
+    "x.ai",
+    "grok.com",
+    "huggingface.co",
+    "hf.space",
+    "hf.co",
+    "perplexity.ai",
+    "perplexity.com",
+    "poe.com",
+    "copilot.microsoft.com",
     "cursor.com",
     "cursor.sh",
     "cursorapi.com",
