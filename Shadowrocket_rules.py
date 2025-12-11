@@ -17,54 +17,42 @@ urls = {
 
 # 設定要從 AI 代理列表中剔除的關鍵字 (香港可直連的網站)
 AI_EXCLUSIONS = [
-    # --- Coding Assistants & IDEs ---
     "cursor.com",
     "cursor.sh",
     "cursorapi.com",
     "cursor-cdn.com",
-    "trae.ai",          # ByteDance IDE
-    "marscode.com",     # ByteDance/Doubao Coding
+    "trae.ai",
+    "marscode.com",
+    "devin.ai",
     "coderabbit.ai",
     "coderabbit.gallery.vsassets.io",
-    
-    # --- Open Models & Inference Providers ---
-    "mistral.ai",       # France / Europe
+    "mistral.ai",
     "cohere.ai",
     "cohere.com",
-    "groq.com",         # Fast Inference
+    "groq.com",
     "cerebras.ai",
-    "openrouter.ai",    # API Aggregator (Works in HK)
-    "deepmind.google",  # Google DeepMind Info (Info sites usually work)
-    "deepmind.com",
-    
-    # --- AI Platforms & Tools ---
-    "dify.ai",          # LLM App Builder
-    "coze.com",         # ByteDance Coze International
-    "ciciai.com",       # Cici AI
-    "cici.com",
-    "ciciaicdn.com",
-    "poe.com",          # Quora Poe (Works in HK)
-    "huggingface.co",   # (Usually accessible, good to add)
-    
-    # --- Media, Art & Generation ---
-    "elevenlabs.io",    # Voice AI
+    "openrouter.ai",
+    "dify.ai",
     "elevenlabs.com",
-    "clipdrop.co",      # Stability AI Tool
-    "comfy.org",        # ComfyUI
+    "elevenlabs.io",
+    "clipdrop.co",
+    "comfy.org",
     "comfyregistry.org",
     "comfyci.org",
     "openart.ai",
-    "civitai.com",      # (Usually accessible)
-    
-    # --- Infrastructure & CDNs ---
+    "ciciai.com",
+    "cici.com",
+    "ciciaicdn.com",
+    "coze.com",
+    "jasper.ai",
+    "dola.com",
+    "diabrowser.com",
     "gateway.ai.cloudflare.com",
-    "pplx-res.cloudinary.com",    # Perplexity Assets
+    "pplx-res.cloudinary.com",
     "browser-intake-datadoghq.com",
     "o33249.ingest.sentry.io",
-    
-    # --- Misc/Browsers ---
-    "diabrowser.com",
-    "dola.com",
+    "openaiapi-site.azureedge.net",
+    "production-openaicom-storage.azureedge.net",
 ]
 
 def fetch_and_parse(url, policy, exclusions=None):
