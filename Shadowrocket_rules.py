@@ -17,6 +17,15 @@ urls = {
 
 # 設定要從 AI 代理列表中剔除的關鍵字 (香港可直連的網站)
 AI_EXCLUSIONS = [
+    "x.ai",
+    "grok.com",
+    "huggingface.co",
+    "hf.space",
+    "hf.co",
+    "perplexity.ai",
+    "perplexity.com",
+    "poe.com",
+    "copilot.microsoft.com",
     "cursor.com",
     "cursor.sh",
     "cursorapi.com",
