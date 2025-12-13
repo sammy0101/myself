@@ -5,6 +5,9 @@ on:
     # 每天 UTC 20:00 (香港時間 04:00) 執行
     - cron: '0 20 * * *'
   workflow_dispatch: # 允許手動執行
+  push:
+    paths:
+      - '**.py' # 當 Python 腳本修改時自動測試運行
 
 jobs:
   sync-all:
@@ -30,7 +33,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
 
       # ========================================================
-      # 任務 1: CF-CIDR 更新
+      # 任務 1: CF-CIDR 更新 (優先執行)
       # ========================================================
       - name: "[CF] 下載 CF-CIDR.txt"
         run: |
@@ -44,6 +47,7 @@ jobs:
       - name: "[CF] 提交變更 (Commit)"
         run: |
           git add CF-CIDR.txt
+          
           if git diff --staged --quiet; then
             echo "No CF-CIDR changes detected."
           else
@@ -55,20 +59,22 @@ jobs:
       # ========================================================
       # 任務 2: AI 規則更新 & 編譯
       # ========================================================
-      - name: "[AI] 安裝依賴"
+      - name: "[AI] 安裝 Python 依賴"
         run: |
           python -m pip install --upgrade pip
-          pip install requests pytz PyYAML
+          pip install requests PyYAML
 
-      # 重點修改：在跑 Python 腳本前，先安裝好 Sing-box 和 Mihomo 到系統路徑
       - name: "[AI] 安裝編譯工具 (Mihomo & Sing-box)"
         run: |
           echo "=== 正在安裝最新版工具 ==="
           
-          # 1. 安裝 Mihomo
+          # 1. 安裝 Mihomo (Clash Meta)
           echo "Fetching Mihomo..."
           MIHOMO_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | \
             jq -r '.assets[] | select(.name | contains("linux-amd64") and (contains("compatible")|not) and contains(".gz")) | .browser_download_url' | head -n 1)
+          
+          if [ -z "$MIHOMO_URL" ]; then echo "Failed to find Mihomo URL"; exit 1; fi
+          
           wget -q -O mihomo.gz "$MIHOMO_URL"
           gzip -d mihomo.gz
           sudo mv mihomo /usr/local/bin/
@@ -78,6 +84,9 @@ jobs:
           echo "Fetching Sing-box..."
           SINGBOX_URL=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | \
             jq -r '.assets[] | select(.name | contains("linux-amd64") and contains("tar.gz")) | .browser_download_url' | head -n 1)
+            
+          if [ -z "$SINGBOX_URL" ]; then echo "Failed to find Sing-box URL"; exit 1; fi
+          
           wget -q -O sing-box.tar.gz "$SINGBOX_URL"
           tar -zxf sing-box.tar.gz
           sudo mv sing-box-*/sing-box /usr/local/bin/
@@ -90,30 +99,38 @@ jobs:
 
       - name: "[AI] 執行 Python 腳本 & 強制編譯"
         run: |
-          # 1. 執行 Python 生成 .json 和 .list
-          echo "Running Python scripts..."
-          python geosite_ai_hk.py
-          python Shadowrocket_rules.py
+          # 1. 執行 Python 生成規則文件
+          echo "Running geosite_ai_hk.py..."
+          # 生成: geosite_ai_hk_proxy.list, .json, .yaml
+          python geosite_ai_hk.py || echo "Warning: geosite_ai_hk.py failed"
+          
+          echo "Running Shadowrocket_rules.py..."
+          # 生成: ai_ad.conf
+          python Shadowrocket_rules.py || echo "Warning: Shadowrocket_rules.py failed"
           
           # 2. 強制執行編譯指令 (確保 .mrs 和 .srs 一定被更新)
-          # 即使 Python 腳本裡有寫編譯指令，這裡再跑一次也不會報錯，確保萬無一失
-          
-          echo "Compiling MRS..."
+          echo "Compiling MRS (for Mihomo)..."
           if [ -f "geosite_ai_hk_proxy.list" ]; then
-            # Mihomo 轉換規則
             mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
+          else
+            echo "Skipping MRS: geosite_ai_hk_proxy.list not found."
           fi
 
-          echo "Compiling SRS..."
+          echo "Compiling SRS (for Sing-box)..."
           if [ -f "geosite_ai_hk_proxy.json" ]; then
-             # Sing-box 編譯規則
              sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
+          else
+            echo "Skipping SRS: geosite_ai_hk_proxy.json not found."
           fi
 
       - name: "[AI] 提交變更 (Commit)"
         run: |
-          # 檢查是否有任何 AI 相關文件變更
-          git add geosite_ai_hk_proxy.* Shadowrocket_rules.list
+          # --- 關鍵修復 ---
+          # 使用 "git add ." 將當前目錄下所有變更加入
+          # 這會自動包含: 
+          # 1. ai_ad.conf (Shadowrocket)
+          # 2. geosite_ai_hk_proxy.mrs/.srs/.list/.json/.yaml
+          git add .
           
           if git diff --staged --quiet; then
             echo "No AI rules changes detected."
