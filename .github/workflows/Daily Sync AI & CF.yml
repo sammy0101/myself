@@ -32,28 +32,29 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
+     # ========================================================
+      # 任務 1: CF-IPs 更新 (優先執行)
       # ========================================================
-      # 任務 1: CF-CIDR 更新 (優先執行)
-      # ========================================================
-      - name: "[CF] 下載 CF-CIDR.txt"
+      - name: "[CF] 下載 CF-IPs.txt"
         run: |
-          wget -O CF-CIDR.txt https://github.com/cmliu/ACL4SSR/raw/refs/heads/main/CloudflareCIDR.txt
+          # 下載 fast-ips.txt 並儲存為 CF-IPs.txt
+          wget -O CF-IPs.txt https://ip.swoi.qzz.io/fast-ips.txt
           
-          if [ ! -f CF-CIDR.txt ]; then
+          if [ ! -f CF-IPs.txt ]; then
             echo "Download failed!"
             exit 1
           fi
 
       - name: "[CF] 提交變更 (Commit)"
         run: |
-          git add CF-CIDR.txt
+          git add CF-IPs.txt
           
           if git diff --staged --quiet; then
-            echo "No CF-CIDR changes detected."
+            echo "No CF-IPs changes detected."
           else
             current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
-            git commit -m "🔄 自動同步 CF-CIDR.txt (📅 $current_time)"
-            echo "CF-CIDR committed."
+            git commit -m "🔄 自動同步 CF-IPs.txt (📅 $current_time)"
+            echo "CF-IPs committed."
           fi
 
       # ========================================================
