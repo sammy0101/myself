@@ -1,63 +1,65 @@
 # myself - 個人代理規則倉庫
 
-這個倉庫用於存儲和自動維護個人使用的網路代理規則，支援多種常見的代理軟體，如 Clash、Sing-Box 和 Shadowrocket。
+本倉庫用於自動生成和維護個人使用的網路代理規則，主要針對 **AI 服務** 與 **香港 (HK)** 地區服務的分流需求。
+規則文件透過 GitHub Actions 自動更新，支援多種主流代理軟體。
 
-規則主要包含針對特定服務（如 AI 相關服務）的分流設定，並透過 GitHub Actions 進行自動化更新。
+## 📂 規則文件列表
 
-## 📂 文件說明
-
-本倉庫包含以下類型的規則文件，適用於不同的客戶端：
-
-| 文件名稱 | 描述 | 適用軟體/格式 |
-| :--- | :--- | :--- |
-| **[`Clash_Rules.YAML`](./Clash_Rules.YAML)** | Clash 格式的規則配置 | Clash for Windows, Clash Verge, Clash.Meta |
-| **[`Sing-Box_Rules.JSON`](./Sing-Box_Rules.JSON)** | Sing-Box 格式的規則配置 | Sing-Box, Nekobox |
-| **[`geosite_ai_hk_proxy.list`](./geosite_ai_hk_proxy.list)** | 純域名列表 (Domain List) | Shadowrocket, Quantumult X |
-| **[`geosite_ai_hk_proxy.mrs`](./geosite_ai_hk_proxy.mrs)** | Binary 格式規則 (Mihomo) | Mihomo (Clash.Meta) |
-| **[`geosite_ai_hk_proxy.srs`](./geosite_ai_hk_proxy.srs)** | Binary 格式規則 (Sing-Box) | Sing-Box |
-| **[`geosite_ai_hk_proxy.yaml`](./geosite_ai_hk_proxy.yaml)** | YAML 格式規則集 | Clash 家族 |
-| **[`ai_ad.conf`](./ai_ad.conf)** | AI 去廣告配置 | Shadowrocket |
-| **[`CF-CIDR.txt`](./CF-CIDR.txt)** | Cloudflare IP CIDR 範圍列表 | 通用 IP |
+| 文件名稱 | 格式 | 描述 | 推薦客戶端 |
+| :--- | :--- | :--- | :--- |
+| **[`geosite_ai_hk_proxy.yaml`](./geosite_ai_hk_proxy.yaml)** | YAML | Clash 規則集 (Rule Provider) | Clash Verge, Clash.Meta (Mihomo) |
+| **[`geosite_ai_hk_proxy.mrs`](./geosite_ai_hk_proxy.mrs)** | Binary | Mihomo 專用二進制規則 | Mihomo (Clash.Meta) |
+| **[`geosite_ai_hk_proxy.srs`](./geosite_ai_hk_proxy.srs)** | Binary | Sing-Box 專用二進制規則 | Sing-Box, Nekobox |
+| **[`geosite_ai_hk_proxy.json`](./geosite_ai_hk_proxy.json)** | JSON | Sing-Box 規則源文件 | Sing-Box (Source) |
+| **[`geosite_ai_hk_proxy.list`](./geosite_ai_hk_proxy.list)** | List | 純域名列表 | Shadowrocket, Quantumult X |
+| **[`ai_ad.conf`](./ai_ad.conf)** | Conf | Shadowrocket 模組/配置 | Shadowrocket |
+| **[`CF-IPs.txt`](./CF-IPs.txt)** | Text | Cloudflare IP CIDR 列表 | 通用 |
 
 ## 🚀 使用方法
 
-### 引用規則連結
-建議使用 CDN 加速連結引用規則，以確保更新穩定性：
+### 1. Clash / Mihomo (Rule Provider)
+在您的 Clash 設定檔中加入以下 `rule-providers`：
 
-*   **Clash Rule Provider 範例:**
-    ```yaml
-    rule-providers:
-      AI-Services:
-        type: http
-        behavior: domain
-        url: "https://raw.githubusercontent.com/sammy0101/myself/main/geosite_ai_hk_proxy.yaml"
-        path: ./ruleset/ai_services.yaml
-        interval: 86400
+```yaml
+rule-providers:
+  AI-Services:
+    type: http
+    behavior: domain
+    format: yaml
+    url: "https://raw.githubusercontent.com/sammy0101/myself/main/geosite_ai_hk_proxy.yaml"
+    path: ./ruleset/geosite_ai_hk.yaml
+    interval: 86400
+```
+
+### 2. Sing-Box (Rule Set)
+在 Sing-Box 的 `route` 設定中加入：
+
+```json
+{
+  "type": "remote",
+  "tag": "geosite-ai-hk",
+  "format": "binary",
+  "url": "https://raw.githubusercontent.com/sammy0101/myself/main/geosite_ai_hk_proxy.srs",
+  "download_detour": "proxy"
+}
+```
+
+### 3. Shadowrocket (小火箭)
+*   **規則集引用:** 進入 `配置` -> `遠程文件` -> `添加規則集`，輸入 URL：
     ```
-
-*   **Sing-Box Rule Set 範例:**
-    ```json
-    {
-      "type": "remote",
-      "tag": "geosite-ai",
-      "format": "binary",
-      "url": "https://raw.githubusercontent.com/sammy0101/myself/main/geosite_ai_hk_proxy.srs",
-      "download_detour": "proxy"
-    }
+    https://raw.githubusercontent.com/sammy0101/myself/main/geosite_ai_hk_proxy.list
     ```
+*   **模組/配置:** 如果需要使用 `ai_ad.conf`，可直接導入或複製內容使用。
 
-*   **Shadowrocket:**
-    直接在配置中添加 Rule Set URL：
-    `https://raw.githubusercontent.com/sammy0101/myself/main/geosite_ai_hk_proxy.list`
-
-### 腳本與自動化
-本倉庫包含 Python 腳本（如 `scripts/` 目錄及根目錄下的 `.py` 文件），用於從上游數據源提取、轉換並生成上述規則文件。GitHub Actions 會定期執行這些腳本以保持規則為最新狀態。
-
-*   `geosite_ai_hk.py`: 生成 AI 相關的 GeoSite 規則。
-*   `Shadowrocket_rules.py`: 轉換規則為 Shadowrocket 兼容格式。
+## 🛠️ 自動化與腳本
+本倉庫利用 Python 腳本從上游數據源提取規則，並轉換為不同格式。
+*   `geosite_ai_hk.py`: 主要邏輯腳本，整合 AI 與 HK 地區規則。
+*   `Shadowrocket_rules.py`: 格式轉換工具。
+*   自動化工作流 (GitHub Actions) 會定期執行這些腳本，確保規則即時更新。
 
 ## ⚠️ 免責聲明
-本倉庫提供的規則僅供個人學習與研究使用。請遵守您所在地區的法律法規及網路安全規範。
+本項目提供的規則文件僅供個人學習、研究及技術測試使用。請務必遵守所在地區的法律法規。
 
 ---
-*Last Updated: Automatically updated via GitHub Actions.*
+*Last Updated: Automatically via GitHub Actions*
+```
