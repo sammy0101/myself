@@ -38,7 +38,7 @@ jobs:
       - name: "[CF] 下載 CF-IPs.txt"
         run: |
           # 下載 fast-ips.txt 並儲存為 CF-IPs.txt
-          wget -O CF-IPs.txt https://ip.swoi.qzz.io/fast-ips.txt
+          wget -O CF-IPs.txt https://ip.swoi.qzz.io/fast-ips.txt?session=dDeWhymbkNWNvqVPhl5CVrvmva3Zxtxy
           
           if [ ! -f CF-IPs.txt ]; then
             echo "Download failed!"
