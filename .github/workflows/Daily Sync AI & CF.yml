@@ -33,12 +33,11 @@ jobs:
           git config --local user.name "github-actions[bot]"
 
       # ========================================================
-      # 任務 1: CF-IPs 更新 (優先執行)
+      # 任務 1: CF-IPs 更新 (獨立檢查)
       # ========================================================
       - name: "[CF] 下載 CF-IPs.txt"
         run: |
-          # 下載 fast-ips.txt 並儲存為 CF-IPs.txt
-          # 使用您指定的帶 Token 的網址
+          # 下載並直接覆蓋舊檔案
           wget -O CF-IPs.txt "https://ip.swoi.qzz.io/fast-ips.txt?token=B7suc8L5IpwkcMwr6ccPoXFkITeDcVb5&session=rQa1BKAeYxR0OH5uRrzzxgcvsZbUdk95"
           
           if [ ! -f CF-IPs.txt ]; then
@@ -46,108 +45,73 @@ jobs:
             exit 1
           fi
 
-      - name: "[CF] 提交變更 (Commit)"
+      - name: "[CF] 檢查變更 & 提交"
         run: |
           git add CF-IPs.txt
           
+          # 只有當內容真的變了，才提交
           if git diff --staged --quiet; then
-            echo "No CF-IPs changes detected."
+            echo "✅ CF-IPs.txt 內容無變化，跳過提交。"
           else
             current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
             git commit -m "🔄 自動同步 CF-IPs.txt (📅 $current_time)"
-            echo "CF-IPs committed."
+            echo "🚀 CF-IPs 已更新並提交。"
           fi
 
       # ========================================================
-      # 任務 2: AI 規則更新 & 編譯
+      # 任務 2: AI 規則更新 & 編譯 (獨立檢查)
       # ========================================================
-      - name: "[AI] 安裝 Python 依賴"
+      - name: "[AI] 安裝依賴 & 編譯工具"
         run: |
-          python -m pip install --upgrade pip
+          # 1. Python 依賴
           pip install requests PyYAML
-
-      - name: "[AI] 安裝編譯工具 (Mihomo & Sing-box)"
-        run: |
-          echo "=== 正在安裝最新版工具 ==="
           
-          # 1. 安裝 Mihomo (Clash Meta)
-          echo "Fetching Mihomo..."
-          MIHOMO_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | \
-            jq -r '.assets[] | select(.name | contains("linux-amd64") and (contains("compatible")|not) and contains(".gz")) | .browser_download_url' | head -n 1)
+          # 2. 下載 Mihomo
+          MIHOMO_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | jq -r '.assets[] | select(.name | contains("linux-amd64") and (contains("compatible")|not) and contains(".gz")) | .browser_download_url' | head -n 1)
+          wget -q -O mihomo.gz "$MIHOMO_URL" && gzip -d mihomo.gz
+          sudo mv mihomo /usr/local/bin/ && sudo chmod +x /usr/local/bin/mihomo
           
-          if [ -z "$MIHOMO_URL" ]; then echo "Failed to find Mihomo URL"; exit 1; fi
-          
-          wget -q -O mihomo.gz "$MIHOMO_URL"
-          gzip -d mihomo.gz
-          sudo mv mihomo /usr/local/bin/
-          sudo chmod +x /usr/local/bin/mihomo
-          
-          # 2. 安裝 Sing-box
-          echo "Fetching Sing-box..."
-          SINGBOX_URL=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | \
-            jq -r '.assets[] | select(.name | contains("linux-amd64") and contains("tar.gz")) | .browser_download_url' | head -n 1)
-            
-          if [ -z "$SINGBOX_URL" ]; then echo "Failed to find Sing-box URL"; exit 1; fi
-          
-          wget -q -O sing-box.tar.gz "$SINGBOX_URL"
-          tar -zxf sing-box.tar.gz
-          sudo mv sing-box-*/sing-box /usr/local/bin/
-          sudo chmod +x /usr/local/bin/sing-box
+          # 3. 下載 Sing-box
+          SINGBOX_URL=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | jq -r '.assets[] | select(.name | contains("linux-amd64") and contains("tar.gz")) | .browser_download_url' | head -n 1)
+          wget -q -O sing-box.tar.gz "$SINGBOX_URL" && tar -zxf sing-box.tar.gz
+          sudo mv sing-box-*/sing-box /usr/local/bin/ && sudo chmod +x /usr/local/bin/sing-box
           rm -rf sing-box.tar.gz sing-box-*
-          
-          # 驗證安裝
-          mihomo -v
-          sing-box version
 
-      - name: "[AI] 執行 Python 腳本 & 強制編譯"
+      - name: "[AI] 執行腳本 & 編譯規則"
         run: |
-          # 1. 執行 Python 生成規則文件 (.list, .json, .conf)
-          echo "Running geosite_ai_hk.py..."
-          python geosite_ai_hk.py || echo "Warning: geosite_ai_hk.py failed"
+          echo ">>> 1. 執行 Python 腳本 (生成 List/Json/Conf) <<<"
+          # 如果腳本內的 smart_write 發現內容沒變，就不會更新檔案時間
+          python geosite_ai_hk.py || echo "Warning: geosite script failed"
+          python Shadowrocket_rules.py || echo "Warning: shadowrocket script failed"
           
-          echo "Running Shadowrocket_rules.py..."
-          python Shadowrocket_rules.py || echo "Warning: Shadowrocket_rules.py failed"
-          
-          # ------------------------------------------------------------------
-          # 2. 刪除舊的二進位檔案 (強制重新編譯)
-          # ------------------------------------------------------------------
-          echo "Deleting old binary files..."
-          rm -f geosite_ai_hk_proxy.mrs geosite_ai_hk_proxy.srs
-
-          # 3. 編譯新檔案
-          echo "Compiling MRS (for Mihomo)..."
+          echo ">>> 2. 執行編譯指令 (覆蓋模式) <<<"
+          # Mihomo: List -> MRS
           if [ -f "geosite_ai_hk_proxy.list" ]; then
             mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
-          else
-            echo "Error: geosite_ai_hk_proxy.list not found!"
           fi
 
-          echo "Compiling SRS (for Sing-box)..."
+          # Sing-box: Json -> SRS
           if [ -f "geosite_ai_hk_proxy.json" ]; then
              sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
-          else
-            echo "Error: geosite_ai_hk_proxy.json not found!"
           fi
-          
-          # 4. 顯示結果 (在 Log 中確認檔案是否生成)
-          ls -lh geosite_ai_hk_proxy.* ai_ad.conf || true
 
-      - name: "[AI] 提交變更 (Commit)"
+      - name: "[AI] 檢查變更 & 提交"
         run: |
-          # --- 使用 git add . ---
-          # 這會自動將 ai_ad.conf, .list, .json, .mrs, .srs 全部加入
+          # 將所有變更加入暫存區 (包含 .conf, .list, .json, .mrs, .srs)
           git add .
           
+          # Git 會自動比對 Hash 值
+          # 如果編譯出來的 .mrs 跟昨天的二進位內容一模一樣，Git 會判定 "無變更"
           if git diff --staged --quiet; then
-            echo "No AI rules changes detected."
+            echo "✅ AI 規則 (包含 .mrs/.srs) 內容完全一致，無需更新。"
           else
             current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
             git commit -m "🔄 自動同步 AI 規則 (📅 $current_time)"
-            echo "AI Rules committed."
+            echo "🚀 AI 規則已更新並提交。"
           fi
 
       # ========================================================
-      # 最終推送
+      # 最終推送 (如果上面有任何一個任務產生了 Commit)
       # ========================================================
       - name: Push All Changes
         run: |
