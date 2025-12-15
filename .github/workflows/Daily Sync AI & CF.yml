@@ -32,13 +32,14 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
-     # ========================================================
+      # ========================================================
       # 任務 1: CF-IPs 更新 (優先執行)
       # ========================================================
       - name: "[CF] 下載 CF-IPs.txt"
         run: |
           # 下載 fast-ips.txt 並儲存為 CF-IPs.txt
-          wget -O CF-IPs.txt https://ip.swoi.qzz.io/fast-ips.txt?token=B7suc8L5IpwkcMwr6ccPoXFkITeDcVb5&session=rQa1BKAeYxR0OH5uRrzzxgcvsZbUdk95
+          # 使用您指定的帶 Token 的網址
+          wget -O CF-IPs.txt "https://ip.swoi.qzz.io/fast-ips.txt?token=B7suc8L5IpwkcMwr6ccPoXFkITeDcVb5&session=rQa1BKAeYxR0OH5uRrzzxgcvsZbUdk95"
           
           if [ ! -f CF-IPs.txt ]; then
             echo "Download failed!"
@@ -94,43 +95,47 @@ jobs:
           sudo chmod +x /usr/local/bin/sing-box
           rm -rf sing-box.tar.gz sing-box-*
           
-          # 驗證
+          # 驗證安裝
           mihomo -v
           sing-box version
 
       - name: "[AI] 執行 Python 腳本 & 強制編譯"
         run: |
-          # 1. 執行 Python 生成規則文件
+          # 1. 執行 Python 生成規則文件 (.list, .json, .conf)
           echo "Running geosite_ai_hk.py..."
-          # 生成: geosite_ai_hk_proxy.list, .json, .yaml
           python geosite_ai_hk.py || echo "Warning: geosite_ai_hk.py failed"
           
           echo "Running Shadowrocket_rules.py..."
-          # 生成: ai_ad.conf
           python Shadowrocket_rules.py || echo "Warning: Shadowrocket_rules.py failed"
           
-          # 2. 強制執行編譯指令 (確保 .mrs 和 .srs 一定被更新)
+          # ------------------------------------------------------------------
+          # 2. 刪除舊的二進位檔案 (強制重新編譯)
+          # ------------------------------------------------------------------
+          echo "Deleting old binary files..."
+          rm -f geosite_ai_hk_proxy.mrs geosite_ai_hk_proxy.srs
+
+          # 3. 編譯新檔案
           echo "Compiling MRS (for Mihomo)..."
           if [ -f "geosite_ai_hk_proxy.list" ]; then
             mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
           else
-            echo "Skipping MRS: geosite_ai_hk_proxy.list not found."
+            echo "Error: geosite_ai_hk_proxy.list not found!"
           fi
 
           echo "Compiling SRS (for Sing-box)..."
           if [ -f "geosite_ai_hk_proxy.json" ]; then
              sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
           else
-            echo "Skipping SRS: geosite_ai_hk_proxy.json not found."
+            echo "Error: geosite_ai_hk_proxy.json not found!"
           fi
+          
+          # 4. 顯示結果 (在 Log 中確認檔案是否生成)
+          ls -lh geosite_ai_hk_proxy.* ai_ad.conf || true
 
       - name: "[AI] 提交變更 (Commit)"
         run: |
-          # --- 關鍵修復 ---
-          # 使用 "git add ." 將當前目錄下所有變更加入
-          # 這會自動包含: 
-          # 1. ai_ad.conf (Shadowrocket)
-          # 2. geosite_ai_hk_proxy.mrs/.srs/.list/.json/.yaml
+          # --- 使用 git add . ---
+          # 這會自動將 ai_ad.conf, .list, .json, .mrs, .srs 全部加入
           git add .
           
           if git diff --staged --quiet; then
