@@ -59,14 +59,3 @@ rule-providers:
 
 ## ⚠️ 免責聲明
 本項目提供的規則文件僅供個人學習、研究及技術測試使用。請務必遵守所在地區的法律法規。
-
----
-*Last Updated: Automatically via GitHub Actions*
-```
-
-### 主要修改點說明：
-1.  **修正檔名**：將 `Clash_Rules.YAML` 改為實際的 `geosite_ai_hk_proxy.yaml`。
-2.  **修正檔名**：將 `Sing-Box_Rules.JSON` 改為實際的 `geosite_ai_hk_proxy.json`。
-3.  **修正檔名**：將 `CF-CIDR.txt` 改為實際的 `CF-IPs.txt`。
-4.  **優化表格**：增加了「格式」欄位，讓使用者更清楚文件的類型。
-5.  **更新範例**：範例代碼中的 URL 已經更新為指向正確的檔案路徑。
