@@ -38,7 +38,7 @@ jobs:
       - name: "[CF] 下載 CF-IPs.txt"
         run: |
           # 下載並直接覆蓋舊檔案
-          wget -O CF-IPs.txt "https://ip.swoi.qzz.io/fast-ips.txt?token=B7suc8L5IpwkcMwr6ccPoXFkITeDcVb5&session=rQa1BKAeYxR0OH5uRrzzxgcvsZbUdk95"
+          wget -O CF-IPs.txt "https://ip.swoi.qzz.io/fast-ips.txt?token=B7suc8L5IpwkcMwr6ccPoXFkITeDcVb5"
           
           if [ ! -f CF-IPs.txt ]; then
             echo "Download failed!"
