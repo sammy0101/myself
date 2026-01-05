@@ -2,6 +2,7 @@ name: '[Scheduled] Create OCI A1 Flex VM'
 
 on:
   schedule:
+    # 每天 UTC 時間 0 點和 12 點各運行一次
     - cron: '0 0,12 * * *'
   workflow_dispatch:
     inputs:
@@ -24,7 +25,6 @@ env:
 jobs:
   create-vm:
     runs-on: ubuntu-22.04
-    timeout-minutes: 30 # <--- 優化點 1：防止任務卡死，最長運行 30 分鐘
     outputs:
       time: ${{ steps.get-current-time.outputs.time }}
       vm_exists: ${{ steps.check-vm-exists.outputs.exists }}
@@ -43,14 +43,7 @@ jobs:
         id: get-current-time
         run: echo "time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
 
-      # <--- 優化點 2：使用 setup-python 來加速安裝並緩存依賴
-      - name: 設置 Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          cache: 'pip' # 啟用緩存，加快運行速度
-
-      - name: 安裝與配置 OCI CLI
+      - name: 設置 Python and OCI CLI
         run: |
           pip install oci-cli
           mkdir -p ~/.oci
@@ -84,15 +77,12 @@ jobs:
           VM_NAME_TO_CHECK="${{ steps.determine-vm-name.outputs.vm_name }}"
           echo "正在檢查 VM 名稱: $VM_NAME_TO_CHECK"
           set +e
-          # <--- 優化點 3：增加了 STOPPED 和 STOPPING 狀態的檢查
           EXISTING_VM_OCID=$(oci compute instance list \
             --compartment-id "${{ env.OCI_COMPARTMENT_ID }}" \
             --display-name "$VM_NAME_TO_CHECK" \
             --lifecycle-state RUNNING \
             --lifecycle-state PROVISIONING \
             --lifecycle-state STARTING \
-            --lifecycle-state STOPPED \
-            --lifecycle-state STOPPING \
             --query 'data[0].id' --raw-output)
           exit_code=$?
           set -e
@@ -100,7 +90,7 @@ jobs:
             echo "⚠️  OCI CLI 查詢命令失敗，無法檢查 VM 是否存在。為安全起見，將跳過創建。"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           elif [ -n "$EXISTING_VM_OCID" ] && [ "$EXISTING_VM_OCID" != "null" ]; then
-            echo "❌ 發現已存在的同名 VM (含已停止): $VM_NAME_TO_CHECK"
+            echo "❌ 發現已存在的同名 VM: $VM_NAME_TO_CHECK"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "✅ 未發現同名的活動 VM，可以繼續。"
