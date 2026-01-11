@@ -122,7 +122,6 @@ rule-providers:
     interval: 86400
 
 rules:
-rules:
   # 1. 最優先：攔截與內網 (域名類)
   - RULE-SET,meta-ads,🛑 廣告攔截
   - RULE-SET,meta-private,🏠 私有網絡
