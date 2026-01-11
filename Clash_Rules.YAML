@@ -122,12 +122,25 @@ rule-providers:
     interval: 86400
 
 rules:
+rules:
+  # 1. 最優先：攔截與內網 (域名類)
   - RULE-SET,meta-ads,🛑 廣告攔截
   - RULE-SET,meta-private,🏠 私有網絡
-  - RULE-SET,meta-ip-private,🏠 私有網絡
+
+  # 2. 核心業務：AI (域名類)
+  # 放在這裡確保優先權最高，不受 CN/Non-CN 規則干擾
   - RULE-SET,my-ai,💬 AI 服務
+
+  # 3. 地區分流 (域名類 - Domain Rule)
+  # 先匹配域名，避免不必要的 DNS 解析
   - RULE-SET,meta-cn,🔒 國內服務
-  - RULE-SET,meta-ip-cn,🔒 國內服務
   - RULE-SET,meta-non-cn,🌐 非中國
+
+  # 4. 兜底分流 (IP 類 - IP Rule)
+  # 上面域名都沒匹配到，這裡才開始解析 IP 進行判斷
+  - RULE-SET,meta-ip-private,🏠 私有網絡
+  - RULE-SET,meta-ip-cn,🔒 國內服務
   - GEOIP,CN,🔒 國內服務
+
+  # 5. 最終兜底
   - MATCH,🐟 漏網之魚
