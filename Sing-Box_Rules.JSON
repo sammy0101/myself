@@ -36,7 +36,7 @@
       // { "outbound": "any", "server": "local" },  <-- 建議先註解掉觀察，通常不需要這行
       { "clash_mode": "Direct", "server": "local" },
       { "clash_mode": "Global", "server": "google" },
-      { "rule_set": "rs-ads", "server": "REJECT" }, // 廣告直接在 DNS 層攔截，很好 👍
+      { "rule_set": "rs-ads", "server": "REJECT" }, // 廣告直接在 DNS 層攔截
       
       // 國內域名、內網域名、國內IP -> 走國內 DNS
       { "rule_set": ["rs-cn", "rs-private", "ip-cn", "ip-private"], "server": "local" }
