@@ -33,12 +33,9 @@
       }
     ],
     "rules": [
-      // { "outbound": "any", "server": "local" },  <-- 建議先註解掉觀察，通常不需要這行
       { "clash_mode": "Direct", "server": "local" },
       { "clash_mode": "Global", "server": "google" },
-      { "rule_set": "rs-ads", "server": "REJECT" }, // 廣告直接在 DNS 層攔截
-      
-      // 國內域名、內網域名、國內IP -> 走國內 DNS
+      { "rule_set": "rs-ads", "server": "REJECT" },
       { "rule_set": ["rs-cn", "rs-private", "ip-cn", "ip-private"], "server": "local" }
     ],
     "final": "google",
@@ -81,28 +78,16 @@
       { "type": "remote", "tag": "ip-cn", "format": "binary", "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/cn.srs", "download_detour": "DIRECT" },
       { "type": "remote", "tag": "ip-private", "format": "binary", "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/private.srs", "download_detour": "DIRECT" }
     ],
-  "rules": [
+    "rules": [
       { "protocol": "dns", "outbound": "dns-out" },
       { "clash_mode": "Direct", "outbound": "DIRECT" },
       { "clash_mode": "Global", "outbound": "🚀 節點選擇" },
-      
-      // 1. 廣告 & 內網 (最優先)
       { "rule_set": "rs-ads", "outbound": "REJECT" },
       { "rule_set": ["rs-private", "ip-private"], "outbound": "🏠 私有網絡" },
-      
-      // 2. 核心業務：AI (確保優先權)
       { "rule_set": "rs-ai", "outbound": "💬 AI 服務" },
-      
-      // 3. 域名優先匹配 (Domain Strategy)
-      // 先把所有「域名規則」比對完，這樣大部分流量都不需要解析 IP
-      { "rule_set": "rs-cn", "outbound": "🔒 國內服務" },      // 國內域名
-      { "rule_set": "rs-non-cn", "outbound": "🌐 非中國" },   // 國外域名 (把這個提上來!)
-
-      // 4. IP 兜底 (IP Strategy)
-      // 域名都沒對上，才開始看 IP
-      { "rule_set": "ip-cn", "outbound": "🔒 國內服務" },      // 國內 IP
-      
-      // 5. 最終兜底
+      { "rule_set": "rs-cn", "outbound": "🔒 國內服務" },
+      { "rule_set": "rs-non-cn", "outbound": "🌐 非中國" },
+      { "rule_set": "ip-cn", "outbound": "🔒 國內服務" },
       { "outbound": "🐟 漏網之魚" }
     ],
     "auto_detect_interface": true
