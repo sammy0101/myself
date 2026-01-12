@@ -3,18 +3,6 @@
     "level": "info",
     "timestamp": true
   },
-  "experimental": {
-    "clash_api": {
-      "external_controller": "127.0.0.1:9090",
-      "external_ui": "ui",
-      "secret": "",
-      "default_mode": "rule"
-    },
-    "cache_file": {
-      "enabled": true,
-      "store_fakeip": true
-    }
-  },
   "dns": {
     "servers": [
       {
@@ -33,10 +21,27 @@
       }
     ],
     "rules": [
-      { "clash_mode": "Direct", "server": "local" },
-      { "clash_mode": "Global", "server": "google" },
-      { "rule_set": "rs-ads", "server": "REJECT" },
-      { "rule_set": ["rs-cn", "rs-private", "ip-cn", "ip-private"], "server": "local" }
+      {
+        "clash_mode": "Direct",
+        "server": "local"
+      },
+      {
+        "clash_mode": "Global",
+        "server": "google"
+      },
+      {
+        "rule_set": "rs-ads",
+        "server": "REJECT"
+      },
+      {
+        "rule_set": [
+          "rs-cn",
+          "rs-private",
+          "ip-cn",
+          "ip-private"
+        ],
+        "server": "local"
+      }
     ],
     "final": "google",
     "strategy": "ipv4_only"
@@ -55,40 +60,177 @@
     }
   ],
   "outbounds": [
-    { "type": "selector", "tag": "🚀 節點選擇", "outbounds": ["⚡ 自動選擇", "DIRECT"] },
-    { "type": "urltest", "tag": "⚡ 自動選擇", "outbounds": [], "url": "https://www.gstatic.com/generate_204", "interval": "3m", "tolerance": 50 },
-    { "type": "selector", "tag": "💬 AI 服務", "outbounds": ["⚡ 自動選擇", "🚀 節點選擇"] },
-    { "type": "selector", "tag": "🌐 非中國", "outbounds": ["🚀 節點選擇", "DIRECT"] },
-    { "type": "selector", "tag": "🔒 國內服務", "outbounds": ["DIRECT", "🚀 節點選擇"] },
-    { "type": "selector", "tag": "🏠 私有網絡", "outbounds": ["DIRECT"] },
-    { "type": "selector", "tag": "🐟 漏網之魚", "outbounds": ["🚀 節點選擇", "DIRECT"] },
-    { "type": "selector", "tag": "🛑 廣告攔截", "outbounds": ["REJECT", "DIRECT"] },
-    
-    { "type": "direct", "tag": "DIRECT" },
-    { "type": "block", "tag": "REJECT" },
-    { "type": "dns", "tag": "dns-out" }
+    {
+      "type": "selector",
+      "tag": "🚀 節點選擇",
+      "outbounds": [
+        "⚡ 自動選擇",
+        "DIRECT"
+      ]
+    },
+    {
+      "type": "urltest",
+      "tag": "⚡ 自動選擇",
+      "outbounds": [],
+      "url": "https://www.gstatic.com/generate_204",
+      "interval": "3m",
+      "tolerance": 50
+    },
+    {
+      "type": "selector",
+      "tag": "💬 AI 服務",
+      "outbounds": [
+        "⚡ 自動選擇",
+        "🚀 節點選擇"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🌐 非中國",
+      "outbounds": [
+        "🚀 節點選擇",
+        "DIRECT"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🔒 國內服務",
+      "outbounds": [
+        "DIRECT",
+        "🚀 節點選擇"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🏠 私有網絡",
+      "outbounds": [
+        "DIRECT"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🐟 漏網之魚",
+      "outbounds": [
+        "🚀 節點選擇",
+        "DIRECT"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🛑 廣告攔截",
+      "outbounds": [
+        "REJECT",
+        "DIRECT"
+      ]
+    },
+    {
+      "type": "direct",
+      "tag": "DIRECT"
+    },
+    {
+      "type": "block",
+      "tag": "REJECT"
+    },
+    {
+      "type": "dns",
+      "tag": "dns-out"
+    }
   ],
   "route": {
     "rule_set": [
-      { "type": "remote", "tag": "rs-ai", "format": "binary", "url": "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.srs", "download_detour": "DIRECT" },
-      { "type": "remote", "tag": "rs-non-cn", "format": "binary", "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/geolocation-!cn.srs", "download_detour": "DIRECT" },
-      { "type": "remote", "tag": "rs-cn", "format": "binary", "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/geolocation-cn.srs", "download_detour": "DIRECT" },
-      { "type": "remote", "tag": "rs-ads", "format": "binary", "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/category-ads-all.srs", "download_detour": "DIRECT" },
-      { "type": "remote", "tag": "rs-private", "format": "binary", "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/private.srs", "download_detour": "DIRECT" },
-      { "type": "remote", "tag": "ip-cn", "format": "binary", "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/cn.srs", "download_detour": "DIRECT" },
-      { "type": "remote", "tag": "ip-private", "format": "binary", "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/private.srs", "download_detour": "DIRECT" }
+      {
+        "type": "remote",
+        "tag": "rs-ai",
+        "format": "binary",
+        "url": "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-non-cn",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/geolocation-!cn.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-cn",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/geolocation-cn.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-ads",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/category-ads-all.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-private",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/private.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "ip-cn",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/cn.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "ip-private",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/private.srs",
+        "download_detour": "DIRECT"
+      }
     ],
     "rules": [
-      { "protocol": "dns", "outbound": "dns-out" },
-      { "clash_mode": "Direct", "outbound": "DIRECT" },
-      { "clash_mode": "Global", "outbound": "🚀 節點選擇" },
-      { "rule_set": "rs-ads", "outbound": "REJECT" },
-      { "rule_set": ["rs-private", "ip-private"], "outbound": "🏠 私有網絡" },
-      { "rule_set": "rs-ai", "outbound": "💬 AI 服務" },
-      { "rule_set": "rs-cn", "outbound": "🔒 國內服務" },
-      { "rule_set": "rs-non-cn", "outbound": "🌐 非中國" },
-      { "rule_set": "ip-cn", "outbound": "🔒 國內服務" },
-      { "outbound": "🐟 漏網之魚" }
+      {
+        "protocol": "dns",
+        "outbound": "dns-out"
+      },
+      {
+        "clash_mode": "Direct",
+        "outbound": "DIRECT"
+      },
+      {
+        "clash_mode": "Global",
+        "outbound": "🚀 節點選擇"
+      },
+      {
+        "rule_set": "rs-ads",
+        "outbound": "REJECT"
+      },
+      {
+        "rule_set": [
+          "rs-private",
+          "ip-private"
+        ],
+        "outbound": "🏠 私有網絡"
+      },
+      {
+        "rule_set": "rs-ai",
+        "outbound": "💬 AI 服務"
+      },
+      {
+        "rule_set": "rs-cn",
+        "outbound": "🔒 國內服務"
+      },
+      {
+        "rule_set": "rs-non-cn",
+        "outbound": "🌐 非中國"
+      },
+      {
+        "rule_set": "ip-cn",
+        "outbound": "🔒 國內服務"
+      },
+      {
+        "outbound": "🐟 漏網之魚"
+      }
     ],
     "auto_detect_interface": true
   }
