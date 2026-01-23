@@ -17,7 +17,7 @@ HK_DIRECT_KEYWORDS = [
     "cursor.com", "cursor.sh", "cursorapi.com", "cursor-cdn.com",
     "trae.ai", "marscode.com", "devin.ai", "coderabbit.ai", "coderabbit.gallery.vsassets.io",
     # API & 推理
-    "mistral.ai", "cohere.ai", "cohere.com", "cerebras.ai",
+    "mistral.ai", "cohere.ai", "cohere.com", "groq.com", "cerebras.ai",
     "openrouter.ai", "deepmind.google", "deepmind.com",
     # 媒體
     "elevenlabs.io", "elevenlabs.com", "clipdrop.co",
