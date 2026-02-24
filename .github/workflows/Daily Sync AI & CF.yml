@@ -36,12 +36,21 @@ jobs:
       # 任務 1: CF-IPs 更新 (獨立檢查)
       # ========================================================
       - name: "[CF] 下載 CF-IPs.txt"
+        # 將 GitHub Secret 賦值給環境變數 CF_URL
+        env:
+          CF_URL: ${{ secrets.CF_IP_URL }}
         run: |
-          # 下載並直接覆蓋舊檔案
-          wget -O CF-IPs.txt "https://ip.swoi.qzz.io/fast-ips.txt?token=B7suc8L5IpwkcMwr6ccPoXFkITeDcVb5"
+          # 檢查 Secret 是否有正確載入
+          if [ -z "$CF_URL" ]; then
+            echo "錯誤：找不到 CF_IP_URL Secret，請先在 GitHub Settings 中設定！"
+            exit 1
+          fi
           
-          if [ ! -f CF-IPs.txt ]; then
-            echo "Download failed!"
+          # 下載並直接覆蓋舊檔案 (使用環境變數)
+          wget -q -O CF-IPs.txt "$CF_URL"
+          
+          if [ ! -f CF-IPs.txt ] || [ ! -s CF-IPs.txt ]; then
+            echo "Download failed or file is empty!"
             exit 1
           fi
 
@@ -80,7 +89,6 @@ jobs:
       - name: "[AI] 執行腳本 & 編譯規則"
         run: |
           echo ">>> 1. 執行 Python 腳本 (生成 List/Json/Conf) <<<"
-          # 如果腳本內的 smart_write 發現內容沒變，就不會更新檔案時間
           python geosite_ai_hk.py || echo "Warning: geosite script failed"
           python Shadowrocket_rules.py || echo "Warning: shadowrocket script failed"
           
@@ -97,11 +105,10 @@ jobs:
 
       - name: "[AI] 檢查變更 & 提交"
         run: |
-          # 將所有變更加入暫存區 (包含 .conf, .list, .json, .mrs, .srs)
+          # 將所有變更加入暫存區
           git add .
           
           # Git 會自動比對 Hash 值
-          # 如果編譯出來的 .mrs 跟昨天的二進位內容一模一樣，Git 會判定 "無變更"
           if git diff --staged --quiet; then
             echo "✅ AI 規則 (包含 .mrs/.srs) 內容完全一致，無需更新。"
           else
