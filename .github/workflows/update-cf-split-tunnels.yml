@@ -73,13 +73,19 @@ jobs:
           domain_rules = []
           ip_rules =[]
           seen_domains = set()
+          has_cn_tld = False
           
           # ==========================================
-          # 解析網域 (domains)
+          # 解析網域 (domains) 並精簡 .cn
           # ==========================================
           for line in dom_resp.text.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
+              
+              # 【核心優化】如果網域以 .cn 結尾，標記後直接跳過，不佔用個別額度
+              if line.endswith(".cn") or line == "cn" or line == "*.cn" or line == "+.cn":
+                  has_cn_tld = True
+                  continue
               
               domain = line
               if domain.startswith("+."):
@@ -104,6 +110,15 @@ jobs:
                       domain_rules.append({"host": domain, "description": "Auto CN domain"})
                       seen_domains.add(domain)
           
+          # 迴圈結束後，將統一的 *.cn 規則加入清單
+          if has_cn_tld:
+              if "*.cn" not in seen_domains:
+                  domain_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
+                  seen_domains.add("*.cn")
+              if "cn" not in seen_domains:
+                  domain_rules.append({"host": "cn", "description": "Auto CN TLD (cn)"})
+                  seen_domains.add("cn")
+          
           # ==========================================
           # 解析並壓縮 IP 網段 (CIDR)
           # ==========================================
@@ -121,7 +136,6 @@ jobs:
               except ValueError:
                   pass
           
-          # 透過 collapse_addresses 將鄰近的 IP 網段合併，極大化減少規則數
           collapsed_ipv4 = list(ipaddress.collapse_addresses(ipv4_nets))
           collapsed_ipv6 = list(ipaddress.collapse_addresses(ipv6_nets))
           
@@ -137,11 +151,10 @@ jobs:
           # ==========================================
           MAX_RULES = 4000
           
-          # 在此決定優先級：您可以選擇 domain_rules + ip_rules 或反過來
           split_tunnels = domain_rules + ip_rules
           
           if len(split_tunnels) > MAX_RULES:
-              print(f"⚠️ 警告: 總規則數 ({len(split_tunnels)}) 超過 Cloudflare 上限 {MAX_RULES} 條。")
+              print(f"⚠️ 警告: 總規則數 ({len(split_tunnels)}) 依然超過 Cloudflare 上限 {MAX_RULES} 條。")
               print(f"將自動裁切保留前 {MAX_RULES} 條規則。")
               split_tunnels = split_tunnels[:MAX_RULES]
           
