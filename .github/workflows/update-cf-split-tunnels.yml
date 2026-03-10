@@ -1,4 +1,4 @@
-name: Cloudflare Zero Trust 分割隧道 (non-cn)
+name: 自動更新 Cloudflare Zero Trust 分割隧道 (non-cn)
 
 on:
   schedule:
@@ -17,8 +17,9 @@ jobs:
         with:
           python-version: '3.x'
 
+      # 這裡新增了 tldextract 套件來精準提取主網域
       - name: Install Dependencies
-        run: pip install requests
+        run: pip install requests tldextract
 
       - name: Fetch, Parse and Update Cloudflare API
         env:
@@ -30,6 +31,7 @@ jobs:
           import os
           import requests
           import ipaddress
+          import tldextract
           
           CF_API_Zero_Trust_TOKEN = os.environ.get("CF_API_Zero_Trust_TOKEN")
           CF_ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
@@ -70,58 +72,51 @@ jobs:
           dom_resp = requests.get(domain_url)
           ip_resp = requests.get(ip_url)
           
-          domain_rules = []
-          ip_rules =[]
+          domain_rules =[]
           seen_domains = set()
           has_cn_tld = False
           
           # ==========================================
-          # 解析網域 (domains) 並精簡 .cn
+          # 1. 解析網域：極致精簡與折疊
           # ==========================================
           for line in dom_resp.text.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
               
-              # 【核心優化】如果網域以 .cn 結尾，標記後直接跳過，不佔用個別額度
-              if line.endswith(".cn") or line == "cn" or line == "*.cn" or line == "+.cn":
+              # 清理前綴
+              clean_domain = line
+              if clean_domain.startswith("+."):
+                  clean_domain = clean_domain[2:]
+              elif clean_domain.startswith("*."):
+                  clean_domain = clean_domain[2:]
+                  
+              # 如果是 .cn 結尾直接跳過，最後統一處理
+              if clean_domain.endswith(".cn") or clean_domain == "cn":
                   has_cn_tld = True
                   continue
               
-              domain = line
-              if domain.startswith("+."):
-                  domain = domain[2:]
-                  wildcard = f"*.{domain}"
-                  if wildcard not in seen_domains:
-                      domain_rules.append({"host": wildcard, "description": "Auto CN domain"})
-                      seen_domains.add(wildcard)
-                  if domain not in seen_domains:
-                      domain_rules.append({"host": domain, "description": "Auto CN domain"})
-                      seen_domains.add(domain)
-              elif domain.startswith("*."):
-                  if domain not in seen_domains:
-                      domain_rules.append({"host": domain, "description": "Auto CN domain"})
-                      seen_domains.add(domain)
-                  base = domain[2:]
-                  if base not in seen_domains:
-                      domain_rules.append({"host": base, "description": "Auto CN domain"})
-                      seen_domains.add(base)
+              # 利用 tldextract 提取主網域 (例如 p1.byteimg.com -> byteimg.com)
+              ext = tldextract.extract(clean_domain)
+              root_domain = ext.registered_domain
+              
+              if root_domain:
+                  # 有標準主網域，只保留 *.主網域 (滿足您要求的 *.byteimg.com)
+                  seen_domains.add(f"*.{root_domain}")
               else:
-                  if domain not in seen_domains:
-                      domain_rules.append({"host": domain, "description": "Auto CN domain"})
-                      seen_domains.add(domain)
-          
-          # 迴圈結束後，將統一的 *.cn 規則加入清單
+                  # 針對無法提取主網域的特例 (如純文字 sohu)，只保留 *.sohu
+                  seen_domains.add(f"*.{clean_domain}")
+                  
+          # 將精簡後的 Set 轉為 Cloudflare API 格式
+          for d in seen_domains:
+              domain_rules.append({"host": d, "description": "Auto CN domain"})
+              
           if has_cn_tld:
-              if "*.cn" not in seen_domains:
-                  domain_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
-                  seen_domains.add("*.cn")
-              if "cn" not in seen_domains:
-                  domain_rules.append({"host": "cn", "description": "Auto CN TLD (cn)"})
-                  seen_domains.add("cn")
+              domain_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
           
           # ==========================================
-          # 解析並壓縮 IP 網段 (CIDR)
+          # 2. 解析並壓縮 IP 網段 (CIDR)
           # ==========================================
+          ip_rules =[]
           ipv4_nets = []
           ipv6_nets =[]
           for line in ip_resp.text.splitlines():
@@ -144,13 +139,12 @@ jobs:
           for net in collapsed_ipv6:
               ip_rules.append({"address": str(net), "description": "Auto CN IPv6"})
               
-          print(f"解析完畢: 網域 {len(domain_rules)} 條, IP 合併後 {len(ip_rules)} 條")
+          print(f"解析完畢: 網域合併後僅 {len(domain_rules)} 條, IP 合併後 {len(ip_rules)} 條")
           
           # ==========================================
-          # 組合、限制數量至 4000 條以內
+          # 3. 組合並寫入 API
           # ==========================================
           MAX_RULES = 4000
-          
           split_tunnels = domain_rules + ip_rules
           
           if len(split_tunnels) > MAX_RULES:
