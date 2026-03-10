@@ -64,10 +64,13 @@ jobs:
               
           print(f"找到設定檔 '{POLICY_NAME}'，ID: {policy_id}")
           
-          domain_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.list"
-          ip_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.list"
+          # ==========================================
+          # 替換為 geo-lite (精簡版) 來源
+          # ==========================================
+          domain_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/cn.list"
+          ip_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
           
-          print("正在下載來源清單...")
+          print("正在下載來源清單 (geo-lite)...")
           dom_resp = requests.get(domain_url)
           ip_resp = requests.get(ip_url)
           
@@ -101,7 +104,7 @@ jobs:
                   seen_domains.add(f"*.{clean_domain}")
                   
           for d in seen_domains:
-              domain_rules.append({"host": d, "description": "Auto CN domain"})
+              domain_rules.append({"host": d, "description": "Auto CN domain (geo-lite)"})
               
           if has_cn_tld:
               domain_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
@@ -112,7 +115,7 @@ jobs:
           ip_rules =[]
           ipv4_nets = set()
           
-          # 定義聚合的強度 (16 代表將所有 /17 ~ /32 的 IP 都放大合併成 /16 網段)
+          # 依然維持 /16 的聚合強度，確保數量極低
           AGGRESSIVE_PREFIX = 16 
           
           for line in ip_resp.text.splitlines():
@@ -121,10 +124,7 @@ jobs:
               try:
                   net = ipaddress.ip_network(line, strict=False)
                   
-                  # 只保留 IPv4，捨棄 IPv6
                   if net.version == 4:
-                      # 核心邏輯：如果網段範圍比 /16 還小 (例如 /22, /23, /24, /31)
-                      # 就強制把它放大並歸納到所屬的 /16 網段中
                       if net.prefixlen > AGGRESSIVE_PREFIX:
                           net = net.supernet(new_prefix=AGGRESSIVE_PREFIX)
                       
@@ -132,7 +132,6 @@ jobs:
               except ValueError:
                   pass
           
-          # 將蒐集到的網段再進行一次內建的標準合併，確保完全沒有重疊
           collapsed_ipv4 = list(ipaddress.collapse_addresses(ipv4_nets))
           
           for net in collapsed_ipv4:
