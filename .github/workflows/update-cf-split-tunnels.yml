@@ -1,4 +1,4 @@
-name: 自動更新 Cloudflare Zero Trust 分割隧道 (non-cn)
+name: Cloudflare Zero Trust 分割隧道 (non-cn)
 
 on:
   schedule:
