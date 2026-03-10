@@ -62,7 +62,7 @@ jobs:
               exit(1)
 
           # ==========================================
-          # 來源定義 (僅保留 中國IP 與 私有IP)
+          # 來源定義
           # ==========================================
           ip_cn_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
           ip_private_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/private.list"
@@ -71,63 +71,55 @@ jobs:
           ip_cn_resp = requests.get(ip_cn_url)
           ip_private_resp = requests.get(ip_private_url)
           
-          split_tunnels =[]
+          split_tunnels = []
+          
+          # ==========================================
+          # 處理 IP 聚合 (IPv4 與 IPv6)
+          # ==========================================
+          # 壓縮強度：IPv4(/16), IPv6(/48)
+          AGGRESSIVE_PREFIX_V4 = 16 
+          AGGRESSIVE_PREFIX_V6 = 48 
+          
+          all_nets = set()
+          
+          # 讀取所有來源
+          for resp in [ip_cn_resp, ip_private_resp]:
+              for line in resp.text.splitlines():
+                  line = line.strip()
+                  if not line or line.startswith("#"): continue
+                  try:
+                      net = ipaddress.ip_network(line, strict=False)
+                      
+                      # 根據版本進行聚合壓縮
+                      if net.version == 4:
+                          if net.prefixlen > AGGRESSIVE_PREFIX_V4:
+                              net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V4)
+                      else: # IPv6
+                          if net.prefixlen > AGGRESSIVE_PREFIX_V6:
+                              net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V6)
+                              
+                      all_nets.add(net)
+                  except ValueError: pass
+          
+          # 最後進行一次全局合併，確保沒有重疊
+          for net in ipaddress.collapse_addresses(all_nets):
+              split_tunnels.append({"address": str(net), "description": "Auto-aggregated IP"})
 
           # ==========================================
-          # 1. 解析 私有 IP (精確保留，不暴力壓縮)
-          # ==========================================
-          private_nets = set()
-          for line in ip_private_resp.text.splitlines():
-              line = line.strip()
-              if not line or line.startswith("#"): continue
-              try:
-                  net = ipaddress.ip_network(line, strict=False)
-                  if net.version == 4: # 僅保留 IPv4
-                      private_nets.add(net)
-              except ValueError: pass
-          
-          # 將內網 IP 加入清單
-          for net in ipaddress.collapse_addresses(private_nets):
-              split_tunnels.append({"address": str(net), "description": "Private IP"})
-
-          # ==========================================
-          # 2. 解析 中國 IP (強制壓縮至 /16)
-          # ==========================================
-          cn_nets = set()
-          # 壓縮強度設定為 16 (這會把 6000 多條 IP 瞬間壓到剩 300 條左右)
-          AGGRESSIVE_PREFIX = 16 
-          
-          for line in ip_cn_resp.text.splitlines():
-              line = line.strip()
-              if not line or line.startswith("#"): continue
-              try:
-                  net = ipaddress.ip_network(line, strict=False)
-                  if net.version == 4:
-                      # 如果網段範圍太小，就強制放大合併
-                      if net.prefixlen > AGGRESSIVE_PREFIX:
-                          net = net.supernet(new_prefix=AGGRESSIVE_PREFIX)
-                      cn_nets.add(net)
-              except ValueError: pass
-          
-          # 將壓縮後的中國 IP 加入清單
-          for net in ipaddress.collapse_addresses(cn_nets):
-              split_tunnels.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
-
-          # ==========================================
-          # 3. 確保總數保護與 API 提交
+          # 提交 API
           # ==========================================
           MAX_RULES = 4000
           if len(split_tunnels) > MAX_RULES:
+              print(f"⚠️ 警告: 壓縮後仍有 {len(split_tunnels)} 條，執行截斷...")
               split_tunnels = split_tunnels[:MAX_RULES]
               
-          print(f"📊 統計結果: 總計將寫入 {len(split_tunnels)} 條規則 (上限 4000 條)")
-          print("這極少的數量將確保您的 WARP 連線瞬間完成！")
+          print(f"📊 最終寫入數量: {len(split_tunnels)} 條")
           
           put_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policy/{policy_id}/exclude"
           update_resp = requests.put(put_url, headers=headers, json=split_tunnels)
           
           if update_resp.status_code == 200 and update_resp.json().get("success"):
-              print("✅ 成功更新 Cloudflare Split Tunnels (Exclude) 列表！")
+              print("✅ 成功更新 Cloudflare Split Tunnels (Exclude)！")
           else:
               print("❌ 更新失敗:")
               print(update_resp.text)
