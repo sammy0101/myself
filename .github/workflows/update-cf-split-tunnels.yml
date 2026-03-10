@@ -1,0 +1,137 @@
+name: 自動更新 Cloudflare Zero Trust 分割隧道 (non-cn)
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 每天 UTC 00:00 自動執行 (可自行修改時間)
+  workflow_dispatch: # 允許在 GitHub Actions 頁面手動點擊執行
+
+jobs:
+  update-tunnels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Dependencies
+        run: pip install requests
+
+      - name: Fetch, Parse and Update Cloudflare API
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          POLICY_NAME: "non-cn"
+        run: |
+          python - << 'EOF'
+          import os
+          import requests
+          
+          CF_API_TOKEN = os.environ.get("CF_API_TOKEN")
+          CF_ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
+          POLICY_NAME = os.environ.get("POLICY_NAME")
+          
+          if not CF_API_TOKEN or not CF_ACCOUNT_ID:
+              print("錯誤: 找不到 CF_API_TOKEN 或 CF_ACCOUNT_ID 環境變數，請檢查 GitHub Secrets 設定。")
+              exit(1)
+              
+          headers = {
+              "Authorization": f"Bearer {CF_API_TOKEN}",
+              "Content-Type": "application/json"
+          }
+          
+          # ==========================================
+          # 1. 取得指定的 Device Profile (Policy ID)
+          # ==========================================
+          print(f"正在獲取帳戶 {CF_ACCOUNT_ID} 的裝置設定檔清單...")
+          resp = requests.get(f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policies", headers=headers)
+          if resp.status_code != 200:
+              print("取得 Policy 清單失敗:", resp.text)
+              exit(1)
+              
+          policies = resp.json().get("result",[])
+          policy_id = None
+          for p in policies:
+              if p.get("name") == POLICY_NAME:
+                  # Cloudflare API 可能以 id 或 policy_id 命名
+                  policy_id = p.get("policy_id") or p.get("id")
+                  break
+                  
+          if not policy_id:
+              print(f"錯誤: 找不到名稱為 '{POLICY_NAME}' 的設定檔，請確認設定檔名稱完全相符。")
+              exit(1)
+              
+          print(f"找到設定檔 '{POLICY_NAME}'，ID: {policy_id}")
+          
+          # ==========================================
+          # 2. 下載並解析 meta-rules-dat 網域與 IP 列表
+          # ==========================================
+          domain_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.list"
+          ip_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.list"
+          
+          print("正在下載來源清單...")
+          dom_resp = requests.get(domain_url)
+          ip_resp = requests.get(ip_url)
+          
+          split_tunnels =[]
+          seen = set()
+          
+          # 解析網域 (domains)
+          # 處理 Clash/Meta 規則常見的 +. 語法，將其轉換為 Cloudflare 支援的 *. 通配符與一般網域
+          for line in dom_resp.text.splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"): continue
+              
+              domain = line
+              if domain.startswith("+."):
+                  domain = domain[2:]
+                  wildcard = f"*.{domain}"
+                  if wildcard not in seen:
+                      split_tunnels.append({"host": wildcard, "description": "Auto-update CN domain"})
+                      seen.add(wildcard)
+                  if domain not in seen:
+                      split_tunnels.append({"host": domain, "description": "Auto-update CN domain"})
+                      seen.add(domain)
+              elif domain.startswith("*."):
+                  if domain not in seen:
+                      split_tunnels.append({"host": domain, "description": "Auto-update CN domain"})
+                      seen.add(domain)
+                  base = domain[2:]
+                  if base not in seen:
+                      split_tunnels.append({"host": base, "description": "Auto-update CN domain"})
+                      seen.add(base)
+              else:
+                  if domain not in seen:
+                      split_tunnels.append({"host": domain, "description": "Auto-update CN domain"})
+                      seen.add(domain)
+                      
+          # 解析 IP 位址 (CIDR)
+          for line in ip_resp.text.splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"): continue
+              
+              if line not in seen:
+                  split_tunnels.append({"address": line, "description": "Auto-update CN IP"})
+                  seen.add(line)
+                  
+          print(f"總共解析了 {len(split_tunnels)} 條路由規則")
+          
+          # ==========================================
+          # 3. 透過 API 覆蓋更新 Split Tunnels Exclude 列表
+          # ==========================================
+          print("正在將規則更新至 Cloudflare Split Tunnels (Exclude)...")
+          put_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policy/{policy_id}/exclude"
+          
+          # 將處理好的 JSON Array 直接 PUT 給 Cloudflare
+          update_resp = requests.put(put_url, headers=headers, json=split_tunnels)
+          
+          if update_resp.status_code == 200 and update_resp.json().get("success"):
+              print("✅ 成功更新 Cloudflare Split Tunnels Exclude 列表！")
+          else:
+              print("❌ 更新失敗:")
+              print(update_resp.text)
+              exit(1)
+          EOF
