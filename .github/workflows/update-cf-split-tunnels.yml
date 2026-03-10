@@ -71,48 +71,74 @@ jobs:
           ip_cn_resp = requests.get(ip_cn_url)
           ip_private_resp = requests.get(ip_private_url)
           
+          private_v4_nets = set()
+          private_v6_nets = set()
+          cn_v4_nets = set()
+          cn_v6_nets = set()
+          
           # ==========================================
-          # 處理 IP 聚合 (IPv4 與 IPv6 必須分開列表)
+          # 1. 解析 私有 IP (精確保留，不壓縮)
+          # ==========================================
+          for line in ip_private_resp.text.splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"): continue
+              try:
+                  net = ipaddress.ip_network(line, strict=False)
+                  if net.version == 4:
+                      private_v4_nets.add(net)
+                  else:
+                      private_v6_nets.add(net)
+              except ValueError: pass
+
+          # ==========================================
+          # 2. 解析 中國 IP (強制暴力壓縮)
           # ==========================================
           AGGRESSIVE_PREFIX_V4 = 16 
           AGGRESSIVE_PREFIX_V6 = 48 
           
-          v4_nets = set()
-          v6_nets = set()
+          for line in ip_cn_resp.text.splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"): continue
+              try:
+                  net = ipaddress.ip_network(line, strict=False)
+                  if net.version == 4:
+                      if net.prefixlen > AGGRESSIVE_PREFIX_V4:
+                          net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V4)
+                      cn_v4_nets.add(net)
+                  else:
+                      if net.prefixlen > AGGRESSIVE_PREFIX_V6:
+                          net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V6)
+                      cn_v6_nets.add(net)
+              except ValueError: pass
           
-          for resp in [ip_cn_resp, ip_private_resp]:
-              for line in resp.text.splitlines():
-                  line = line.strip()
-                  if not line or line.startswith("#"): continue
-                  try:
-                      net = ipaddress.ip_network(line, strict=False)
-                      
-                      if net.version == 4:
-                          if net.prefixlen > AGGRESSIVE_PREFIX_V4:
-                              net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V4)
-                          v4_nets.add(net)
-                      else:
-                          if net.prefixlen > AGGRESSIVE_PREFIX_V6:
-                              net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V6)
-                          v6_nets.add(net)
-                  except ValueError: pass
+          split_tunnels =[]
           
-          split_tunnels = []
+          print("正在合併與排序 IP 網段...")
           
-          # 分別合併 IPv4 和 IPv6 (解決 TypeError)
-          print("正在合併與壓縮 IP 網段...")
-          for net in ipaddress.collapse_addresses(list(v4_nets)):
-              split_tunnels.append({"address": str(net), "description": "Auto-aggregated IPv4"})
+          # ==========================================
+          # 3. 組合清單：私有 IP 優先放入最前面
+          # ==========================================
+          for net in ipaddress.collapse_addresses(list(private_v4_nets)):
+              split_tunnels.append({"address": str(net), "description": "Private IPv4"})
               
-          for net in ipaddress.collapse_addresses(list(v6_nets)):
-              split_tunnels.append({"address": str(net), "description": "Auto-aggregated IPv6"})
+          for net in ipaddress.collapse_addresses(list(private_v6_nets)):
+              split_tunnels.append({"address": str(net), "description": "Private IPv6"})
+              
+          # ==========================================
+          # 4. 組合清單：中國 IP 放在私有 IP 後面
+          # ==========================================
+          for net in ipaddress.collapse_addresses(list(cn_v4_nets)):
+              split_tunnels.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
+              
+          for net in ipaddress.collapse_addresses(list(cn_v6_nets)):
+              split_tunnels.append({"address": str(net), "description": "Auto CN IPv6 (Aggregated)"})
 
           # ==========================================
           # 提交 API
           # ==========================================
           MAX_RULES = 4000
           if len(split_tunnels) > MAX_RULES:
-              print(f"⚠️ 警告: 壓縮後仍有 {len(split_tunnels)} 條，執行截斷...")
+              print(f"⚠️ 警告: 總數 {len(split_tunnels)} 條，執行截斷 (保留最前面)...")
               split_tunnels = split_tunnels[:MAX_RULES]
               
           print(f"📊 最終寫入數量: {len(split_tunnels)} 條")
