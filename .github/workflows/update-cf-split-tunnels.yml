@@ -2,8 +2,8 @@ name: Cloudflare Zero Trust 分割隧道 (non-cn)
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 每天 UTC 00:00 自動執行 (可自行修改時間)
-  workflow_dispatch: # 允許在 GitHub Actions 頁面手動點擊執行
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   update-tunnels:
@@ -29,13 +29,14 @@ jobs:
           python - << 'EOF'
           import os
           import requests
+          import ipaddress
           
           CF_API_Zero_Trust_TOKEN = os.environ.get("CF_API_Zero_Trust_TOKEN")
           CF_ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
           POLICY_NAME = os.environ.get("POLICY_NAME")
           
           if not CF_API_Zero_Trust_TOKEN or not CF_ACCOUNT_ID:
-              print("錯誤: 找不到 CF_API_Zero_Trust_TOKEN 或 CF_ACCOUNT_ID 環境變數，請檢查 GitHub Secrets 設定。")
+              print("錯誤: 找不到 CF_API_Zero_Trust_TOKEN 或 CF_ACCOUNT_ID 環境變數。")
               exit(1)
               
           headers = {
@@ -43,9 +44,6 @@ jobs:
               "Content-Type": "application/json"
           }
           
-          # ==========================================
-          # 1. 取得指定的 Device Profile (Policy ID)
-          # ==========================================
           print(f"正在獲取帳戶 {CF_ACCOUNT_ID} 的裝置設定檔清單...")
           resp = requests.get(f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policies", headers=headers)
           if resp.status_code != 200:
@@ -56,19 +54,15 @@ jobs:
           policy_id = None
           for p in policies:
               if p.get("name") == POLICY_NAME:
-                  # Cloudflare API 可能以 id 或 policy_id 命名
                   policy_id = p.get("policy_id") or p.get("id")
                   break
                   
           if not policy_id:
-              print(f"錯誤: 找不到名稱為 '{POLICY_NAME}' 的設定檔，請確認設定檔名稱完全相符。")
+              print(f"錯誤: 找不到名稱為 '{POLICY_NAME}' 的設定檔。")
               exit(1)
               
           print(f"找到設定檔 '{POLICY_NAME}'，ID: {policy_id}")
           
-          # ==========================================
-          # 2. 下載並解析 meta-rules-dat 網域與 IP 列表
-          # ==========================================
           domain_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.list"
           ip_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.list"
           
@@ -76,11 +70,13 @@ jobs:
           dom_resp = requests.get(domain_url)
           ip_resp = requests.get(ip_url)
           
-          split_tunnels =[]
-          seen = set()
+          domain_rules = []
+          ip_rules =[]
+          seen_domains = set()
           
+          # ==========================================
           # 解析網域 (domains)
-          # 處理 Clash/Meta 規則常見的 +. 語法，將其轉換為 Cloudflare 支援的 *. 通配符與一般網域
+          # ==========================================
           for line in dom_resp.text.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
@@ -89,43 +85,69 @@ jobs:
               if domain.startswith("+."):
                   domain = domain[2:]
                   wildcard = f"*.{domain}"
-                  if wildcard not in seen:
-                      split_tunnels.append({"host": wildcard, "description": "Auto-update CN domain"})
-                      seen.add(wildcard)
-                  if domain not in seen:
-                      split_tunnels.append({"host": domain, "description": "Auto-update CN domain"})
-                      seen.add(domain)
+                  if wildcard not in seen_domains:
+                      domain_rules.append({"host": wildcard, "description": "Auto CN domain"})
+                      seen_domains.add(wildcard)
+                  if domain not in seen_domains:
+                      domain_rules.append({"host": domain, "description": "Auto CN domain"})
+                      seen_domains.add(domain)
               elif domain.startswith("*."):
-                  if domain not in seen:
-                      split_tunnels.append({"host": domain, "description": "Auto-update CN domain"})
-                      seen.add(domain)
+                  if domain not in seen_domains:
+                      domain_rules.append({"host": domain, "description": "Auto CN domain"})
+                      seen_domains.add(domain)
                   base = domain[2:]
-                  if base not in seen:
-                      split_tunnels.append({"host": base, "description": "Auto-update CN domain"})
-                      seen.add(base)
+                  if base not in seen_domains:
+                      domain_rules.append({"host": base, "description": "Auto CN domain"})
+                      seen_domains.add(base)
               else:
-                  if domain not in seen:
-                      split_tunnels.append({"host": domain, "description": "Auto-update CN domain"})
-                      seen.add(domain)
-                      
-          # 解析 IP 位址 (CIDR)
+                  if domain not in seen_domains:
+                      domain_rules.append({"host": domain, "description": "Auto CN domain"})
+                      seen_domains.add(domain)
+          
+          # ==========================================
+          # 解析並壓縮 IP 網段 (CIDR)
+          # ==========================================
+          ipv4_nets = []
+          ipv6_nets =[]
           for line in ip_resp.text.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
+              try:
+                  net = ipaddress.ip_network(line, strict=False)
+                  if net.version == 4:
+                      ipv4_nets.append(net)
+                  else:
+                      ipv6_nets.append(net)
+              except ValueError:
+                  pass
+          
+          # 透過 collapse_addresses 將鄰近的 IP 網段合併，極大化減少規則數
+          collapsed_ipv4 = list(ipaddress.collapse_addresses(ipv4_nets))
+          collapsed_ipv6 = list(ipaddress.collapse_addresses(ipv6_nets))
+          
+          for net in collapsed_ipv4:
+              ip_rules.append({"address": str(net), "description": "Auto CN IPv4"})
+          for net in collapsed_ipv6:
+              ip_rules.append({"address": str(net), "description": "Auto CN IPv6"})
               
-              if line not in seen:
-                  split_tunnels.append({"address": line, "description": "Auto-update CN IP"})
-                  seen.add(line)
-                  
-          print(f"總共解析了 {len(split_tunnels)} 條路由規則")
+          print(f"解析完畢: 網域 {len(domain_rules)} 條, IP 合併後 {len(ip_rules)} 條")
           
           # ==========================================
-          # 3. 透過 API 覆蓋更新 Split Tunnels Exclude 列表
+          # 組合、限制數量至 4000 條以內
           # ==========================================
-          print("正在將規則更新至 Cloudflare Split Tunnels (Exclude)...")
+          MAX_RULES = 4000
+          
+          # 在此決定優先級：您可以選擇 domain_rules + ip_rules 或反過來
+          split_tunnels = domain_rules + ip_rules
+          
+          if len(split_tunnels) > MAX_RULES:
+              print(f"⚠️ 警告: 總規則數 ({len(split_tunnels)}) 超過 Cloudflare 上限 {MAX_RULES} 條。")
+              print(f"將自動裁切保留前 {MAX_RULES} 條規則。")
+              split_tunnels = split_tunnels[:MAX_RULES]
+          
+          print(f"準備寫入 {len(split_tunnels)} 條規則至 Cloudflare Split Tunnels (Exclude)...")
           put_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policy/{policy_id}/exclude"
           
-          # 將處理好的 JSON Array 直接 PUT 給 Cloudflare
           update_resp = requests.put(put_url, headers=headers, json=split_tunnels)
           
           if update_resp.status_code == 200 and update_resp.json().get("success"):
