@@ -60,7 +60,7 @@ jobs:
           if not policy_id:
               print(f"錯誤: 找不到名稱為 '{POLICY_NAME}' 的設定檔。")
               exit(1)
-
+          
           # ==========================================
           # 來源定義
           # ==========================================
@@ -71,18 +71,15 @@ jobs:
           ip_cn_resp = requests.get(ip_cn_url)
           ip_private_resp = requests.get(ip_private_url)
           
-          split_tunnels = []
-          
           # ==========================================
-          # 處理 IP 聚合 (IPv4 與 IPv6)
+          # 處理 IP 聚合 (IPv4 與 IPv6 必須分開列表)
           # ==========================================
-          # 壓縮強度：IPv4(/16), IPv6(/48)
           AGGRESSIVE_PREFIX_V4 = 16 
           AGGRESSIVE_PREFIX_V6 = 48 
           
-          all_nets = set()
+          v4_nets = set()
+          v6_nets = set()
           
-          # 讀取所有來源
           for resp in [ip_cn_resp, ip_private_resp]:
               for line in resp.text.splitlines():
                   line = line.strip()
@@ -90,20 +87,25 @@ jobs:
                   try:
                       net = ipaddress.ip_network(line, strict=False)
                       
-                      # 根據版本進行聚合壓縮
                       if net.version == 4:
                           if net.prefixlen > AGGRESSIVE_PREFIX_V4:
                               net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V4)
-                      else: # IPv6
+                          v4_nets.add(net)
+                      else:
                           if net.prefixlen > AGGRESSIVE_PREFIX_V6:
                               net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V6)
-                              
-                      all_nets.add(net)
+                          v6_nets.add(net)
                   except ValueError: pass
           
-          # 最後進行一次全局合併，確保沒有重疊
-          for net in ipaddress.collapse_addresses(all_nets):
-              split_tunnels.append({"address": str(net), "description": "Auto-aggregated IP"})
+          split_tunnels = []
+          
+          # 分別合併 IPv4 和 IPv6 (解決 TypeError)
+          print("正在合併與壓縮 IP 網段...")
+          for net in ipaddress.collapse_addresses(list(v4_nets)):
+              split_tunnels.append({"address": str(net), "description": "Auto-aggregated IPv4"})
+              
+          for net in ipaddress.collapse_addresses(list(v6_nets)):
+              split_tunnels.append({"address": str(net), "description": "Auto-aggregated IPv6"})
 
           # ==========================================
           # 提交 API
