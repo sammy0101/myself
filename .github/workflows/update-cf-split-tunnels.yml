@@ -51,7 +51,7 @@ jobs:
               print("取得 Policy 清單失敗:", resp.text)
               exit(1)
               
-          policies = resp.json().get("result",[])
+          policies = resp.json().get("result", [])
           policy_id = None
           for p in policies:
               if p.get("name") == POLICY_NAME:
@@ -61,20 +61,24 @@ jobs:
           if not policy_id:
               print(f"錯誤: 找不到名稱為 '{POLICY_NAME}' 的設定檔。")
               exit(1)
-              
-          # 使用 geo-lite 精簡版來源
+
+          # ==========================================
+          # 來源定義 (geo-lite 系列)
+          # ==========================================
           domain_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/cn.list"
-          ip_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
+          ip_cn_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
+          ip_private_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/private.list"
           
+          print("正在下載來源清單 (Domains, CN IPs, Private IPs)...")
           dom_resp = requests.get(domain_url)
-          ip_resp = requests.get(ip_url)
+          ip_cn_resp = requests.get(ip_cn_url)
+          ip_private_resp = requests.get(ip_private_url)
           
+          # ==========================================
+          # 1. 解析網域：同名合一 + 短網域優先
+          # ==========================================
           seen_slds = {}
           has_cn_tld = False
-          
-          # ==========================================
-          # 1. 解析網域並去重
-          # ==========================================
           for line in dom_resp.text.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
@@ -99,19 +103,31 @@ jobs:
                   if clean_domain not in seen_slds:
                       seen_slds[clean_domain] = f"*.{clean_domain}"
                       
-          domain_rules =[{"host": d, "description": "Auto CN domain"} for d in seen_slds.values()]
-          
-          # 【關鍵優化】按照網域長度排序，越短越有價值 (例如 qq.com)，越長越冷門！
-          domain_rules.sort(key=lambda x: len(x["host"]))
-          
+          domain_rules = [{"host": d, "description": "Auto CN domain"} for d in seen_slds.values()]
+          domain_rules.sort(key=lambda x: len(x["host"])) # 按長度排序，優先保留短網域
+
           # ==========================================
-          # 2. IP 核彈級壓縮 (放寬至 /12)
+          # 2. 解析 IP：Private IP (精確) + CN IP (暴力壓縮)
           # ==========================================
-          ipv4_nets = set()
-          # 將 16 改為 12，這會將所有相鄰 IP 暴力結合成超大網段
+          all_ip_rules = []
+          
+          # A. 處理私有 IP (保持精確，不進行 /12 暴力壓縮)
+          private_nets = set()
+          for line in ip_private_resp.text.splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"): continue
+              try:
+                  net = ipaddress.ip_network(line, strict=False)
+                  if net.version == 4: private_nets.add(net)
+              except ValueError: pass
+          
+          for net in ipaddress.collapse_addresses(private_nets):
+              all_ip_rules.append({"address": str(net), "description": "Private IP"})
+
+          # B. 處理中國 IP (暴力壓縮至 /12 以節省額度)
+          cn_nets = set()
           AGGRESSIVE_PREFIX = 12 
-          
-          for line in ip_resp.text.splitlines():
+          for line in ip_cn_resp.text.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
               try:
@@ -119,42 +135,40 @@ jobs:
                   if net.version == 4:
                       if net.prefixlen > AGGRESSIVE_PREFIX:
                           net = net.supernet(new_prefix=AGGRESSIVE_PREFIX)
-                      ipv4_nets.add(net)
-              except ValueError:
-                  pass
+                      cn_nets.add(net)
+              except ValueError: pass
           
-          collapsed_ipv4 = list(ipaddress.collapse_addresses(ipv4_nets))
-          ip_rules =[{"address": str(net), "description": "Auto CN IPv4 (Aggregated)"} for net in collapsed_ipv4]
-          
+          for net in ipaddress.collapse_addresses(cn_nets):
+              all_ip_rules.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
+
           # ==========================================
-          # 3. 智能組合：保底機制
+          # 3. 智能組合：保底機制 (確保絕對不超過 4000)
           # ==========================================
-          # IP 規則與 *.cn 屬於「絕對必須」保留的清單
-          must_have_rules = ip_rules
+          must_have_rules = all_ip_rules
           if has_cn_tld:
               must_have_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
               
           MAX_RULES = 4000
-          
-          # 算一下剩餘多少空位可以塞網域
           available_domain_slots = MAX_RULES - len(must_have_rules)
           
           if available_domain_slots > 0:
-              # 把最重要的「短網域」塞滿剩餘空位，超出的長網域直接無情捨棄
               split_tunnels = must_have_rules + domain_rules[:available_domain_slots]
           else:
-              # 極端情況：連 IP 規則都超過 4000 條 (在 /12 下不可能發生，但為了代碼安全)
               split_tunnels = must_have_rules[:MAX_RULES]
               
-          print(f"✅ IP 規則壓制數量: {len(ip_rules)} 條")
-          print(f"✅ 網域原始去重後數量: {len(domain_rules)} 條")
-          print(f"🎉 最終準備寫入 Cloudflare 的精華規則數: {len(split_tunnels)} 條")
+          print(f"📊 統計結果:")
+          print(f" - 私有與中國 IP 規則: {len(all_ip_rules)} 條")
+          print(f" - 網域規則 (精選後): {min(len(domain_rules), max(0, available_domain_slots))} 條")
+          print(f"🚀 總計寫入: {len(split_tunnels)} 條 / 上限 4000 條")
           
+          # ==========================================
+          # 4. API 提交
+          # ==========================================
           put_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policy/{policy_id}/exclude"
           update_resp = requests.put(put_url, headers=headers, json=split_tunnels)
           
           if update_resp.status_code == 200 and update_resp.json().get("success"):
-              print("✅ 成功更新 Cloudflare Split Tunnels Exclude 列表！")
+              print("✅ 成功更新 Cloudflare Split Tunnels (Exclude)！")
           else:
               print("❌ 更新失敗:")
               print(update_resp.text)
