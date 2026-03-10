@@ -62,69 +62,54 @@ jobs:
               print(f"錯誤: 找不到名稱為 '{POLICY_NAME}' 的設定檔。")
               exit(1)
               
-          print(f"找到設定檔 '{POLICY_NAME}'，ID: {policy_id}")
-          
-          # 採用 geo-lite (精簡版) 來源
+          # 使用 geo-lite 精簡版來源
           domain_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/cn.list"
           ip_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
           
-          print("正在下載來源清單 (geo-lite)...")
           dom_resp = requests.get(domain_url)
           ip_resp = requests.get(ip_url)
           
-          domain_rules =[]
-          # 使用字典來記錄主名稱 (SLD) 是否已經出現過
           seen_slds = {}
           has_cn_tld = False
           
           # ==========================================
-          # 1. 解析網域：主名稱 (SLD) 唯一化
+          # 1. 解析網域並去重
           # ==========================================
           for line in dom_resp.text.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
               
               clean_domain = line
-              if clean_domain.startswith("+."):
-                  clean_domain = clean_domain[2:]
-              elif clean_domain.startswith("*."):
-                  clean_domain = clean_domain[2:]
+              if clean_domain.startswith("+."): clean_domain = clean_domain[2:]
+              elif clean_domain.startswith("*."): clean_domain = clean_domain[2:]
                   
-              # 若為 .cn 結尾，直接交給最後的 *.cn 統一處理
               if clean_domain.endswith(".cn") or clean_domain == "cn":
                   has_cn_tld = True
                   continue
               
-              # 解析網域，萃取出主名稱 (例如 xxx.com 的 xxx)
               ext = tldextract.extract(clean_domain)
-              sld = ext.domain            # 取得 xxx
-              root_domain = ext.registered_domain # 取得 xxx.com 或 xxx.com.tw 等
+              sld = ext.domain
+              root_domain = ext.registered_domain
               
               if sld:
-                  # 核心邏輯：如果這個 xxx 還沒見過，就記錄下來；如果見過了，就直接丟棄 (達成縮減)
                   if sld not in seen_slds:
-                      if root_domain:
-                          seen_slds[sld] = f"*.{root_domain}"
-                      else:
-                          seen_slds[sld] = f"*.{clean_domain}"
+                      if root_domain: seen_slds[sld] = f"*.{root_domain}"
+                      else: seen_slds[sld] = f"*.{clean_domain}"
               else:
-                  # 極少數無法正常解析的特例處理
                   if clean_domain not in seen_slds:
                       seen_slds[clean_domain] = f"*.{clean_domain}"
-                  
-          # 將去重後的主網域轉入規則清單
-          for d in seen_slds.values():
-              domain_rules.append({"host": d, "description": "Auto CN domain (SLD deduplicated)"})
-              
-          if has_cn_tld:
-              domain_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
+                      
+          domain_rules =[{"host": d, "description": "Auto CN domain"} for d in seen_slds.values()]
+          
+          # 【關鍵優化】按照網域長度排序，越短越有價值 (例如 qq.com)，越長越冷門！
+          domain_rules.sort(key=lambda x: len(x["host"]))
           
           # ==========================================
-          # 2. 解析並「暴力壓縮」 IPv4 網段 (捨棄 IPv6)
+          # 2. IP 核彈級壓縮 (放寬至 /12)
           # ==========================================
-          ip_rules =[]
           ipv4_nets = set()
-          AGGRESSIVE_PREFIX = 16 
+          # 將 16 改為 12，這會將所有相鄰 IP 暴力結合成超大網段
+          AGGRESSIVE_PREFIX = 12 
           
           for line in ip_resp.text.splitlines():
               line = line.strip()
@@ -139,28 +124,33 @@ jobs:
                   pass
           
           collapsed_ipv4 = list(ipaddress.collapse_addresses(ipv4_nets))
+          ip_rules =[{"address": str(net), "description": "Auto CN IPv4 (Aggregated)"} for net in collapsed_ipv4]
           
-          for net in collapsed_ipv4:
-              ip_rules.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
+          # ==========================================
+          # 3. 智能組合：保底機制
+          # ==========================================
+          # IP 規則與 *.cn 屬於「絕對必須」保留的清單
+          must_have_rules = ip_rules
+          if has_cn_tld:
+              must_have_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
               
-          print(f"解析完畢: 網域 (同名合一) 後僅 {len(domain_rules)} 條, IP 極限合併後僅 {len(ip_rules)} 條")
-          
-          # ==========================================
-          # 3. 組合並寫入 API
-          # ==========================================
           MAX_RULES = 4000
-          split_tunnels = domain_rules + ip_rules
           
-          if len(split_tunnels) > MAX_RULES:
-              print(f"⚠️ 警告: 總規則數 ({len(split_tunnels)}) 依然超過 Cloudflare 上限 {MAX_RULES} 條。")
-              print(f"將自動裁切保留前 {MAX_RULES} 條規則。")
-              split_tunnels = split_tunnels[:MAX_RULES]
+          # 算一下剩餘多少空位可以塞網域
+          available_domain_slots = MAX_RULES - len(must_have_rules)
+          
+          if available_domain_slots > 0:
+              # 把最重要的「短網域」塞滿剩餘空位，超出的長網域直接無情捨棄
+              split_tunnels = must_have_rules + domain_rules[:available_domain_slots]
           else:
-              print(f"🎉 太棒了！總規則數為 {len(split_tunnels)} 條，安全低於 4000 條上限！")
+              # 極端情況：連 IP 規則都超過 4000 條 (在 /12 下不可能發生，但為了代碼安全)
+              split_tunnels = must_have_rules[:MAX_RULES]
+              
+          print(f"✅ IP 規則壓制數量: {len(ip_rules)} 條")
+          print(f"✅ 網域原始去重後數量: {len(domain_rules)} 條")
+          print(f"🎉 最終準備寫入 Cloudflare 的精華規則數: {len(split_tunnels)} 條")
           
-          print(f"準備寫入 {len(split_tunnels)} 條規則至 Cloudflare Split Tunnels (Exclude)...")
           put_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policy/{policy_id}/exclude"
-          
           update_resp = requests.put(put_url, headers=headers, json=split_tunnels)
           
           if update_resp.status_code == 200 and update_resp.json().get("success"):
