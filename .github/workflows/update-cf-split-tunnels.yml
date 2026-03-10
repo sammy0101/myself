@@ -22,7 +22,7 @@ jobs:
 
       - name: Fetch, Parse and Update Cloudflare API
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_API_Zero_Trust_TOKEN: ${{ secrets.CF_API_Zero_Trust_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           POLICY_NAME: "non-cn"
         run: |
@@ -30,16 +30,16 @@ jobs:
           import os
           import requests
           
-          CF_API_TOKEN = os.environ.get("CF_API_TOKEN")
+          CF_API_Zero_Trust_TOKEN = os.environ.get("CF_API_Zero_Trust_TOKEN")
           CF_ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
           POLICY_NAME = os.environ.get("POLICY_NAME")
           
-          if not CF_API_TOKEN or not CF_ACCOUNT_ID:
-              print("錯誤: 找不到 CF_API_TOKEN 或 CF_ACCOUNT_ID 環境變數，請檢查 GitHub Secrets 設定。")
+          if not CF_API_Zero_Trust_TOKEN or not CF_ACCOUNT_ID:
+              print("錯誤: 找不到 CF_API_Zero_Trust_TOKEN 或 CF_ACCOUNT_ID 環境變數，請檢查 GitHub Secrets 設定。")
               exit(1)
               
           headers = {
-              "Authorization": f"Bearer {CF_API_TOKEN}",
+              "Authorization": f"Bearer {CF_API_Zero_Trust_TOKEN}",
               "Content-Type": "application/json"
           }
           
