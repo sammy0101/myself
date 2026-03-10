@@ -64,9 +64,7 @@ jobs:
               
           print(f"找到設定檔 '{POLICY_NAME}'，ID: {policy_id}")
           
-          # ==========================================
-          # 替換為 geo-lite (精簡版) 來源
-          # ==========================================
+          # 採用 geo-lite (精簡版) 來源
           domain_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/cn.list"
           ip_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
           
@@ -75,11 +73,12 @@ jobs:
           ip_resp = requests.get(ip_url)
           
           domain_rules =[]
-          seen_domains = set()
+          # 使用字典來記錄主名稱 (SLD) 是否已經出現過
+          seen_slds = {}
           has_cn_tld = False
           
           # ==========================================
-          # 1. 解析網域：極致精簡與折疊
+          # 1. 解析網域：主名稱 (SLD) 唯一化
           # ==========================================
           for line in dom_resp.text.splitlines():
               line = line.strip()
@@ -91,31 +90,40 @@ jobs:
               elif clean_domain.startswith("*."):
                   clean_domain = clean_domain[2:]
                   
+              # 若為 .cn 結尾，直接交給最後的 *.cn 統一處理
               if clean_domain.endswith(".cn") or clean_domain == "cn":
                   has_cn_tld = True
                   continue
               
+              # 解析網域，萃取出主名稱 (例如 xxx.com 的 xxx)
               ext = tldextract.extract(clean_domain)
-              root_domain = ext.registered_domain
+              sld = ext.domain            # 取得 xxx
+              root_domain = ext.registered_domain # 取得 xxx.com 或 xxx.com.tw 等
               
-              if root_domain:
-                  seen_domains.add(f"*.{root_domain}")
+              if sld:
+                  # 核心邏輯：如果這個 xxx 還沒見過，就記錄下來；如果見過了，就直接丟棄 (達成縮減)
+                  if sld not in seen_slds:
+                      if root_domain:
+                          seen_slds[sld] = f"*.{root_domain}"
+                      else:
+                          seen_slds[sld] = f"*.{clean_domain}"
               else:
-                  seen_domains.add(f"*.{clean_domain}")
+                  # 極少數無法正常解析的特例處理
+                  if clean_domain not in seen_slds:
+                      seen_slds[clean_domain] = f"*.{clean_domain}"
                   
-          for d in seen_domains:
-              domain_rules.append({"host": d, "description": "Auto CN domain (geo-lite)"})
+          # 將去重後的主網域轉入規則清單
+          for d in seen_slds.values():
+              domain_rules.append({"host": d, "description": "Auto CN domain (SLD deduplicated)"})
               
           if has_cn_tld:
               domain_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
           
           # ==========================================
-          # 2. 解析並「暴力壓縮」 IPv4 網段 (完全捨棄 IPv6)
+          # 2. 解析並「暴力壓縮」 IPv4 網段 (捨棄 IPv6)
           # ==========================================
           ip_rules =[]
           ipv4_nets = set()
-          
-          # 依然維持 /16 的聚合強度，確保數量極低
           AGGRESSIVE_PREFIX = 16 
           
           for line in ip_resp.text.splitlines():
@@ -123,11 +131,9 @@ jobs:
               if not line or line.startswith("#"): continue
               try:
                   net = ipaddress.ip_network(line, strict=False)
-                  
                   if net.version == 4:
                       if net.prefixlen > AGGRESSIVE_PREFIX:
                           net = net.supernet(new_prefix=AGGRESSIVE_PREFIX)
-                      
                       ipv4_nets.add(net)
               except ValueError:
                   pass
@@ -137,7 +143,7 @@ jobs:
           for net in collapsed_ipv4:
               ip_rules.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
               
-          print(f"解析完畢: 網域合併後僅 {len(domain_rules)} 條, IP 極限合併後僅 {len(ip_rules)} 條")
+          print(f"解析完畢: 網域 (同名合一) 後僅 {len(domain_rules)} 條, IP 極限合併後僅 {len(ip_rules)} 條")
           
           # ==========================================
           # 3. 組合並寫入 API
