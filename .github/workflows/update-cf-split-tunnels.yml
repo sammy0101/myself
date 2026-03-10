@@ -17,7 +17,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      # 這裡新增了 tldextract 套件來精準提取主網域
       - name: Install Dependencies
         run: pip install requests tldextract
 
@@ -83,30 +82,24 @@ jobs:
               line = line.strip()
               if not line or line.startswith("#"): continue
               
-              # 清理前綴
               clean_domain = line
               if clean_domain.startswith("+."):
                   clean_domain = clean_domain[2:]
               elif clean_domain.startswith("*."):
                   clean_domain = clean_domain[2:]
                   
-              # 如果是 .cn 結尾直接跳過，最後統一處理
               if clean_domain.endswith(".cn") or clean_domain == "cn":
                   has_cn_tld = True
                   continue
               
-              # 利用 tldextract 提取主網域 (例如 p1.byteimg.com -> byteimg.com)
               ext = tldextract.extract(clean_domain)
               root_domain = ext.registered_domain
               
               if root_domain:
-                  # 有標準主網域，只保留 *.主網域 (滿足您要求的 *.byteimg.com)
                   seen_domains.add(f"*.{root_domain}")
               else:
-                  # 針對無法提取主網域的特例 (如純文字 sohu)，只保留 *.sohu
                   seen_domains.add(f"*.{clean_domain}")
                   
-          # 將精簡後的 Set 轉為 Cloudflare API 格式
           for d in seen_domains:
               domain_rules.append({"host": d, "description": "Auto CN domain"})
               
@@ -114,32 +107,38 @@ jobs:
               domain_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
           
           # ==========================================
-          # 2. 解析並壓縮 IP 網段 (CIDR)
+          # 2. 解析並「暴力壓縮」 IPv4 網段 (完全捨棄 IPv6)
           # ==========================================
           ip_rules =[]
-          ipv4_nets = []
-          ipv6_nets =[]
+          ipv4_nets = set()
+          
+          # 定義聚合的強度 (16 代表將所有 /17 ~ /32 的 IP 都放大合併成 /16 網段)
+          AGGRESSIVE_PREFIX = 16 
+          
           for line in ip_resp.text.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
               try:
                   net = ipaddress.ip_network(line, strict=False)
+                  
+                  # 只保留 IPv4，捨棄 IPv6
                   if net.version == 4:
-                      ipv4_nets.append(net)
-                  else:
-                      ipv6_nets.append(net)
+                      # 核心邏輯：如果網段範圍比 /16 還小 (例如 /22, /23, /24, /31)
+                      # 就強制把它放大並歸納到所屬的 /16 網段中
+                      if net.prefixlen > AGGRESSIVE_PREFIX:
+                          net = net.supernet(new_prefix=AGGRESSIVE_PREFIX)
+                      
+                      ipv4_nets.add(net)
               except ValueError:
                   pass
           
+          # 將蒐集到的網段再進行一次內建的標準合併，確保完全沒有重疊
           collapsed_ipv4 = list(ipaddress.collapse_addresses(ipv4_nets))
-          collapsed_ipv6 = list(ipaddress.collapse_addresses(ipv6_nets))
           
           for net in collapsed_ipv4:
-              ip_rules.append({"address": str(net), "description": "Auto CN IPv4"})
-          for net in collapsed_ipv6:
-              ip_rules.append({"address": str(net), "description": "Auto CN IPv6"})
+              ip_rules.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
               
-          print(f"解析完畢: 網域合併後僅 {len(domain_rules)} 條, IP 合併後 {len(ip_rules)} 條")
+          print(f"解析完畢: 網域合併後僅 {len(domain_rules)} 條, IP 極限合併後僅 {len(ip_rules)} 條")
           
           # ==========================================
           # 3. 組合並寫入 API
@@ -151,6 +150,8 @@ jobs:
               print(f"⚠️ 警告: 總規則數 ({len(split_tunnels)}) 依然超過 Cloudflare 上限 {MAX_RULES} 條。")
               print(f"將自動裁切保留前 {MAX_RULES} 條規則。")
               split_tunnels = split_tunnels[:MAX_RULES]
+          else:
+              print(f"🎉 太棒了！總規則數為 {len(split_tunnels)} 條，安全低於 4000 條上限！")
           
           print(f"準備寫入 {len(split_tunnels)} 條規則至 Cloudflare Split Tunnels (Exclude)...")
           put_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policy/{policy_id}/exclude"
