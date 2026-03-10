@@ -18,7 +18,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install Dependencies
-        run: pip install requests tldextract
+        run: pip install requests
 
       - name: Fetch, Parse and Update Cloudflare API
         env:
@@ -30,7 +30,6 @@ jobs:
           import os
           import requests
           import ipaddress
-          import tldextract
           
           CF_API_Zero_Trust_TOKEN = os.environ.get("CF_API_Zero_Trust_TOKEN")
           CF_ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
@@ -63,51 +62,19 @@ jobs:
               exit(1)
 
           # ==========================================
-          # 來源定義 (僅保留 網域 與 私有IP)
+          # 來源定義 (僅保留 中國IP 與 私有IP)
           # ==========================================
-          domain_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/cn.list"
+          ip_cn_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
           ip_private_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/private.list"
           
-          print("正在下載來源清單 (Domains & Private IPs)...")
-          dom_resp = requests.get(domain_url)
+          print("正在下載來源清單 (CN IPs & Private IPs)...")
+          ip_cn_resp = requests.get(ip_cn_url)
           ip_private_resp = requests.get(ip_private_url)
           
-          # ==========================================
-          # 1. 解析網域：同名合一 + 短網域優先
-          # ==========================================
-          seen_slds = {}
-          has_cn_tld = False
-          
-          for line in dom_resp.text.splitlines():
-              line = line.strip()
-              if not line or line.startswith("#"): continue
-              
-              clean_domain = line
-              if clean_domain.startswith("+."): clean_domain = clean_domain[2:]
-              elif clean_domain.startswith("*."): clean_domain = clean_domain[2:]
-                  
-              if clean_domain.endswith(".cn") or clean_domain == "cn":
-                  has_cn_tld = True
-                  continue
-              
-              ext = tldextract.extract(clean_domain)
-              sld = ext.domain
-              root_domain = ext.registered_domain
-              
-              if sld:
-                  if sld not in seen_slds:
-                      if root_domain: seen_slds[sld] = f"*.{root_domain}"
-                      else: seen_slds[sld] = f"*.{clean_domain}"
-              else:
-                  if clean_domain not in seen_slds:
-                      seen_slds[clean_domain] = f"*.{clean_domain}"
-                      
-          domain_rules =[{"host": d, "description": "Auto CN domain"} for d in seen_slds.values()]
-          # 按長度排序，優先保留核心短網域 (如 qq.com, baidu.com)
-          domain_rules.sort(key=lambda x: len(x["host"]))
+          split_tunnels =[]
 
           # ==========================================
-          # 2. 解析 私有 IP (精確保留，不進行暴力壓縮)
+          # 1. 解析 私有 IP (精確保留，不暴力壓縮)
           # ==========================================
           private_nets = set()
           for line in ip_private_resp.text.splitlines():
@@ -115,39 +82,47 @@ jobs:
               if not line or line.startswith("#"): continue
               try:
                   net = ipaddress.ip_network(line, strict=False)
-                  # 僅保留 IPv4
-                  if net.version == 4: 
+                  if net.version == 4: # 僅保留 IPv4
                       private_nets.add(net)
               except ValueError: pass
           
-          # 進行標準合併 (例如多個 /24 合併為 /23)，保證內網連線精準無誤
-          ip_rules =[{"address": str(net), "description": "Private IP"} for net in ipaddress.collapse_addresses(private_nets)]
+          # 將內網 IP 加入清單
+          for net in ipaddress.collapse_addresses(private_nets):
+              split_tunnels.append({"address": str(net), "description": "Private IP"})
 
           # ==========================================
-          # 3. 智能組合與寫入 (上限 4000 條保護)
+          # 2. 解析 中國 IP (強制壓縮至 /16)
           # ==========================================
-          # 私有 IP 與 *.cn 是絕對必須保留的底線規則
-          must_have_rules = ip_rules
-          if has_cn_tld:
-              must_have_rules.append({"host": "*.cn", "description": "Auto CN TLD (*.cn)"})
-              
+          cn_nets = set()
+          # 壓縮強度設定為 16 (這會把 6000 多條 IP 瞬間壓到剩 300 條左右)
+          AGGRESSIVE_PREFIX = 16 
+          
+          for line in ip_cn_resp.text.splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"): continue
+              try:
+                  net = ipaddress.ip_network(line, strict=False)
+                  if net.version == 4:
+                      # 如果網段範圍太小，就強制放大合併
+                      if net.prefixlen > AGGRESSIVE_PREFIX:
+                          net = net.supernet(new_prefix=AGGRESSIVE_PREFIX)
+                      cn_nets.add(net)
+              except ValueError: pass
+          
+          # 將壓縮後的中國 IP 加入清單
+          for net in ipaddress.collapse_addresses(cn_nets):
+              split_tunnels.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
+
+          # ==========================================
+          # 3. 確保總數保護與 API 提交
+          # ==========================================
           MAX_RULES = 4000
-          available_domain_slots = MAX_RULES - len(must_have_rules)
-          
-          if available_domain_slots > 0:
-              # 將剩餘空位全數留給精簡後的網域
-              split_tunnels = must_have_rules + domain_rules[:available_domain_slots]
-          else:
-              split_tunnels = must_have_rules[:MAX_RULES]
+          if len(split_tunnels) > MAX_RULES:
+              split_tunnels = split_tunnels[:MAX_RULES]
               
-          print(f"📊 統計結果:")
-          print(f" - 私有 IP 規則: {len(ip_rules)} 條")
-          print(f" - 網域規則 (精選後): {min(len(domain_rules), max(0, available_domain_slots))} 條")
-          print(f"🚀 總計寫入: {len(split_tunnels)} 條 / 上限 4000 條")
+          print(f"📊 統計結果: 總計將寫入 {len(split_tunnels)} 條規則 (上限 4000 條)")
+          print("這極少的數量將確保您的 WARP 連線瞬間完成！")
           
-          # ==========================================
-          # 4. 透過 API 更新 Cloudflare Split Tunnels
-          # ==========================================
           put_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policy/{policy_id}/exclude"
           update_resp = requests.put(put_url, headers=headers, json=split_tunnels)
           
