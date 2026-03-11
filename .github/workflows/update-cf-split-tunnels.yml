@@ -62,10 +62,16 @@ jobs:
               exit(1)
           
           # ==========================================
-          # 來源定義
+          # 來源定義與自訂網域
           # ==========================================
           ip_cn_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
           ip_private_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/private.list"
+          
+          # 【新增】自訂要單獨加入的網域 (您可以在這裡隨意增加，例如 "*.qq.com")
+          CUSTOM_DOMAINS =[
+              "*.cn",
+              "cn"
+          ]
           
           print("正在下載來源清單 (CN IPs & Private IPs)...")
           ip_cn_resp = requests.get(ip_cn_url)
@@ -113,10 +119,10 @@ jobs:
           
           split_tunnels =[]
           
-          print("正在合併與排序 IP 網段...")
+          print("正在合併與按照合理順序排序規則...")
           
           # ==========================================
-          # 3. 組合清單：私有 IP 優先放入最前面
+          # 3. 組合清單：【第一順位】私有內網 IP
           # ==========================================
           for net in ipaddress.collapse_addresses(list(private_v4_nets)):
               split_tunnels.append({"address": str(net), "description": "Private IPv4"})
@@ -125,7 +131,13 @@ jobs:
               split_tunnels.append({"address": str(net), "description": "Private IPv6"})
               
           # ==========================================
-          # 4. 組合清單：中國 IP 放在私有 IP 後面
+          # 4. 組合清單：【第二順位】單獨指定之網域 (*.cn 等)
+          # ==========================================
+          for domain in CUSTOM_DOMAINS:
+              split_tunnels.append({"host": domain, "description": f"Custom Domain ({domain})"})
+              
+          # ==========================================
+          # 5. 組合清單：【第三順位】中國 IP (保底防線)
           # ==========================================
           for net in ipaddress.collapse_addresses(list(cn_v4_nets)):
               split_tunnels.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
