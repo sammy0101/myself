@@ -6,11 +6,12 @@ import re
 # 設定來源網址
 urls = {
     "Ads": {
-        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ads-all.list",
+        # 使用你提供的正確 MetaCubeX 去廣告純文字列表連結
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ads-all.list",
         "policy": "Reject"
     },
     "AI": {
-        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.list",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ai-!cn.list",
         "policy": "Proxy"
     }
 }
@@ -75,11 +76,11 @@ AI_EXCLUSIONS =[
 ]
 
 def fetch_and_parse(url, policy, exclusions=None):
-    rules = []
+    rules =[]
     if exclusions is None: exclusions =[]
     try:
         print(f"Downloading {url}...")
-        resp = requests.get(url, timeout=10)
+        resp = requests.get(url, timeout=15)
         resp.raise_for_status()
         lines = resp.text.splitlines()
         for line in lines:
@@ -90,7 +91,7 @@ def fetch_and_parse(url, policy, exclusions=None):
             domain = line.replace("+.", "").replace("'", "").strip()
             if not domain: continue
             
-            # 檢查是否命中直連白名單
+            # 檢查是否命中直連白名單 (只針對 AI 規則進行白名單檢查)
             is_excluded = False
             for kw in exclusions:
                 if kw.lower() in domain.lower():
@@ -124,9 +125,9 @@ def main():
         except Exception:
             pass
 
-    # 2. 下載新規則
+    # 2. 下載新規則 (廣告規則不需要傳入排除名單)
     ai_rules = fetch_and_parse(urls["AI"]["url"], urls["AI"]["policy"], exclusions=AI_EXCLUSIONS)
-    ads_rules = fetch_and_parse(urls["Ads"]["url"], urls["Ads"]["policy"])
+    ads_rules = fetch_and_parse(urls["Ads"]["url"], urls["Ads"]["policy"], exclusions=[])
 
     # 3. 組合新內容 (主體)
     new_body = "[Rule]\n"
