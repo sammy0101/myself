@@ -16,105 +16,67 @@ urls = {
 }
 
 # 設定要從 AI 代理列表中剔除的關鍵字 (香港可直連的網站)
-AI_EXCLUSIONS = [
+AI_EXCLUSIONS =[
     # ----------------------------------------
-    # 1. 開源社群與模型託管 (Open Source & Hosting)
+    # 1. 開源社群與模型託管
     # ----------------------------------------
-    "huggingface.co",   # 全球最大的 AI 模型與數據集社區
-    "hf.space",         # Hugging Face Spaces (演示應用)
-    "hf.co",            # Hugging Face 短域名
-    "chutes.ai",        # AI 基礎設施與部署平台
-
+    "huggingface.co", "hf.space", "hf.co", "chutes.ai",
     # ----------------------------------------
-    # 2. AI 搜尋與聚合對話平台 (Search & Chatbots)
+    # 2. AI 搜尋與聚合對話平台
     # ----------------------------------------
-    "perplexity.ai",    # AI 搜尋引擎 (香港可用，推薦)
-    "perplexity.com",
-    "poe.com",          # Quora 旗下 AI 聚合平台 (香港可用)
-    "poecdn.net",       # Poe 的資源 CDN
-    "ciciai.com",       # 字節跳動旗下 Cici AI (海外版豆包)
-    "cici.com",
-    "ciciaicdn.com",
-    "diabrowser.com",   # 專為 AI 設計的瀏覽器
-    "dola.com",         # AI 日曆與助理
-
+    "perplexity.ai", "perplexity.com", "poe.com", "poecdn.net",
+    "ciciai.com", "cici.com", "ciciaicdn.com", "diabrowser.com", "dola.com",
     # ----------------------------------------
-    # 3. 程式開發與 IDE (Coding Assistants)
+    # 3. 程式開發與 IDE
     # ----------------------------------------
-    "cursor.com",       # VS Code Fork 的 AI 編輯器 (香港可用)
-    "cursor.sh",
-    "cursorapi.com",    # Cursor API 接口
-    "cursor-cdn.com",   # Cursor 資源下載
-    "trae.ai",          # 字節跳動推出的 AI IDE
-    "marscode.com",     # 豆包/MarsCode 編程助手
-    "devin.ai",         # Cognition AI (全自動工程師)
-    "coderabbit.ai",    # AI Code Review 工具
-    "coderabbit.gallery.vsassets.io", # VS Code 插件資源
-
+    "cursor.com", "cursor.sh", "cursorapi.com", "cursor-cdn.com",
+    "trae.ai", "marscode.com", "devin.ai", "coderabbit.ai", "coderabbit.gallery.vsassets.io",
     # ----------------------------------------
-    # 4. 模型 API 與推理加速 (Inference & APIs)
+    # 4. 模型 API 與推理加速
     # ----------------------------------------
-    "mistral.ai",       # 法國開源模型強者 (香港可直連)
-    "cohere.ai",        # 企業級 NLP 模型
-    "cohere.com",
-    "groq.com",         # LPU 推理加速芯片 (速度極快)
-    "cerebras.ai",      # 晶圓級芯片 AI
-    "openrouter.ai",    # 模型 API 聚合商 (香港可直連調用)
-    "deepmind.google",  # Google DeepMind 資訊頁 (非 Gemini 聊天)
-    "deepmind.com",
-
+    "mistral.ai", "cohere.ai", "cohere.com", "groq.com", "cerebras.ai",
+    "openrouter.ai", "deepmind.google", "deepmind.com",
     # ----------------------------------------
-    # 5. 圖像、媒體與生成式內容 (Media & Generation)
+    # 5. 圖像、媒體與生成式內容
     # ----------------------------------------
-    "elevenlabs.io",    # 頂級 AI 語音生成
-    "elevenlabs.com",
-    "clipdrop.co",      # Stability AI 圖像工具
-    "comfy.org",        # ComfyUI 官網
-    "comfyregistry.org",# ComfyUI 插件註冊表
-    "comfyci.org",      # ComfyUI 持續集成
-    "openart.ai",       # AI 繪畫生成與社區
-
+    "elevenlabs.io", "elevenlabs.com", "clipdrop.co",
+    "comfy.org", "comfyregistry.org", "comfyci.org", "openart.ai",
     # ----------------------------------------
-    # 6. 應用構建與工作流 (App Builders & Workflow)
+    # 6. 應用構建與工作流
     # ----------------------------------------
-    "dify.ai",          # 開源 LLM 應用開發平台
-    "coze.com",         # 扣子 (Coze) 國際版 (香港可用)
-    "jasper.ai",        # 行銷文案 AI
-
+    "dify.ai", "coze.com", "jasper.ai",
     # ----------------------------------------
-    # 7. 社交與馬斯克系列 (Social & xAI)
+    # 7. 社交與馬斯克系列
     # ----------------------------------------
-    "x.ai",             # Elon Musk 的 xAI 公司
-    "grok.com",         # Grok 模型官網
-    "grok.x.com",       # X (Twitter) 內置的 Grok (需會員)
-    
+    "x.ai", "grok.com", "grok.x.com",
     # ----------------------------------------
-    # 8. 基礎設施與監控 (Infrastructure & CDN)
+    # 8. 基礎設施與監控
     # ----------------------------------------
-    "gateway.ai.cloudflare.com",    # Cloudflare AI Gateway
-    "pplx-res.cloudinary.com",      # Perplexity 圖片資源
-    "browser-intake-datadoghq.com", # 監控日誌
-    "o33249.ingest.sentry.io",      # 錯誤追蹤
-    
+    "gateway.ai.cloudflare.com", "pplx-res.cloudinary.com",
+    "browser-intake-datadoghq.com", "o33249.ingest.sentry.io",
     # ----------------------------------------
-    # 9. Azure/OpenAI CDN (特殊情況)
+    # 9. Azure/OpenAI CDN
     # ----------------------------------------
-    # 註：雖然這些 CDN 域名在香港不被封鎖，但 OpenAI 主服務(openai.com)被鎖。
-    # 這些通常是微軟 Azure 託管的資源，部分開發場景可能用到。
-    "openaiapi-site.azureedge.net",
-    "production-openaicom-storage.azureedge.net",
-
+    "openaiapi-site.azureedge.net", "production-openaicom-storage.azureedge.net",
     # ----------------------------------------
-    # ⚠️ 存疑/需注意 (Warning)
+    # Warning
     # ----------------------------------------
-    # 微軟 Copilot 消費者版在香港並未正式開放，通常會顯示「不支援該地區」。
-    # 除非是企業版 (M365) 配置，否則通常需要代理。
     "copilot.microsoft.com", 
+
+    # ----------------------------------------
+    # 🌟 Google Gemini 相關 (香港已開放直連)
+    # 註：aistudio 不在此名單，將繼續走代理
+    # ----------------------------------------
+    "gemini.google",
+    "gemini.google.com",
+    "bard.google.com",
+    "generativelanguage.googleapis.com", 
+    "proactivebackend-pa.googleapis.com"
 ]
 
 def fetch_and_parse(url, policy, exclusions=None):
     rules = []
-    if exclusions is None: exclusions = []
+    if exclusions is None: exclusions =[]
     try:
         print(f"Downloading {url}...")
         resp = requests.get(url, timeout=10)
@@ -123,9 +85,12 @@ def fetch_and_parse(url, policy, exclusions=None):
         for line in lines:
             line = line.strip()
             if not line or line.startswith("#"): continue
-            domain = line.replace("+.", "").strip()
+            
+            # 清理網域：移除 "+." 和單引號 "'"
+            domain = line.replace("+.", "").replace("'", "").strip()
             if not domain: continue
             
+            # 檢查是否命中直連白名單
             is_excluded = False
             for kw in exclusions:
                 if kw.lower() in domain.lower():
@@ -143,36 +108,27 @@ def get_content_without_timestamp(content):
 
 def main():
     conf_file = "ai_ad.conf"
-    header_content = ""
+    header_content = "[General]\nbypass-system = true\n"
     
-    # 1. 讀取舊檔案 (如果存在)
+    # 1. 嘗試保留舊檔案的 Header (如果有的話)
     old_content_raw = ""
     if os.path.exists(conf_file):
         try:
             with open(conf_file, "r", encoding="utf-8") as f:
                 old_content_raw = f.read()
-                
-                # 取得 Header
                 if "[Rule]" in old_content_raw:
                     raw_header = old_content_raw.split("[Rule]")[0]
-                else:
-                    raw_header = old_content_raw
-                
-                # 清理舊 Header 中的時間戳
-                clean_lines = [line for line in raw_header.splitlines() if not line.strip().startswith("# Updated:")]
-                header_content = "\n".join(clean_lines)
+                    # 清理舊 Header 中的時間戳
+                    clean_lines =[line for line in raw_header.splitlines() if not line.strip().startswith("# Updated:")]
+                    header_content = "\n".join(clean_lines) + "\n"
         except Exception:
-            header_content = ""
-
-    if not header_content or "[General]" not in header_content:
-        if "[General]" not in header_content:
-            header_content = "[General]\nbypass-system = true\n" + header_content
+            pass
 
     # 2. 下載新規則
     ai_rules = fetch_and_parse(urls["AI"]["url"], urls["AI"]["policy"], exclusions=AI_EXCLUSIONS)
     ads_rules = fetch_and_parse(urls["Ads"]["url"], urls["Ads"]["policy"])
 
-    # 3. 組合新內容 (暫不加時間戳)
+    # 3. 組合新內容 (主體)
     new_body = "[Rule]\n"
     new_body += f"# --- Category: AI (Proxy) [{len(ai_rules)}] ---\n"
     new_body += "\n".join(ai_rules) + "\n\n"
@@ -180,15 +136,14 @@ def main():
     new_body += "\n".join(ads_rules) + "\n"
     new_body += "\n# Final Match\nFINAL,DIRECT\n"
 
+    # 4. 用於比對的內容 (不含時間戳)
     new_content_no_time = header_content.strip() + "\n\n" + new_body
     old_content_no_time = get_content_without_timestamp(old_content_raw)
 
-    # 4. 比對內容 (移除空白與換行後比對)
+    # 5. 比對並寫入
     if new_content_no_time.strip() == old_content_no_time.strip():
-        print("規則內容未變更，跳過更新。")
-        # 這裡我們不寫入檔案，這樣檔案修改時間就不會變，Git 就不會偵測到變更
+        print(f"[{conf_file}] 規則內容未變更，跳過更新。")
     else:
-        # 內容有變，加上時間戳並寫入
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         final_content = header_content.strip() + "\n\n"
         final_content += f"# Updated: {current_time}\n"
@@ -196,7 +151,7 @@ def main():
         
         with open(conf_file, "w", encoding="utf-8") as f:
             f.write(final_content)
-        print(f"規則已有更新，已寫入 {conf_file}")
+        print(f"[{conf_file}] 規則已有更新，已寫入。")
 
 if __name__ == "__main__":
     main()
