@@ -38,6 +38,7 @@ HK_DIRECT_KEYWORDS =[
     # 🌟 新增：Google Gemini 相關 (香港已開放直連)
     # 註：aistudio 不在名單內，因此會繼續保留在代理清單中
     # ========================================================
+    "gemini.google",
     "gemini.google.com",
     "bard.google.com",
     "generativelanguage.googleapis.com", # Gemini API 服務
