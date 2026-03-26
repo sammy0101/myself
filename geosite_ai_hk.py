@@ -4,7 +4,7 @@ import yaml
 import os
 
 # 1. 上游位址
-SOURCE_URL = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.list"
+SOURCE_URL = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ai-!cn.list"
 
 # 2. 香港直連白名單 (包含這些關鍵字的網域將被剔除，即不走代理)
 HK_DIRECT_KEYWORDS =[
