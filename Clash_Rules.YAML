@@ -38,8 +38,7 @@ proxy-groups:
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 300
-    proxies: 
-      - DIRECT
+    proxies:[]
 
   - name: 💬 AI 服務
     type: select
@@ -80,7 +79,6 @@ rule-providers:
     path: ./ruleset/my-ai.mrs
     interval: 86400
 
-  # 新增：把 GFW 名單加回來，防止 FB 域名對應的 IP 被當作中國 IP
   meta-gfw:
     type: http
     behavior: domain
@@ -139,10 +137,7 @@ rule-providers:
 
 # ---------------- 流量路由 ----------------
 rules:
-  # 0. 阻斷 QUIC (UDP 443)，強迫 Facebook/IG 走 TCP 協議，解決無窮轉圈圈問題！
-  - AND,((NETWORK,udp),(DST-PORT,443)),REJECT
-
-  # 1. 最優先：攔截與內網
+  # 1. 最優先：攔截廣告與內網直連
   - RULE-SET,meta-ads,🛑 廣告攔截
   - RULE-SET,meta-private,🏠 私有網絡
 
