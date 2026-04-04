@@ -17,10 +17,12 @@ dns:
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
+  # 預設 DNS (所有外國與未知網站)：強制透過代理節點進行加密解析，達到 100% 防洩漏
   nameserver:
     - https://8.8.8.8/dns-query#🚀 節點選擇
     - https://1.1.1.1/dns-query#🚀 節點選擇
   nameserver-policy:
+    # 國內域名與私有網路：走本地直連加密解析，確保國內 CDN 速度
     "rule-set:meta-cn,meta-private":
       - https://dns.alidns.com/dns-query
       - https://doh.pub/dns-query
@@ -69,7 +71,7 @@ proxy-groups:
       - REJECT
       - DIRECT
 
-# ---------------- 規則集 ----------------
+# ---------------- 規則集 (國內外分流模式) ----------------
 rule-providers:
   my-ai:
     type: http
@@ -77,14 +79,6 @@ rule-providers:
     format: mrs
     url: "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.mrs"
     path: ./ruleset/my-ai.mrs
-    interval: 86400
-
-  meta-gfw:
-    type: http
-    behavior: domain
-    format: mrs
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/gfw.mrs"
-    path: ./ruleset/gfw.mrs
     interval: 86400
 
   meta-telegram:
@@ -137,16 +131,15 @@ rule-providers:
 
 # ---------------- 流量路由 ----------------
 rules:
-  # 1. 最優先：攔截廣告與內網直連
+  # 1. 最優先：攔截與內網
   - RULE-SET,meta-ads,🛑 廣告攔截
   - RULE-SET,meta-private,🏠 私有網絡
 
-  # 2. 核心業務與被牆清單：強制走代理 (放在 cn 之前，防誤判)
+  # 2. 核心業務：AI 服務 (強制代理)
   - RULE-SET,my-ai,💬 AI 服務
-  - RULE-SET,meta-gfw,🚀 節點選擇
   - RULE-SET,meta-telegram,🚀 節點選擇
 
-  # 3. 國內服務：匹配到中國網域或 IP 走國內策略組
+  # 3. 國內服務：匹配到中國網域或 IP (交給新增的 🇨🇳 國內服務 策略組)
   - RULE-SET,meta-cn,🇨🇳 國內服務
   - RULE-SET,meta-cn-ip,🇨🇳 國內服務
   - RULE-SET,meta-ip-private,🏠 私有網絡
