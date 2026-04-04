@@ -12,7 +12,7 @@
       },
       {
         "tag": "local-direct",
-        "address": "https://dns.alidns.com/dns-query",
+        "address": "https://223.5.5.5/dns-query",
         "detour": "DIRECT"
       },
       {
@@ -100,7 +100,7 @@
     {
       "type": "selector",
       "tag": "🐟 漏網之魚",
-      "outbounds": [
+      "outbounds":[
         "🚀 節點選擇",
         "DIRECT"
       ]
@@ -108,7 +108,7 @@
     {
       "type": "selector",
       "tag": "🛑 廣告攔截",
-      "outbounds": [
+      "outbounds":[
         "REJECT",
         "DIRECT"
       ]
