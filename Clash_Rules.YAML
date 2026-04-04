@@ -10,13 +10,12 @@ dns:
   ipv6: false
   listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
-  # 這裡改用 DoH，防劫持且更穩定
   nameserver:
     - https://8.8.8.8/dns-query
     - https://1.1.1.1/dns-query
     - https://223.5.5.5/dns-query
 
-proxies: []
+proxies:[]
 
 proxy-groups:
   - name: 🚀 節點選擇
@@ -29,23 +28,12 @@ proxy-groups:
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 300
-    proxies: []
+    proxies:[]
 
   - name: 💬 AI 服務
     type: select
     proxies:
       - ⚡ 自動選擇
-      - 🚀 節點選擇
-
-  - name: 🌐 非中國
-    type: select
-    proxies:
-      - 🚀 節點選擇
-
-  - name: 🔒 國內服務
-    type: select
-    proxies:
-      - DIRECT
       - 🚀 節點選擇
 
   - name: 🏠 私有網絡
@@ -56,6 +44,7 @@ proxy-groups:
   - name: 🐟 漏網之魚
     type: select
     proxies:
+      - DIRECT
       - 🚀 節點選擇
 
   - name: 🛑 廣告攔截
@@ -73,20 +62,22 @@ rule-providers:
     path: ./ruleset/my-ai.mrs
     interval: 86400
 
-  meta-non-cn:
+  # 新增：被牆的網站清單 (GFW)
+  meta-gfw:
     type: http
     behavior: domain
     format: mrs
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-!cn.mrs"
-    path: ./ruleset/non-cn.mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/gfw.mrs"
+    path: ./ruleset/gfw.mrs
     interval: 86400
 
-  meta-cn:
+  # 新增：Telegram 直連 IP 段 (因 TG 經常無 DNS 請求)
+  meta-telegram:
     type: http
-    behavior: domain
+    behavior: ipcidr
     format: mrs
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.mrs"
-    path: ./ruleset/cn.mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs"
+    path: ./ruleset/telegram.mrs
     interval: 86400
 
   meta-ads:
@@ -105,14 +96,6 @@ rule-providers:
     path: ./ruleset/private.mrs
     interval: 86400
 
-  meta-ip-cn:
-    type: http
-    behavior: ipcidr
-    format: mrs
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs"
-    path: ./ruleset/ip-cn.mrs
-    interval: 86400
-
   meta-ip-private:
     type: http
     behavior: ipcidr
@@ -122,24 +105,19 @@ rule-providers:
     interval: 86400
 
 rules:
-  # 1. 最優先：攔截與內網 (域名類)
+  # 1. 最優先：攔截與內網
   - RULE-SET,meta-ads,🛑 廣告攔截
   - RULE-SET,meta-private,🏠 私有網絡
 
-  # 2. 核心業務：AI (域名類)
-  # 放在這裡確保優先權最高，不受 CN/Non-CN 規則干擾
+  # 2. 核心業務：AI
   - RULE-SET,my-ai,💬 AI 服務
 
-  # 3. 地區分流 (域名類 - Domain Rule)
-  # 先匹配域名，避免不必要的 DNS 解析
-  - RULE-SET,meta-cn,🔒 國內服務
-  - RULE-SET,meta-non-cn,🌐 非中國
+  # 3. 牆外分流：只有被 GFW 封鎖的網站才走代理
+  - RULE-SET,meta-gfw,🚀 節點選擇
 
-  # 4. 兜底分流 (IP 類 - IP Rule)
-  # 上面域名都沒匹配到，這裡才開始解析 IP 進行判斷
+  # 4. IP 兜底分流：被牆的 Telegram IP 走代理
+  - RULE-SET,meta-telegram,🚀 節點選擇
   - RULE-SET,meta-ip-private,🏠 私有網絡
-  - RULE-SET,meta-ip-cn,🔒 國內服務
-  - GEOIP,CN,🔒 國內服務
 
-  # 5. 最終兜底
+  # 5. 最終兜底：未被牆的外國網站與國內服務均走直連 (預設)
   - MATCH,🐟 漏網之魚
