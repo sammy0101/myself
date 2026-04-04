@@ -5,16 +5,30 @@ mode: rule
 log-level: info
 external-controller: 127.0.0.1:9090
 
+# ---------------- DNS 防洩漏三分流優化 ----------------
 dns:
   enable: true
   ipv6: false
   listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
+  fake-ip-filter:
+    - '+.lan'
+    - '+.local'
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
   nameserver:
-    - https://8.8.8.8/dns-query
+    # 預設 DNS (未被牆外國網站)：使用加密 DNS 防 ISP 監聽
     - https://1.1.1.1/dns-query
-    - https://223.5.5.5/dns-query
+    # 代理 DNS (被牆網站)：強制走代理節點解析
+    - https://8.8.8.8/dns-query#🚀 節點選擇
+  nameserver-policy:
+    # 國內網域與私有 IP：使用國內加密 DNS 解析，確保 CDN 速度
+    "rule-set:meta-cn,meta-private":
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
 
+# 節點容器 (保留空格防止嚴格 YAML 解析報錯)
 proxies:
 
 proxy-groups:
@@ -28,7 +42,9 @@ proxy-groups:
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 300
-    proxies:
+    # 預防報錯：加入 DIRECT 確保陣列不為空，轉換器後續會自動填入節點
+    proxies: 
+      - DIRECT
 
   - name: 💬 AI 服務
     type: select
@@ -53,6 +69,7 @@ proxy-groups:
       - REJECT
       - DIRECT
 
+# ---------------- 規則集 (黑名單模式) ----------------
 rule-providers:
   my-ai:
     type: http
@@ -62,7 +79,6 @@ rule-providers:
     path: ./ruleset/my-ai.mrs
     interval: 86400
 
-  # 新增：被牆的網站清單 (GFW)
   meta-gfw:
     type: http
     behavior: domain
@@ -71,13 +87,20 @@ rule-providers:
     path: ./ruleset/gfw.mrs
     interval: 86400
 
-  # 新增：Telegram 直連 IP 段 (因 TG 經常無 DNS 請求)
   meta-telegram:
     type: http
     behavior: ipcidr
     format: mrs
     url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs"
     path: ./ruleset/telegram.mrs
+    interval: 86400
+
+  meta-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs"
+    path: ./ruleset/cn.mrs
     interval: 86400
 
   meta-ads:
@@ -104,18 +127,19 @@ rule-providers:
     path: ./ruleset/ip-private.mrs
     interval: 86400
 
+# ---------------- 流量分流規則 ----------------
 rules:
-  # 1. 最優先：攔截與內網
+  # 1. 最優先：攔截與內網直連
   - RULE-SET,meta-ads,🛑 廣告攔截
   - RULE-SET,meta-private,🏠 私有網絡
 
-  # 2. 核心業務：AI
+  # 2. 核心業務：AI 服務
   - RULE-SET,my-ai,💬 AI 服務
 
   # 3. 牆外分流：只有被 GFW 封鎖的網站才走代理
   - RULE-SET,meta-gfw,🚀 節點選擇
 
-  # 4. IP 兜底分流：被牆的 Telegram IP 走代理
+  # 4. IP 分流：被牆的 Telegram 走代理，其餘私有 IP 走直連
   - RULE-SET,meta-telegram,🚀 節點選擇
   - RULE-SET,meta-ip-private,🏠 私有網絡
 
