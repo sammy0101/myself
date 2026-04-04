@@ -92,7 +92,7 @@
     {
       "type": "selector",
       "tag": "🇨🇳 國內服務",
-      "outbounds": [
+      "outbounds":[
         "DIRECT",
         "🚀 節點選擇"
       ]
@@ -100,7 +100,7 @@
     {
       "type": "selector",
       "tag": "🏠 私有網絡",
-      "outbounds": [
+      "outbounds":[
         "DIRECT"
       ]
     },
@@ -196,11 +196,6 @@
       {
         "protocol": "dns",
         "outbound": "dns-out"
-      },
-      {
-        "network": "udp",
-        "port": 443,
-        "outbound": "REJECT"
       },
       {
         "clash_mode": "Direct",
