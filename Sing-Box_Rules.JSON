@@ -11,11 +11,6 @@
         "detour": "🚀 節點選擇"
       },
       {
-        "tag": "remote-direct",
-        "address": "https://1.1.1.1/dns-query",
-        "detour": "DIRECT"
-      },
-      {
         "tag": "local-direct",
         "address": "https://dns.alidns.com/dns-query",
         "detour": "DIRECT"
@@ -40,20 +35,13 @@
       },
       {
         "rule_set":[
-          "rs-gfw",
-          "rs-ai"
-        ],
-        "server": "remote-proxy"
-      },
-      {
-        "rule_set":[
           "rs-cn",
           "rs-private"
         ],
         "server": "local-direct"
       }
     ],
-    "final": "remote-direct",
+    "final": "remote-proxy",
     "strategy": "ipv4_only"
   },
   "inbounds":[
@@ -96,6 +84,14 @@
     },
     {
       "type": "selector",
+      "tag": "🇨🇳 國內服務",
+      "outbounds": [
+        "DIRECT",
+        "🚀 節點選擇"
+      ]
+    },
+    {
+      "type": "selector",
       "tag": "🏠 私有網絡",
       "outbounds": [
         "DIRECT"
@@ -105,8 +101,8 @@
       "type": "selector",
       "tag": "🐟 漏網之魚",
       "outbounds": [
-        "DIRECT",
-        "🚀 節點選擇"
+        "🚀 節點選擇",
+        "DIRECT"
       ]
     },
     {
@@ -141,13 +137,6 @@
       },
       {
         "type": "remote",
-        "tag": "rs-gfw",
-        "format": "binary",
-        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/gfw.srs",
-        "download_detour": "DIRECT"
-      },
-      {
-        "type": "remote",
         "tag": "ip-telegram",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/telegram.srs",
@@ -158,6 +147,13 @@
         "tag": "rs-cn",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/cn.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "ip-cn",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/cn.srs",
         "download_detour": "DIRECT"
       },
       {
@@ -211,11 +207,15 @@
         "outbound": "💬 AI 服務"
       },
       {
-        "rule_set":[
-          "rs-gfw",
-          "ip-telegram"
-        ],
+        "rule_set": "ip-telegram",
         "outbound": "🚀 節點選擇"
+      },
+      {
+        "rule_set":[
+          "rs-cn",
+          "ip-cn"
+        ],
+        "outbound": "🇨🇳 國內服務"
       },
       {
         "outbound": "🐟 漏網之魚"
