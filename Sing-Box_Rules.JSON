@@ -35,6 +35,13 @@
       },
       {
         "rule_set":[
+          "rs-gfw",
+          "rs-ai"
+        ],
+        "server": "remote-proxy"
+      },
+      {
+        "rule_set":[
           "rs-cn",
           "rs-private"
         ],
@@ -137,6 +144,13 @@
       },
       {
         "type": "remote",
+        "tag": "rs-gfw",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/gfw.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
         "tag": "ip-telegram",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/telegram.srs",
@@ -184,6 +198,11 @@
         "outbound": "dns-out"
       },
       {
+        "network": "udp",
+        "port": 443,
+        "outbound": "REJECT"
+      },
+      {
         "clash_mode": "Direct",
         "outbound": "DIRECT"
       },
@@ -207,7 +226,10 @@
         "outbound": "💬 AI 服務"
       },
       {
-        "rule_set": "ip-telegram",
+        "rule_set":[
+          "rs-gfw",
+          "ip-telegram"
+        ],
         "outbound": "🚀 節點選擇"
       },
       {
