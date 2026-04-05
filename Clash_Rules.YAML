@@ -19,13 +19,13 @@ dns:
     - 223.5.5.5
   # 反向思維核心：預設 DNS 只有 8.8.8.8 和 1.1.1.1，強制綁定走代理！
   nameserver:
-    - https://8.8.8.8/dns-query#🚀 節點選擇
-    - https://1.1.1.1/dns-query#🚀 節點選擇
+    - "https://8.8.8.8/dns-query#🚀 節點選擇"
+    - "https://1.1.1.1/dns-query#🚀 節點選擇"
   # 僅針對國內網域「開後門」走國內解析
   nameserver-policy:
     "rule-set:meta-cn,meta-private":
-      - https://223.5.5.5/dns-query
-      - https://119.29.29.29/dns-query
+      - "https://223.5.5.5/dns-query"
+      - "https://119.29.29.29/dns-query"
 
 proxies:
 
