@@ -6,42 +6,47 @@
   "dns": {
     "servers":[
       {
-        "tag": "remote-proxy",
+        "tag": "remote-google",
         "address": "https://8.8.8.8/dns-query",
         "detour": "🚀 節點選擇"
       },
       {
-        "tag": "local-direct",
+        "tag": "remote-cloudflare",
+        "address": "https://1.1.1.1/dns-query",
+        "detour": "🚀 節點選擇"
+      },
+      {
+        "tag": "local-cn",
         "address": "https://223.5.5.5/dns-query",
         "detour": "DIRECT"
       },
       {
-        "tag": "REJECT",
+        "tag": "block",
         "address": "rcode://success"
       }
     ],
     "rules":[
       {
         "clash_mode": "Direct",
-        "server": "local-direct"
+        "server": "local-cn"
       },
       {
         "clash_mode": "Global",
-        "server": "remote-proxy"
+        "server": "remote-google"
       },
       {
         "rule_set": "rs-ads",
-        "server": "REJECT"
+        "server": "block"
       },
       {
         "rule_set":[
           "rs-cn",
           "rs-private"
         ],
-        "server": "local-direct"
+        "server": "local-cn"
       }
     ],
-    "final": "remote-proxy",
+    "final": "remote-google",
     "strategy": "ipv4_only"
   },
   "inbounds":[
@@ -85,7 +90,7 @@
     {
       "type": "selector",
       "tag": "🇨🇳 國內服務",
-      "outbounds": [
+      "outbounds":[
         "DIRECT",
         "🚀 節點選擇"
       ]
@@ -93,7 +98,7 @@
     {
       "type": "selector",
       "tag": "🏠 私有網絡",
-      "outbounds": [
+      "outbounds":[
         "DIRECT"
       ]
     },
@@ -133,6 +138,13 @@
         "tag": "rs-ai",
         "format": "binary",
         "url": "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-gfw",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/gfw.srs",
         "download_detour": "DIRECT"
       },
       {
@@ -184,6 +196,10 @@
         "outbound": "dns-out"
       },
       {
+        "port": 53,
+        "outbound": "dns-out"
+      },
+      {
         "clash_mode": "Direct",
         "outbound": "DIRECT"
       },
@@ -207,7 +223,10 @@
         "outbound": "💬 AI 服務"
       },
       {
-        "rule_set": "ip-telegram",
+        "rule_set":[
+          "rs-gfw",
+          "ip-telegram"
+        ],
         "outbound": "🚀 節點選擇"
       },
       {
