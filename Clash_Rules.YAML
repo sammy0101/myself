@@ -91,6 +91,14 @@ rule-providers:
     path: ./ruleset/telegram.mrs
     interval: 86400
 
+  meta-apple:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple.mrs"
+    path: ./ruleset/apple.mrs
+    interval: 86400
+
   meta-cn:
     type: http
     behavior: domain
@@ -145,6 +153,7 @@ rules:
   - RULE-SET,meta-telegram,🚀 節點選擇
 
   # 3. 中國國內網域與 IP：走直連
+  - RULE-SET,meta-apple,🇨🇳 國內服務
   - RULE-SET,meta-cn,🇨🇳 國內服務
   - RULE-SET,meta-cn-ip,🇨🇳 國內服務
   - RULE-SET,meta-ip-private,🏠 私有網絡
