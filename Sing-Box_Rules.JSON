@@ -41,7 +41,9 @@
       {
         "rule_set":[
           "rs-cn",
-          "rs-private"
+          "rs-private",
+          "rs-apple",
+          "rs-blizzard"
         ],
         "server": "local-cn"
       }
@@ -98,14 +100,14 @@
     {
       "type": "selector",
       "tag": "🏠 私有網絡",
-      "outbounds": [
+      "outbounds":[
         "DIRECT"
       ]
     },
     {
       "type": "selector",
       "tag": "🐟 漏網之魚",
-      "outbounds": [
+      "outbounds":[
         "🚀 節點選擇",
         "DIRECT"
       ]
@@ -113,7 +115,7 @@
     {
       "type": "selector",
       "tag": "🛑 廣告攔截",
-      "outbounds": [
+      "outbounds":[
         "REJECT",
         "DIRECT"
       ]
@@ -145,6 +147,20 @@
         "tag": "ip-telegram",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/telegram.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-apple",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/apple.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-blizzard",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/blizzard.srs",
         "download_detour": "DIRECT"
       },
       {
@@ -221,6 +237,8 @@
       },
       {
         "rule_set":[
+          "rs-apple",
+          "rs-blizzard",
           "rs-cn",
           "ip-cn"
         ],
