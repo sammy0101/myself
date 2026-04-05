@@ -98,14 +98,14 @@
     {
       "type": "selector",
       "tag": "🏠 私有網絡",
-      "outbounds":[
+      "outbounds": [
         "DIRECT"
       ]
     },
     {
       "type": "selector",
       "tag": "🐟 漏網之魚",
-      "outbounds":[
+      "outbounds": [
         "🚀 節點選擇",
         "DIRECT"
       ]
@@ -113,7 +113,7 @@
     {
       "type": "selector",
       "tag": "🛑 廣告攔截",
-      "outbounds":[
+      "outbounds": [
         "REJECT",
         "DIRECT"
       ]
@@ -138,13 +138,6 @@
         "tag": "rs-ai",
         "format": "binary",
         "url": "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.srs",
-        "download_detour": "DIRECT"
-      },
-      {
-        "type": "remote",
-        "tag": "rs-gfw",
-        "format": "binary",
-        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/gfw.srs",
         "download_detour": "DIRECT"
       },
       {
@@ -223,10 +216,7 @@
         "outbound": "💬 AI 服務"
       },
       {
-        "rule_set":[
-          "rs-gfw",
-          "ip-telegram"
-        ],
+        "rule_set": "ip-telegram",
         "outbound": "🚀 節點選擇"
       },
       {
