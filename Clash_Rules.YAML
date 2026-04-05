@@ -16,7 +16,6 @@ dns:
     - '+.local'
   default-nameserver:
     - system
-    - 223.5.5.5
   nameserver:
     # 國外網站：預設使用遠端 DNS
     - https://8.8.8.8/dns-query
@@ -25,7 +24,6 @@ dns:
     # 國內網站：使用路由器系統 DNS 或 阿里 DNS 提速
     "rule-set:meta-cn,meta-private":
       - system
-      - https://223.5.5.5/dns-query
 
 proxies:
 
