@@ -17,17 +17,13 @@ dns:
   default-nameserver:
     - system
     - 223.5.5.5
-    - 119.29.29.29
   nameserver:
-    # 國外網站：預設使用遠端 DNS
     - https://8.8.8.8/dns-query
     - https://1.1.1.1/dns-query
   nameserver-policy:
-    # 國內網站：使用路由器系統 DNS 或 阿里 DNS 提速
     "rule-set:meta-cn,meta-private":
       - system
-      - https://dns.alidns.com/dns-query
-      - https://doh.pub/dns-query
+      - https://223.5.5.5/dns-query
 
 proxies:
 
@@ -91,14 +87,6 @@ rule-providers:
     path: ./ruleset/telegram.mrs
     interval: 86400
 
-  meta-apple:
-    type: http
-    behavior: domain
-    format: mrs
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple.mrs"
-    path: ./ruleset/apple.mrs
-    interval: 86400
-
   meta-cn:
     type: http
     behavior: domain
@@ -141,9 +129,6 @@ rule-providers:
 
 # ---------------- 流量路由 ----------------
 rules:
-  # 0. 攔截系統偷跑的 DNS
-  - DST-PORT,53,🚀 節點選擇
-
   # 1. 廣告與內網
   - RULE-SET,meta-ads,🛑 廣告攔截
   - RULE-SET,meta-private,🏠 私有網絡
@@ -153,7 +138,6 @@ rules:
   - RULE-SET,meta-telegram,🚀 節點選擇
 
   # 3. 中國國內網域與 IP：走直連
-  - RULE-SET,meta-apple,🇨🇳 國內服務
   - RULE-SET,meta-cn,🇨🇳 國內服務
   - RULE-SET,meta-cn-ip,🇨🇳 國內服務
   - RULE-SET,meta-ip-private,🏠 私有網絡
