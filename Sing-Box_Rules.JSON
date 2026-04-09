@@ -12,7 +12,7 @@
       },
       {
         "tag": "local-dns",
-        "address": "local",
+        "address": "https://223.5.5.5/dns-query",
         "detour": "DIRECT"
       },
       {
@@ -36,13 +36,19 @@
       {
         "rule_set":[
           "rs-cn",
-          "rs-private"
+          "rs-private",
+          "rs-apple" 
         ],
         "server": "local-dns"
       }
     ],
     "final": "remote-dns",
-    "strategy": "ipv4_only"
+    "strategy": "ipv4_only",
+    "fakeip": {
+      "enabled": true,
+      "inet4_range": "198.18.0.0/15",
+      "inet6_range": "fc00::/18"
+    }
   },
   "inbounds":[
     {
@@ -79,6 +85,14 @@
       "tag": "💬 AI 服務",
       "outbounds":[
         "⚡ 自動選擇",
+        "🚀 節點選擇"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🍎 蘋果服務",
+      "outbounds":[
+        "DIRECT",
         "🚀 節點選擇"
       ]
     },
@@ -140,6 +154,13 @@
         "tag": "ip-telegram",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/telegram.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-apple",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/apple.srs",
         "download_detour": "DIRECT"
       },
       {
@@ -209,6 +230,10 @@
       {
         "rule_set": "ip-telegram",
         "outbound": "🚀 節點選擇"
+      },
+      {
+        "rule_set": "rs-apple",
+        "outbound": "🍎 蘋果服務"
       },
       {
         "rule_set":[
