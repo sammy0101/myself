@@ -57,6 +57,8 @@
       "listen": "0.0.0.0",
       "listen_port": 7890,
       "sniff": true,
+      "sniff_override_destination": true,
+      "sniff_timeout": "300ms",
       "set_system_proxy": false
     }
   ],
