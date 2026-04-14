@@ -5,14 +5,7 @@ mode: rule
 log-level: info
 external-controller: 127.0.0.1:9090
 
-# ---------------- TUN 模式 ----------------
-tun:
-  enable: true
-  stack: system
-  auto-route: true
-  auto-detect-interface: true
-
-# ---------------- 經典 DNS (直連優化版) ----------------
+# ---------------- 經典 DNS (無回環、直連優化版) ----------------
 dns:
   enable: true
   ipv6: false
@@ -32,16 +25,18 @@ dns:
     - 'time.*.edu.cn'
     - 'ntp.*.com'
   
-  # [還原] 國內直連沒有問題，還原為您原本的 system + DoH 設定
+  # 國內直連公共 DNS (純 IP)
   default-nameserver:
-    - system
     - 223.5.5.5
+    - 119.29.29.29
+    
   nameserver-policy:
+    # 國內直連與蘋果服務，使用純 UDP 國內 DNS，0毫秒延遲
     "rule-set:meta-cn,meta-private,meta-apple":
-      - system
-      - https://223.5.5.5/dns-query
+      - 223.5.5.5
+      - 119.29.29.29
       
-  # [優化] 國外兜底改為純 UDP，省去 TLS 握手，DIRECT 直連也不會超時卡頓
+  # 國外兜底使用純 UDP，省去 TLS 握手，DIRECT 直連也不會超時卡頓
   nameserver:
     - 8.8.8.8
     - 1.1.1.1
