@@ -5,13 +5,44 @@ mode: rule
 log-level: info
 external-controller: 127.0.0.1:9090
 
-# ---------------- 經典 DNS (無回環、直連優化版) ----------------
+# ---------------- 流量嗅探器 (借鑒 Aethersailor) ----------------
+sniffer:
+  enable: true
+  override-destination: true
+  sniff:
+    QUIC:
+      ports: [443]
+    TLS:
+      ports:[443, 8443]
+    HTTP:
+      ports:[80, 8080-8880]
+      override-destination: true
+  # 強制嗅探以下流媒體與雲端服務，確保精準分流
+  force-domain:
+    - "+.netflix.com"
+    - "+.nflxvideo.net"
+    - "+.amazonaws.com"
+    - "+.media.dssott.com"
+  # 跳過蘋果與智慧家庭的嗅探，防止連線異常
+  skip-domain:
+    - "+.apple.com"
+    - "Mijia Cloud"
+    - "dlg.io.mi.com"
+    - "+.oray.com"
+    - "+.sunlogin.net"
+    - "+.push.apple.com"
+  parse-pure-ip: true
+  force-dns-mapping: true
+
+# ---------------- 進階 DNS (借鑒 Aethersailor + 極速直連優化) ----------------
 dns:
   enable: true
   ipv6: false
   listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  fake-ip-filter-mode: blacklist
+  respect-rules: false            # [借鑒] 關閉 DNS 路由匹配，提高解析效能
   fake-ip-filter:
     - '*.lan'
     - '*.local'
@@ -24,19 +55,18 @@ dns:
     - 'time.*.gov'
     - 'time.*.edu.cn'
     - 'ntp.*.com'
+    # [借鑒] 讓國內網站與蘋果服務強制返回真實 IP，徹底繞過 Fake-IP
+    - 'rule-set:meta-cn,meta-private,meta-apple' 
   
-  # 國內直連公共 DNS (純 IP)
+  # 國內直連公共 DNS (維持純 IP UDP，確保 0 延遲)
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
-    
   nameserver-policy:
-    # 國內直連與蘋果服務，使用純 UDP 國內 DNS，0毫秒延遲
     "rule-set:meta-cn,meta-private,meta-apple":
       - 223.5.5.5
       - 119.29.29.29
-      
-  # 國外兜底使用純 UDP，省去 TLS 握手，DIRECT 直連也不會超時卡頓
+  # 國外兜底 (維持純 UDP)
   nameserver:
     - 8.8.8.8
     - 1.1.1.1
@@ -161,7 +191,7 @@ rule-providers:
 
 # ---------------- 流量路由 ----------------
 rules:
-  # 1. 廣告與內網 (純域名)
+  # 1. 廣告與內網
   - RULE-SET,meta-ads,🛑 廣告攔截
   - RULE-SET,meta-private,🏠 私有網絡
 
