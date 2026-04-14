@@ -12,7 +12,7 @@ tun:
   auto-route: true
   auto-detect-interface: true
 
-# ---------------- 經典 DNS (完美解決直連超時問題) ----------------
+# ---------------- 經典 DNS (直連優化版) ----------------
 dns:
   enable: true
   ipv6: false
@@ -31,17 +31,20 @@ dns:
     - 'time.*.gov'
     - 'time.*.edu.cn'
     - 'ntp.*.com'
+  
+  # [還原] 國內直連沒有問題，還原為您原本的 system + DoH 設定
   default-nameserver:
+    - system
     - 223.5.5.5
-    - 119.29.29.29
-  nameserver:
-    - https://8.8.8.8/dns-query
-    - https://1.1.1.1/dns-query
   nameserver-policy:
-    # [優化] 國內與蘋果服務改用純 UDP DNS，0 毫秒延遲，徹底解決「有時無法解析」的問題
     "rule-set:meta-cn,meta-private,meta-apple":
-      - 223.5.5.5
-      - 119.29.29.29
+      - system
+      - https://223.5.5.5/dns-query
+      
+  # [優化] 國外兜底改為純 UDP，省去 TLS 握手，DIRECT 直連也不會超時卡頓
+  nameserver:
+    - 8.8.8.8
+    - 1.1.1.1
 
 proxies:
 # 請在此處填寫您的節點資訊
