@@ -4,188 +4,205 @@ allow-lan: true
 mode: rule
 log-level: info
 external-controller: 127.0.0.1:9090
----------------- 流量嗅探器 (借鑒 Aethersailor) ----------------
+
+# ---------------- 流量嗅探器 ----------------
 sniffer:
-enable: true
-override-destination: true
-sniff:
-QUIC:
-ports:
-- 443
-TLS:
-ports:
-- 443
-- 8443
-HTTP:
-ports:
-- 80
-- 8080-8880
-override-destination: true
-強制嗅探以下流媒體與雲端服務，確保精準分流
-force-domain:
-- "+.netflix.com"
-- "+.nflxvideo.net"
-- "+.amazonaws.com"
-- "+.media.dssott.com"
-跳過蘋果與智慧家庭的嗅探，防止連線異常
-skip-domain:
-- "+.apple.com"
-- "Mijia Cloud"
-- "dlg.io.mi.com"
-- "+.oray.com"
-- "+.sunlogin.net"
-- "+.push.apple.com"
-parse-pure-ip: true
-force-dns-mapping: true
----------------- 進階 DNS (借鑒 Aethersailor + 極速直連優化) ----------------
+  enable: true
+  override-destination: true
+  sniff:
+    QUIC:
+      ports:
+        - 443
+    TLS:
+      ports:
+        - 443
+        - 8443
+    HTTP:
+      ports:
+        - 80
+        - 8080-8880
+  force-domain:
+    - "+.netflix.com"
+    - "+.nflxvideo.net"
+    - "+.amazonaws.com"
+    - "+.media.dssott.com"
+  skip-domain:
+    - "+.apple.com"
+    - "Mijia Cloud"
+    - "dlg.io.mi.com"
+    - "+.oray.com"
+    - "+.sunlogin.net"
+    - "+.push.apple.com"
+  parse-pure-ip: true
+  force-dns-mapping: true
+
+# ---------------- DNS ----------------
 dns:
-enable: true
-ipv6: false
-listen: 0.0.0.0:1053
-enhanced-mode: fake-ip
-fake-ip-range: 198.18.0.1/16
-fake-ip-filter-mode: blacklist
-respect-rules: false            # [借鑒] 關閉 DNS 路由匹配，提高解析效能
-fake-ip-filter:
-- '.lan'
-- '.local'
-- '.localhost'
-- '.home.arpa'
-- 'captive.apple.com'
-- 'time.apple.com'
-- 'time..apple.com'
-- 'time..com'
-- 'time..gov'
-- 'time..edu.cn'
-- 'ntp.*.com'
-# [借鑒] 讓國內網站與蘋果服務強制返回真實 IP，徹底繞過 Fake-IP
-- 'rule-set:meta-cn,meta-private,meta-apple'
-國內直連公共 DNS (維持純 IP UDP，確保 0 延遲)
-default-nameserver:
-- 223.5.5.5
-- 119.29.29.29
-nameserver-policy:
-"rule-set:meta-cn,meta-private,meta-apple":
-- 223.5.5.5
-- 119.29.29.29
-國外兜底 (維持純 UDP)
-nameserver:
-- 8.8.8.8
-- 1.1.1.1
-proxies:
-請在此處填寫您的節點資訊
+  enable: true
+  ipv6: false
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter-mode: blacklist
+  respect-rules: false
+
+  fake-ip-filter:
+    - ".lan"
+    - ".local"
+    - ".localhost"
+    - ".home.arpa"
+    - "captive.apple.com"
+    - "time.apple.com"
+    - "time..apple.com"
+    - "time..com"
+    - "time..gov"
+    - "time..edu.cn"
+    - "ntp.*.com"
+    - "rule-set:meta-cn,meta-private,meta-apple"
+
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  nameserver-policy:
+    "rule-set:meta-cn,meta-private,meta-apple":
+      - 223.5.5.5
+      - 119.29.29.29
+
+  nameserver:
+    - 8.8.8.8
+    - 1.1.1.1
+
+# ---------------- 代理 ----------------
+proxies: []
+
+# ---------------- 策略組 ----------------
 proxy-groups:
-name: 🚀 節點選擇
-type: select
-proxies:
-⚡ 自動選擇
-DIRECT
-name: ⚡ 自動選擇
-type: url-test
-url: http://www.gstatic.com/generate_204
-interval: 300
-proxies:
-請在此處填寫您的節點名稱
-name: 💬 AI 服務
-type: select
-proxies:
-⚡ 自動選擇
-🚀 節點選擇
-name: 🍎 蘋果服務
-type: select
-proxies:
-DIRECT
-🚀 節點選擇
-name: 🇨🇳 國內服務
-type: select
-proxies:
-DIRECT
-🚀 節點選擇
-name: 🏠 私有網絡
-type: select
-proxies:
-DIRECT
-name: 🐟 漏網之魚
-type: select
-proxies:
-🚀 節點選擇
-DIRECT
-name: 🛑 廣告攔截
-type: select
-proxies:
-REJECT
-DIRECT
----------------- 規則集 ----------------
+  - name: 🚀 節點選擇
+    type: select
+    proxies:
+      - ⚡ 自動選擇
+      - DIRECT
+
+  - name: ⚡ 自動選擇
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    proxies: []
+
+  - name: 💬 AI 服務
+    type: select
+    proxies:
+      - ⚡ 自動選擇
+      - 🚀 節點選擇
+
+  - name: 🍎 蘋果服務
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 節點選擇
+
+  - name: 🇨🇳 國內服務
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 節點選擇
+
+  - name: 🏠 私有網絡
+    type: select
+    proxies:
+      - DIRECT
+
+  - name: 🐟 漏網之魚
+    type: select
+    proxies:
+      - 🚀 節點選擇
+      - DIRECT
+
+  - name: 🛑 廣告攔截
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+
+# ---------------- 規則集 ----------------
 rule-providers:
-my-ai:
-type: http
-behavior: domain
-format: mrs
-url: "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.mrs"
-path: ./ruleset/my-ai.mrs
-interval: 86400
-meta-telegram:
-type: http
-behavior: ipcidr
-format: mrs
-url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs"
-path: ./ruleset/telegram.mrs
-interval: 86400
-meta-apple:
-type: http
-behavior: domain
-format: mrs
-url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple.mrs"
-path: ./ruleset/apple.mrs
-interval: 86400
-meta-cn:
-type: http
-behavior: domain
-format: mrs
-url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs"
-path: ./ruleset/cn.mrs
-interval: 86400
-meta-cn-ip:
-type: http
-behavior: ipcidr
-format: mrs
-url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs"
-path: ./ruleset/cn-ip.mrs
-interval: 86400
-meta-ads:
-type: http
-behavior: domain
-format: mrs
-url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ads-all.mrs"
-path: ./ruleset/ads.mrs
-interval: 86400
-meta-private:
-type: http
-behavior: domain
-format: mrs
-url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/private.mrs"
-path: ./ruleset/private.mrs
-interval: 86400
-meta-ip-private:
-type: http
-behavior: ipcidr
-format: mrs
-url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/private.mrs"
-path: ./ruleset/ip-private.mrs
-interval: 86400
----------------- 流量路由 ----------------
+  my-ai:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.mrs"
+    path: ./ruleset/my-ai.mrs
+    interval: 86400
+
+  meta-telegram:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs"
+    path: ./ruleset/telegram.mrs
+    interval: 86400
+
+  meta-apple:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple.mrs"
+    path: ./ruleset/apple.mrs
+    interval: 86400
+
+  meta-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs"
+    path: ./ruleset/cn.mrs
+    interval: 86400
+
+  meta-cn-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs"
+    path: ./ruleset/cn-ip.mrs
+    interval: 86400
+
+  meta-ads:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ads-all.mrs"
+    path: ./ruleset/ads.mrs
+    interval: 86400
+
+  meta-private:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/private.mrs"
+    path: ./ruleset/private.mrs
+    interval: 86400
+
+  meta-ip-private:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/private.mrs"
+    path: ./ruleset/ip-private.mrs
+    interval: 86400
+
+# ---------------- 規則 ----------------
 rules:
-1. 廣告與內網
-RULE-SET,meta-ads,🛑 廣告攔截
-RULE-SET,meta-private,🏠 私有網絡
-2. 強制代理業務
-RULE-SET,my-ai,💬 AI 服務
-RULE-SET,meta-telegram,🚀 節點選擇,no-resolve
-3. Apple 服務分流
-RULE-SET,meta-apple,🍎 蘋果服務
-4. 中國國內網域與 IP：走直連
-RULE-SET,meta-cn,🇨🇳 國內服務
-RULE-SET,meta-cn-ip,🇨🇳 國內服務,no-resolve
-RULE-SET,meta-ip-private,🏠 私有網絡,no-resolve
-5. 國外網站兜底：全走代理
-MATCH,🐟 漏網之魚
+  - RULE-SET,meta-ads,🛑 廣告攔截
+  - RULE-SET,meta-private,🏠 私有網絡
+
+  - RULE-SET,my-ai,💬 AI 服務
+  - RULE-SET,meta-telegram,🚀 節點選擇,no-resolve
+
+  - RULE-SET,meta-apple,🍎 蘋果服務
+
+  - RULE-SET,meta-cn,🇨🇳 國內服務
+  - RULE-SET,meta-cn-ip,🇨🇳 國內服務,no-resolve
+  - RULE-SET,meta-ip-private,🏠 私有網絡,no-resolve
+
+  - MATCH,🐟 漏網之魚
