@@ -1,250 +1,248 @@
 {
-"log": {
-"level": "info",
-"timestamp": true
-},
-"dns": {
-"servers":[
-{
-"tag": "remote-dns",
-"address": "8.8.8.8",
-"detour": "🚀 節點選擇"
-},
-{
-"tag": "local-dns",
-"address": "223.5.5.5",
-"detour": "DIRECT"
-},
-{
-"tag": "block",
-"address": "rcode://success"
-}
-],
-"rules":[
-{
-"clash_mode": "Direct",
-"server": "local-dns"
-},
-{
-"clash_mode": "Global",
-"server": "remote-dns"
-},
-{
-"rule_set": "rs-ads",
-"server": "block"
-},
-{
-"rule_set":[
-"rs-cn",
-"rs-private",
-"rs-apple"
-],
-"server": "local-dns"
-}
-],
-"final": "remote-dns",
-"strategy": "ipv4_only",
-"fakeip": {
-"enabled": true,
-"inet4_range": "198.18.0.0/15",
-"inet6_range": "fc00::/18"
-}
-},
-"inbounds":[
-{
-"type": "mixed",
-"tag": "mixed-in",
-"listen": "0.0.0.0",
-"listen_port": 7890,
-"sniff": true,
-"sniff_override_destination": true,
-"sniff_timeout": "300ms",
-"set_system_proxy": false
-}
-],
-"outbounds":[
-{
-"type": "selector",
-"tag": "🚀 節點選擇",
-"outbounds":[
-"⚡ 自動選擇",
-"DIRECT"
-]
-},
-{
-"type": "urltest",
-"tag": "⚡ 自動選擇",
-"outbounds":[],
-"url": "https://www.gstatic.com/generate_204",
-"interval": "3m",
-"tolerance": 50
-},
-{
-"type": "selector",
-"tag": "💬 AI 服務",
-"outbounds":[
-"⚡ 自動選擇",
-"🚀 節點選擇"
-]
-},
-{
-"type": "selector",
-"tag": "🍎 蘋果服務",
-"outbounds":[
-"DIRECT",
-"🚀 節點選擇"
-]
-},
-{
-"type": "selector",
-"tag": "🇨🇳 國內服務",
-"outbounds":[
-"DIRECT",
-"🚀 節點選擇"
-]
-},
-{
-"type": "selector",
-"tag": "🏠 私有網絡",
-"outbounds":[
-"DIRECT"
-]
-},
-{
-"type": "selector",
-"tag": "🐟 漏網之魚",
-"outbounds":[
-"🚀 節點選擇",
-"DIRECT"
-]
-},
-{
-"type": "selector",
-"tag": "🛑 廣告攔截",
-"outbounds":[
-"REJECT",
-"DIRECT"
-]
-},
-{
-"type": "direct",
-"tag": "DIRECT"
-},
-{
-"type": "block",
-"tag": "REJECT"
-},
-{
-"type": "dns",
-"tag": "dns-out"
-}
-],
-"route": {
-"rule_set":[
-{
-"type": "remote",
-"tag": "rs-ai",
-"format": "binary",
-"url": "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.srs",
-"download_detour": "DIRECT"
-},
-{
-"type": "remote",
-"tag": "ip-telegram",
-"format": "binary",
-"url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/telegram.srs",
-"download_detour": "DIRECT"
-},
-{
-"type": "remote",
-"tag": "rs-apple",
-"format": "binary",
-"url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/apple.srs",
-"download_detour": "DIRECT"
-},
-{
-"type": "remote",
-"tag": "rs-cn",
-"format": "binary",
-"url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/cn.srs",
-"download_detour": "DIRECT"
-},
-{
-"type": "remote",
-"tag": "ip-cn",
-"format": "binary",
-"url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/cn.srs",
-"download_detour": "DIRECT"
-},
-{
-"type": "remote",
-"tag": "rs-ads",
-"format": "binary",
-"url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/category-ads-all.srs",
-"download_detour": "DIRECT"
-},
-{
-"type": "remote",
-"tag": "rs-private",
-"format": "binary",
-"url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/private.srs",
-"download_detour": "DIRECT"
-},
-{
-"type": "remote",
-"tag": "ip-private",
-"format": "binary",
-"url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/private.srs",
-"download_detour": "DIRECT"
-}
-],
-"rules":[
-{
-"protocol": "dns",
-"outbound": "dns-out"
-},
-{
-"clash_mode": "Direct",
-"outbound": "DIRECT"
-},
-{
-"clash_mode": "Global",
-"outbound": "🚀 節點選擇"
-},
-{
-"rule_set": "rs-ads",
-"outbound": "REJECT"
-},
-{
-"rule_set":[
-"rs-private",
-"ip-private"
-],
-"outbound": "🏠 私有網絡"
-},
-{
-"rule_set": "rs-ai",
-"outbound": "💬 AI 服務"
-},
-{
-"rule_set": "ip-telegram",
-"outbound": "🚀 節點選擇"
-},
-{
-"rule_set": "rs-apple",
-"outbound": "🍎 蘋果服務"
-},
-{
-"rule_set":[
-"rs-cn",
-"ip-cn"
-],
-"outbound": "🇨🇳 國內服務"
-},
-{
-"outbound": "🐟 漏網之魚"
-}
-],
-"auto_detect_interface": true
-}
+  "log": {
+    "level": "info",
+    "timestamp": true
+  },
+
+  "dns": {
+    "servers": [
+      {
+        "tag": "remote-dns",
+        "address": "8.8.8.8",
+        "detour": "🚀 節點選擇"
+      },
+      {
+        "tag": "local-dns",
+        "address": "223.5.5.5",
+        "detour": "DIRECT"
+      },
+      {
+        "tag": "block",
+        "address": "rcode://success"
+      }
+    ],
+
+    "rules": [
+      {
+        "clash_mode": "Direct",
+        "server": "local-dns"
+      },
+      {
+        "clash_mode": "Global",
+        "server": "remote-dns"
+      },
+      {
+        "rule_set": "rs-ads",
+        "server": "block"
+      },
+      {
+        "rule_set": ["rs-cn", "rs-private", "rs-apple"],
+        "server": "local-dns"
+      }
+    ],
+
+    "final": "remote-dns",
+    "strategy": "ipv4_only",
+
+    "fakeip": {
+      "enabled": true,
+      "inet4_range": "198.18.0.0/15",
+      "inet6_range": "fc00::/18"
+    }
+  },
+
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "0.0.0.0",
+      "listen_port": 7890,
+      "sniff": true,
+      "sniff_override_destination": true,
+      "sniff_timeout": "300ms"
+    }
+  ],
+
+  "outbounds": [
+    {
+      "type": "selector",
+      "tag": "🚀 節點選擇",
+      "outbounds": [
+        "⚡ 自動選擇",
+        "DIRECT"
+      ]
+    },
+    {
+      "type": "urltest",
+      "tag": "⚡ 自動選擇",
+      "outbounds": [
+        "DIRECT"
+      ],
+      "url": "https://www.gstatic.com/generate_204",
+      "interval": "3m",
+      "tolerance": 50
+    },
+    {
+      "type": "selector",
+      "tag": "💬 AI 服務",
+      "outbounds": [
+        "⚡ 自動選擇",
+        "🚀 節點選擇"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🍎 蘋果服務",
+      "outbounds": [
+        "DIRECT",
+        "🚀 節點選擇"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🇨🇳 國內服務",
+      "outbounds": [
+        "DIRECT",
+        "🚀 節點選擇"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🏠 私有網絡",
+      "outbounds": [
+        "DIRECT"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🐟 漏網之魚",
+      "outbounds": [
+        "🚀 節點選擇",
+        "DIRECT"
+      ]
+    },
+    {
+      "type": "selector",
+      "tag": "🛑 廣告攔截",
+      "outbounds": [
+        "REJECT",
+        "DIRECT"
+      ]
+    },
+    {
+      "type": "direct",
+      "tag": "DIRECT"
+    },
+    {
+      "type": "block",
+      "tag": "REJECT"
+    },
+    {
+      "type": "dns",
+      "tag": "dns-out"
+    }
+  ],
+
+  "route": {
+    "rule_set": [
+      {
+        "type": "remote",
+        "tag": "rs-ai",
+        "format": "binary",
+        "url": "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "ip-telegram",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/telegram.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-apple",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/apple.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-cn",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/cn.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "ip-cn",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/cn.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-ads",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/category-ads-all.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "rs-private",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/private.srs",
+        "download_detour": "DIRECT"
+      },
+      {
+        "type": "remote",
+        "tag": "ip-private",
+        "format": "binary",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/private.srs",
+        "download_detour": "DIRECT"
+      }
+    ],
+
+    "rules": [
+      {
+        "protocol": "dns",
+        "outbound": "dns-out"
+      },
+      {
+        "clash_mode": "Direct",
+        "outbound": "DIRECT"
+      },
+      {
+        "clash_mode": "Global",
+        "outbound": "🚀 節點選擇"
+      },
+      {
+        "rule_set": "rs-ads",
+        "outbound": "REJECT"
+      },
+      {
+        "rule_set": ["rs-private", "ip-private"],
+        "outbound": "🏠 私有網絡"
+      },
+      {
+        "rule_set": "rs-ai",
+        "outbound": "💬 AI 服務"
+      },
+      {
+        "rule_set": "ip-telegram",
+        "outbound": "🚀 節點選擇"
+      },
+      {
+        "rule_set": "rs-apple",
+        "outbound": "🍎 蘋果服務"
+      },
+      {
+        "rule_set": ["rs-cn", "ip-cn"],
+        "outbound": "🇨🇳 國內服務"
+      }
+    ],
+
+    "final": "🐟 漏網之魚",
+    "auto_detect_interface": true
+  }
 }
