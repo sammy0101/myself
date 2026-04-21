@@ -6,49 +6,56 @@
   "dns": {
     "servers":[
       {
-        "tag": "remote-dns",
-        "address": "8.8.8.8",
+        "tag": "aliDns",
+        "type": "https",
+        "server": "dns.alidns.com",
+        "path": "/dns-query",
+        "domain_resolver": "local"
+      },
+      {
+        "tag": "local",
+        "type": "udp",
+        "server": "223.5.5.5"
+      },
+      {
+        "tag": "proxyDns",
+        "type": "https",
+        "server": "dns.google",
+        "path": "/dns-query",
+        "domain_resolver": "aliDns",
         "detour": "🚀 節點選擇"
       },
       {
-        "tag": "local-dns",
-        "address": "223.5.5.5",
-        "detour": "DIRECT"
-      },
-      {
-        "tag": "block",
-        "address": "rcode://success"
+        "type": "fakeip",
+        "tag": "fakeip",
+        "inet4_range": "198.18.0.0/15",
+        "inet6_range": "fc00::/18"
       }
     ],
     "rules":[
       {
+        "rule_set": "rs-cn",
+        "clash_mode": "Rule",
+        "server": "aliDns"
+      },
+      {
         "clash_mode": "Direct",
-        "server": "local-dns"
+        "server": "local"
       },
       {
         "clash_mode": "Global",
-        "server": "remote-dns"
+        "server": "proxyDns"
       },
       {
-        "rule_set": "rs-ads",
-        "server": "block"
-      },
-      {
-        "rule_set":[
-          "rs-cn",
-          "rs-private",
-          "rs-apple"
+        "query_type": [
+          "A",
+          "AAAA"
         ],
-        "server": "local-dns"
+        "server": "fakeip"
       }
     ],
-    "final": "remote-dns",
-    "strategy": "ipv4_only",
-    "fakeip": {
-      "enabled": true,
-      "inet4_range": "198.18.0.0/15",
-      "inet6_range": "fc00::/18"
-    }
+    "final": "proxyDns",
+    "strategy": "prefer_ipv4"
   },
   "inbounds":[
     {
@@ -66,7 +73,7 @@
     {
       "type": "selector",
       "tag": "🚀 節點選擇",
-      "outbounds":[
+      "outbounds": [
         "⚡ 自動選擇",
         "DIRECT"
       ]
@@ -82,7 +89,7 @@
     {
       "type": "selector",
       "tag": "💬 AI 服務",
-      "outbounds":[
+      "outbounds": [
         "⚡ 自動選擇",
         "🚀 節點選擇"
       ]
@@ -90,7 +97,7 @@
     {
       "type": "selector",
       "tag": "🍎 蘋果服務",
-      "outbounds":[
+      "outbounds": [
         "DIRECT",
         "🚀 節點選擇"
       ]
@@ -106,14 +113,14 @@
     {
       "type": "selector",
       "tag": "🏠 私有網絡",
-      "outbounds":[
+      "outbounds": [
         "DIRECT"
       ]
     },
     {
       "type": "selector",
       "tag": "🐟 漏網之魚",
-      "outbounds":[
+      "outbounds": [
         "🚀 節點選擇",
         "DIRECT"
       ]
@@ -121,7 +128,7 @@
     {
       "type": "selector",
       "tag": "🛑 廣告攔截",
-      "outbounds":[
+      "outbounds": [
         "REJECT",
         "DIRECT"
       ]
@@ -235,7 +242,7 @@
         "outbound": "🍎 蘋果服務"
       },
       {
-        "rule_set":[
+        "rule_set": [
           "rs-cn",
           "ip-cn"
         ],
