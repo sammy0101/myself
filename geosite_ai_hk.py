@@ -4,7 +4,7 @@ import yaml
 import os
 
 # 1. 上游位址
-SOURCE_URL = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ai-!cn.list"
+SOURCE_URL = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.list"
 
 # 2. 香港直連白名單 (包含這些關鍵字的網域將被剔除，即不走代理)
 HK_DIRECT_KEYWORDS =[
@@ -35,14 +35,13 @@ HK_DIRECT_KEYWORDS =[
     "copilot.microsoft.com", 
 
     # ========================================================
-    # 🌟 新增：Google Gemini 相關 (香港已開放直連)
+    # 🌟 Google Gemini 相關 (香港已開放直連)
     # 註：aistudio 不在名單內，因此會繼續保留在代理清單中
     # ========================================================
-    "gemini.google",
     "gemini.google.com",
     "bard.google.com",
-    "generativelanguage.googleapis.com", # Gemini API 服務
-    "proactivebackend-pa.googleapis.com" # Gemini 助手後台服務
+    "generativelanguage.googleapis.com", 
+    "proactivebackend-pa.googleapis.com" 
 ]
 
 def smart_write(filename, new_content):
@@ -92,7 +91,7 @@ def main():
             # 1. 取得乾淨的域名 (移除可能存在的修飾符)
             clean_domain = line.replace("'", "").replace("+.", "")
             
-            # 2. 構建 Clash 用的通配符域名
+            # 2. 構建 Clash / txt 用的通配符域名
             clash_domain = f"+.{clean_domain}"
 
             if clean_domain and clean_domain not in list_for_singbox:
@@ -127,6 +126,12 @@ def main():
     }
     json_content = json.dumps(srs_payload, indent=2)
     smart_write("geosite_ai_hk_proxy.json", json_content)
+
+    # ------------------------------------------------------------
+    # 4. 生成 .txt (單行，以逗號分隔，帶 "+." 前綴)
+    # ------------------------------------------------------------
+    txt_content = ",".join(list_for_clash)
+    smart_write("geosite_ai_hk_proxy.txt", txt_content)
 
 if __name__ == "__main__":
     main()
