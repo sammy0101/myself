@@ -128,9 +128,10 @@ def main():
     smart_write("geosite_ai_hk_proxy.json", json_content)
 
     # ------------------------------------------------------------
-    # 4. 生成 .txt (單行，以逗號分隔，帶 "+." 前綴)
+    # 4. 生成 .txt (單行，以逗號分隔，無 "+." 前綴)
     # ------------------------------------------------------------
-    txt_content = ",".join(list_for_clash)
+    # 改用 list_for_singbox (乾淨域名列表) 來進行串接
+    txt_content = ",".join(list_for_singbox)
     smart_write("geosite_ai_hk_proxy.txt", txt_content)
 
 if __name__ == "__main__":
