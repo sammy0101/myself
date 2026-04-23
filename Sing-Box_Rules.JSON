@@ -3,9 +3,8 @@
     "level": "info",
     "timestamp": true
   },
-
   "dns": {
-    "servers": [
+    "servers":[
       {
         "tag": "remote-dns",
         "address": "8.8.8.8",
@@ -21,8 +20,7 @@
         "address": "rcode://success"
       }
     ],
-
-    "rules": [
+    "rules":[
       {
         "clash_mode": "Direct",
         "server": "local-dns"
@@ -36,22 +34,23 @@
         "server": "block"
       },
       {
-        "rule_set": ["rs-cn", "rs-private", "rs-apple"],
+        "rule_set":[
+          "rs-cn",
+          "rs-private",
+          "rs-apple"
+        ],
         "server": "local-dns"
       }
     ],
-
     "final": "remote-dns",
     "strategy": "ipv4_only",
-
     "fakeip": {
       "enabled": true,
       "inet4_range": "198.18.0.0/15",
       "inet6_range": "fc00::/18"
     }
   },
-
-  "inbounds": [
+  "inbounds":[
     {
       "type": "mixed",
       "tag": "mixed-in",
@@ -59,15 +58,15 @@
       "listen_port": 7890,
       "sniff": true,
       "sniff_override_destination": true,
-      "sniff_timeout": "300ms"
+      "sniff_timeout": "300ms",
+      "set_system_proxy": false
     }
   ],
-
-  "outbounds": [
+  "outbounds":[
     {
       "type": "selector",
       "tag": "🚀 節點選擇",
-      "outbounds": [
+      "outbounds":[
         "⚡ 自動選擇",
         "DIRECT"
       ]
@@ -75,9 +74,7 @@
     {
       "type": "urltest",
       "tag": "⚡ 自動選擇",
-      "outbounds": [
-        "DIRECT"
-      ],
+      "outbounds":[],
       "url": "https://www.gstatic.com/generate_204",
       "interval": "3m",
       "tolerance": 50
@@ -85,7 +82,7 @@
     {
       "type": "selector",
       "tag": "💬 AI 服務",
-      "outbounds": [
+      "outbounds":[
         "⚡ 自動選擇",
         "🚀 節點選擇"
       ]
@@ -93,7 +90,7 @@
     {
       "type": "selector",
       "tag": "🍎 蘋果服務",
-      "outbounds": [
+      "outbounds":[
         "DIRECT",
         "🚀 節點選擇"
       ]
@@ -101,7 +98,7 @@
     {
       "type": "selector",
       "tag": "🇨🇳 國內服務",
-      "outbounds": [
+      "outbounds":[
         "DIRECT",
         "🚀 節點選擇"
       ]
@@ -109,14 +106,14 @@
     {
       "type": "selector",
       "tag": "🏠 私有網絡",
-      "outbounds": [
+      "outbounds":[
         "DIRECT"
       ]
     },
     {
       "type": "selector",
       "tag": "🐟 漏網之魚",
-      "outbounds": [
+      "outbounds":[
         "🚀 節點選擇",
         "DIRECT"
       ]
@@ -124,7 +121,7 @@
     {
       "type": "selector",
       "tag": "🛑 廣告攔截",
-      "outbounds": [
+      "outbounds":[
         "REJECT",
         "DIRECT"
       ]
@@ -142,9 +139,8 @@
       "tag": "dns-out"
     }
   ],
-
   "route": {
-    "rule_set": [
+    "rule_set":[
       {
         "type": "remote",
         "tag": "rs-ai",
@@ -202,8 +198,7 @@
         "download_detour": "DIRECT"
       }
     ],
-
-    "rules": [
+    "rules":[
       {
         "protocol": "dns",
         "outbound": "dns-out"
@@ -221,7 +216,10 @@
         "outbound": "REJECT"
       },
       {
-        "rule_set": ["rs-private", "ip-private"],
+        "rule_set":[
+          "rs-private",
+          "ip-private"
+        ],
         "outbound": "🏠 私有網絡"
       },
       {
@@ -237,12 +235,16 @@
         "outbound": "🍎 蘋果服務"
       },
       {
-        "rule_set": ["rs-cn", "ip-cn"],
+        "rule_set":[
+          "rs-cn",
+          "ip-cn"
+        ],
         "outbound": "🇨🇳 國內服務"
+      },
+      {
+        "outbound": "🐟 漏網之魚"
       }
     ],
-
-    "final": "🐟 漏網之魚",
     "auto_detect_interface": true
   }
 }
