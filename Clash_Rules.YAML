@@ -141,14 +141,6 @@ rule-providers:
     path: ./ruleset/my-ai.mrs
     interval: 86400
 
-  meta-telegram:
-    type: http
-    behavior: ipcidr
-    format: mrs
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs"
-    path: ./ruleset/telegram.mrs
-    interval: 86400
-
   meta-apple:
     type: http
     behavior: domain
@@ -207,7 +199,6 @@ rules:
 
   # 2. 強制代理業務
   - RULE-SET,my-ai,💬 AI 服務
-  - RULE-SET,meta-telegram,🚀 節點選擇,no-resolve
 
   # 3. Apple 服務分流
   - RULE-SET,meta-apple,🍎 蘋果服務
