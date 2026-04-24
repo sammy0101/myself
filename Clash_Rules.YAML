@@ -22,13 +22,11 @@ sniffer:
         - 80
         - 8080-8880
       override-destination: true
-  # 強制嗅探以下流媒體與雲端服務，確保精準分流
   force-domain:
     - "+.netflix.com"
     - "+.nflxvideo.net"
     - "+.amazonaws.com"
     - "+.media.dssott.com"
-  # 跳過蘋果與智慧家庭的嗅探，防止連線異常
   skip-domain:
     - "+.apple.com"
     - "Mijia Cloud"
@@ -60,18 +58,24 @@ dns:
     - 'time.*.gov'
     - 'time.*.edu.cn'
     - 'ntp.*.com'
-    # 讓國內網站與蘋果服務強制返回真實 IP
-    - 'rule-set:meta-cn,meta-private,meta-apple' 
-  
-  # 國內直連公共 DNS (維持純 IP UDP，確保 0 延遲)
+
+  # 國內直連公共 DNS
   default-nameserver:
     - 223.5.5.5
-    - 119.29.29.29
+    - 119.29.29.99
+
   nameserver-policy:
-    "rule-set:meta-cn,meta-private,meta-apple":
+    "rule-set:meta-cn":
       - 223.5.5.5
-      - 119.29.29.29
-  # 國外兜底 (維持純 UDP)
+      - 119.29.29.99
+    "rule-set:meta-private":
+      - 223.5.5.5
+      - 119.29.29.99
+    "rule-set:meta-apple":
+      - 223.5.5.5
+      - 119.29.29.99
+
+  # 國外兜底
   nameserver:
     - 8.8.8.8
     - 1.1.1.1
@@ -80,6 +84,10 @@ dns:
 # 代理節點設定
 # ==================================================
 proxies:
+  # 這裡請放入實際節點，否則 ⚡ 自動選擇 無法運作
+  # - name: 
+  #   type: vless
+  #   ...
 
 proxy-groups:
   - name: 🚀 節點選擇
@@ -93,11 +101,24 @@ proxy-groups:
     url: http://www.gstatic.com/generate_204
     interval: 300
     proxies:
+      # 這裡請放入實際節點名稱
 
   - name: 💬 AI 服務
     type: select
     proxies:
       - ⚡ 自動選擇
+      - 🚀 節點選擇
+
+  - name: 🌐 非中國
+    type: select
+    proxies:
+      - 🚀 節點選擇
+      - DIRECT
+
+  - name: 🇨🇳 國內服務
+    type: select
+    proxies:
+      - DIRECT
       - 🚀 節點選擇
 
   - name: 🍎 蘋果服務
@@ -106,7 +127,13 @@ proxy-groups:
       - DIRECT
       - 🚀 節點選擇
 
-  - name: 🇨🇳 國內服務
+  - name: 🎮 遊戲平台
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 節點選擇
+
+  - name: Ⓜ️ 微軟服務
     type: select
     proxies:
       - DIRECT
@@ -117,29 +144,17 @@ proxy-groups:
     proxies:
       - DIRECT
 
-  - name: 🐟 漏網之魚
-    type: select
-    proxies:
-      - 🚀 節點選擇
-      - DIRECT
-
   - name: 🛑 廣告攔截
     type: select
     proxies:
       - REJECT
       - DIRECT
 
-  - name: 🎮 遊戲平台
+  - name: 🐟 漏網之魚
     type: select
     proxies:
-      - ⚡ 自動選擇
       - 🚀 節點選擇
-
-  - name: Ⓜ️ 微軟服務
-    type: select
-    proxies:
-      - ⚡ 自動選擇
-      - 🚀 節點選擇
+      - DIRECT
 
 # ==================================================
 # 規則集
@@ -151,14 +166,6 @@ rule-providers:
     format: mrs
     url: "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.mrs"
     path: ./ruleset/my-ai.mrs
-    interval: 86400
-
-  meta-telegram:
-    type: http
-    behavior: ipcidr
-    format: mrs
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs"
-    path: ./ruleset/telegram.mrs
     interval: 86400
 
   meta-apple:
@@ -173,7 +180,7 @@ rule-providers:
     type: http
     behavior: domain
     format: mrs
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs"
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.mrs"
     path: ./ruleset/cn.mrs
     interval: 86400
 
@@ -183,6 +190,14 @@ rule-providers:
     format: mrs
     url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs"
     path: ./ruleset/cn-ip.mrs
+    interval: 86400
+
+  geoip-non-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-!cn.mrs"
+    path: ./ruleset/geolocation-!cn.mrs
     interval: 86400
 
   meta-ads:
@@ -261,33 +276,18 @@ rule-providers:
 # 流量路由
 # ==================================================
 rules:
-  # 1. 私有网络与内网
+  - RULE-SET,meta-ads,🛑 廣告攔截
   - RULE-SET,meta-private,🏠 私有網絡
-
-  # 2. 強制代理業務
   - RULE-SET,my-ai,💬 AI 服務
-  - RULE-SET,meta-telegram,🚀 節點選擇,no-resolve
-
-  # 3. Apple 服務分流
   - RULE-SET,meta-apple,🍎 蘋果服務
-
-  # 3.1 微軟服務
   - RULE-SET,microsoft,Ⓜ️ 微軟服務
-
-  # 3.2 遊戲平台
   - RULE-SET,steam,🎮 遊戲平台
   - RULE-SET,epicgames,🎮 遊戲平台
   - RULE-SET,ea,🎮 遊戲平台
   - RULE-SET,ubisoft,🎮 遊戲平台
   - RULE-SET,blizzard,🎮 遊戲平台
-
-  # 4. 中國國內網域與 IP：走直連
   - RULE-SET,meta-cn,🇨🇳 國內服務
   - RULE-SET,meta-cn-ip,🇨🇳 國內服務,no-resolve
   - RULE-SET,meta-ip-private,🏠 私有網絡,no-resolve
-
-  # 5. 廣告攔截（最後）
-  - RULE-SET,meta-ads,🛑 廣告攔截
-
-  # 6. 國外網站兜底：全走代理
+  - RULE-SET,geolocation-!cn,🌐 非中國,no-resolve
   - MATCH,🐟 漏網之魚
