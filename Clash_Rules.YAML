@@ -129,6 +129,18 @@ proxy-groups:
       - REJECT
       - DIRECT
 
+  - name: 🎮 遊戲平台
+    type: select
+    proxies:
+      - ⚡ 自動選擇
+      - 🚀 節點選擇
+
+  - name: Ⓜ️ 微軟服務
+    type: select
+    proxies:
+      - ⚡ 自動選擇
+      - 🚀 節點選擇
+
 # ==================================================
 # 規則集
 # ==================================================
@@ -197,12 +209,59 @@ rule-providers:
     path: ./ruleset/ip-private.mrs
     interval: 86400
 
+  microsoft:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft.mrs"
+    path: ./ruleset/microsoft.mrs
+    interval: 86400
+
+  steam:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/steam.mrs"
+    path: ./ruleset/steam.mrs
+    interval: 86400
+
+  epicgames:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/epicgames.mrs"
+    path: ./ruleset/epicgames.mrs
+    interval: 86400
+
+  ea:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/ea.mrs"
+    path: ./ruleset/ea.mrs
+    interval: 86400
+
+  ubisoft:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/ubisoft.mrs"
+    path: ./ruleset/ubisoft.mrs
+    interval: 86400
+
+  blizzard:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/blizzard.mrs"
+    path: ./ruleset/blizzard.mrs
+    interval: 86400
+
 # ==================================================
 # 流量路由
 # ==================================================
 rules:
-  # 1. 廣告與內網
-  - RULE-SET,meta-ads,🛑 廣告攔截
+  # 1. 私有网络与内网
   - RULE-SET,meta-private,🏠 私有網絡
 
   # 2. 強制代理業務
@@ -212,10 +271,23 @@ rules:
   # 3. Apple 服務分流
   - RULE-SET,meta-apple,🍎 蘋果服務
 
+  # 3.1 微軟服務
+  - RULE-SET,microsoft,Ⓜ️ 微軟服務
+
+  # 3.2 遊戲平台
+  - RULE-SET,steam,🎮 遊戲平台
+  - RULE-SET,epicgames,🎮 遊戲平台
+  - RULE-SET,ea,🎮 遊戲平台
+  - RULE-SET,ubisoft,🎮 遊戲平台
+  - RULE-SET,blizzard,🎮 遊戲平台
+
   # 4. 中國國內網域與 IP：走直連
   - RULE-SET,meta-cn,🇨🇳 國內服務
   - RULE-SET,meta-cn-ip,🇨🇳 國內服務,no-resolve
   - RULE-SET,meta-ip-private,🏠 私有網絡,no-resolve
 
-  # 5. 國外網站兜底：全走代理
+  # 5. 廣告攔截（最後）
+  - RULE-SET,meta-ads,🛑 廣告攔截
+
+  # 6. 國外網站兜底：全走代理
   - MATCH,🐟 漏網之魚
