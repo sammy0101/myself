@@ -13,10 +13,10 @@
       {
         "tag": "local-dns",
         "address": "223.5.5.5",
-        "detour": "DIRECT"
+        "detour": "direct"
       },
       {
-        "tag": "block",
+        "tag": "block-dns",
         "address": "rcode://success"
       }
     ],
@@ -31,7 +31,7 @@
       },
       {
         "rule_set": "rs-ads",
-        "server": "block"
+        "server": "block-dns"
       },
       {
         "rule_set":[
@@ -52,14 +52,16 @@
   },
   "inbounds":[
     {
-      "type": "mixed",
-      "tag": "mixed-in",
-      "listen": "0.0.0.0",
-      "listen_port": 7890,
+      "type": "tun",
+      "tag": "tun-in",
+      "interface_name": "tun0",
+      "inet4_address": "172.19.0.1/30",
+      "inet6_address": "fd00::1/126",
+      "stack": "system",
+      "auto_route": true,
+      "strict_route": true,
       "sniff": true,
-      "sniff_override_destination": true,
-      "sniff_timeout": "300ms",
-      "set_system_proxy": false
+      "sniff_override_destination": true
     }
   ],
   "outbounds":[
@@ -68,7 +70,7 @@
       "tag": "🚀 節點選擇",
       "outbounds":[
         "⚡ 自動選擇",
-        "DIRECT"
+        "direct"
       ]
     },
     {
@@ -91,7 +93,7 @@
       "type": "selector",
       "tag": "🍎 蘋果服務",
       "outbounds":[
-        "DIRECT",
+        "direct",
         "🚀 節點選擇"
       ]
     },
@@ -99,7 +101,7 @@
       "type": "selector",
       "tag": "🇨🇳 國內服務",
       "outbounds":[
-        "DIRECT",
+        "direct",
         "🚀 節點選擇"
       ]
     },
@@ -107,7 +109,7 @@
       "type": "selector",
       "tag": "🏠 私有網絡",
       "outbounds":[
-        "DIRECT"
+        "direct"
       ]
     },
     {
@@ -115,24 +117,24 @@
       "tag": "🐟 漏網之魚",
       "outbounds":[
         "🚀 節點選擇",
-        "DIRECT"
+        "direct"
       ]
     },
     {
       "type": "selector",
       "tag": "🛑 廣告攔截",
       "outbounds":[
-        "REJECT",
-        "DIRECT"
+        "block",
+        "direct"
       ]
     },
     {
       "type": "direct",
-      "tag": "DIRECT"
+      "tag": "direct"
     },
     {
       "type": "block",
-      "tag": "REJECT"
+      "tag": "block"
     },
     {
       "type": "dns",
@@ -146,56 +148,56 @@
         "tag": "rs-ai",
         "format": "binary",
         "url": "https://github.com/sammy0101/myself/raw/refs/heads/main/geosite_ai_hk_proxy.srs",
-        "download_detour": "DIRECT"
+        "download_detour": "direct"
       },
       {
         "type": "remote",
         "tag": "ip-telegram",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/telegram.srs",
-        "download_detour": "DIRECT"
+        "download_detour": "direct"
       },
       {
         "type": "remote",
         "tag": "rs-apple",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/apple.srs",
-        "download_detour": "DIRECT"
+        "download_detour": "direct"
       },
       {
         "type": "remote",
         "tag": "rs-cn",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/cn.srs",
-        "download_detour": "DIRECT"
+        "download_detour": "direct"
       },
       {
         "type": "remote",
         "tag": "ip-cn",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/cn.srs",
-        "download_detour": "DIRECT"
+        "download_detour": "direct"
       },
       {
         "type": "remote",
         "tag": "rs-ads",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/category-ads-all.srs",
-        "download_detour": "DIRECT"
+        "download_detour": "direct"
       },
       {
         "type": "remote",
         "tag": "rs-private",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geosite/private.srs",
-        "download_detour": "DIRECT"
+        "download_detour": "direct"
       },
       {
         "type": "remote",
         "tag": "ip-private",
         "format": "binary",
         "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/sing/geo/geoip/private.srs",
-        "download_detour": "DIRECT"
+        "download_detour": "direct"
       }
     ],
     "rules":[
@@ -205,7 +207,7 @@
       },
       {
         "clash_mode": "Direct",
-        "outbound": "DIRECT"
+        "outbound": "direct"
       },
       {
         "clash_mode": "Global",
@@ -213,7 +215,7 @@
       },
       {
         "rule_set": "rs-ads",
-        "outbound": "REJECT"
+        "outbound": "block"
       },
       {
         "rule_set":[
@@ -235,7 +237,7 @@
         "outbound": "🍎 蘋果服務"
       },
       {
-        "rule_set":[
+        "rule_set": [
           "rs-cn",
           "ip-cn"
         ],
@@ -246,5 +248,17 @@
       }
     ],
     "auto_detect_interface": true
+  },
+  "experimental": {
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090",
+      "external_ui": "ui",
+      "secret": "",
+      "default_mode": "rule"
+    },
+    "cache_file": {
+      "enabled": true,
+      "store_fakeip": true
+    }
   }
 }
