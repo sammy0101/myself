@@ -68,7 +68,7 @@ dns:
     - 223.5.5.5
     - 119.29.29.29
   nameserver-policy:
-    "rule-set:meta-cn,meta-private,meta-apple":
+    "rule-set:meta-cn,meta-private,meta-apple"
       - 223.5.5.5
       - 119.29.29.29
   # 國外兜底 (維持純 UDP)
