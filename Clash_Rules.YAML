@@ -141,14 +141,6 @@ rule-providers:
     path: ./ruleset/my-ai.mrs
     interval: 86400
 
-  meta-telegram:
-    type: http
-    behavior: ipcidr
-    format: mrs
-    url: "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs"
-    path: ./ruleset/telegram.mrs
-    interval: 86400
-
   meta-apple:
     type: http
     behavior: domain
