@@ -21,6 +21,7 @@ env:
   VM_SHAPE: 'VM.Standard.A1.Flex'
   OCPU_COUNT: 2
   MEMORY_IN_GB: 12
+  PIP_BREAK_SYSTEM_PACKAGES: 1  # 防止 Ubuntu 的 pip 安裝限制阻礙 oci-cli 的安裝
 
 jobs:
   create-vm:
@@ -63,7 +64,7 @@ jobs:
         run: |
           VM_NAME=""
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VM_NAME="${{ github.event.inputs.vm-name }}"
+            VM_NAME="${{ inputs.vm-name }}"
             echo "使用手動觸發的名稱: $VM_NAME"
           else
             VM_NAME="a1-flex-vm"
@@ -77,20 +78,19 @@ jobs:
           VM_NAME_TO_CHECK="${{ steps.determine-vm-name.outputs.vm_name }}"
           echo "正在檢查 VM 名稱: $VM_NAME_TO_CHECK"
           set +e
+          # 使用 JMESPath 查詢排除 TERMINATED 與 TERMINATING 狀態的同名 VM
+          # 解決 `--lifecycle-state` 在 OCI CLI 中重複宣告時會被覆蓋的 Bug
           EXISTING_VM_OCID=$(oci compute instance list \
             --compartment-id "${{ env.OCI_COMPARTMENT_ID }}" \
-            --display-name "$VM_NAME_TO_CHECK" \
-            --lifecycle-state RUNNING \
-            --lifecycle-state PROVISIONING \
-            --lifecycle-state STARTING \
-            --query 'data[0].id' --raw-output)
+            --query "data[?\"display-name\"=='$VM_NAME_TO_CHECK' && !contains(['TERMINATED', 'TERMINATING'], \"lifecycle-state\")].id | [0]" \
+            --raw-output)
           exit_code=$?
           set -e
           if [ $exit_code -ne 0 ]; then
             echo "⚠️  OCI CLI 查詢命令失敗，無法檢查 VM 是否存在。為安全起見，將跳過創建。"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           elif [ -n "$EXISTING_VM_OCID" ] && [ "$EXISTING_VM_OCID" != "null" ]; then
-            echo "❌ 發現已存在的同名 VM: $VM_NAME_TO_CHECK"
+            echo "❌ 發現已存在的同名 VM: $VM_NAME_TO_CHECK (OCID: $EXISTING_VM_OCID)"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "✅ 未發現同名的活動 VM，可以繼續。"
@@ -143,30 +143,73 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
+      - name: 準備 Telegram 訊息內容
+        id: prep-msg
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          VM_EXISTS: ${{ needs.create-vm.outputs.vm_exists }}
+          CHECKED_VM_NAME: ${{ needs.create-vm.outputs.checked_vm_name }}
+          CREATION_STATUS: ${{ needs.create-vm.outputs.creation_status }}
+          ATTEMPT_COUNT: ${{ needs.create-vm.outputs.attempt_count }}
+          ERROR_MESSAGE: ${{ needs.create-vm.outputs.error_message }}
+          VM_NAME: ${{ needs.create-vm.outputs.vm_name }}
+          PUBLIC_IP: ${{ needs.create-vm.outputs.public_ip }}
+          EXEC_TIME: ${{ needs.create-vm.outputs.time }}
+        run: |
+          TRIGGER_TYPE=$([ "$EVENT_NAME" = "workflow_dispatch" ] && echo "手動觸發" || echo "定時任務")
+          
+          # 使用 Here-Document (cat << 'EOF') 構建 HTML 訊息
+          # 這樣做能完美避免多行引號不合，或 API 錯誤訊息內含花括號 {} 導致 GitHub Action 語法解析崩潰的問題
+          if [ "$VM_EXISTS" = "true" ] || [ -z "$VM_EXISTS" ]; then
+            REASON="名為 \"${CHECKED_VM_NAME:-unknown}\" 的虛擬機器已存在或前置檢查失敗。"
+            MSG=$(cat <<EOF
+          <b>OCI 虛擬機器建立 - 操作取消</b>
+          • <b>觸發方式:</b> ${TRIGGER_TYPE}
+          • <b>執行時間:</b> ${EXEC_TIME:-未知時間}
+          • <b>狀態:</b> 🟡 已跳過 / 取消
+          • <b>原因:</b> ${REASON}
+          • <b>區域:</b> ${{ env.OCI_REGION }}
+          • <b>詳情:</b> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">查看日誌</a>
+          EOF
+          )
+          else
+            STATUS_STR=$([ "$CREATION_STATUS" = "true" ] && echo "✅ 成功" || echo "❌ 失敗")
+            MSG_STR=$([ "$CREATION_STATUS" = "true" ] && echo "VM 創建成功" || echo "${ERROR_MESSAGE:-未知錯誤}")
+            
+            VM_INFO=""
+            if [ "$CREATION_STATUS" = "true" ]; then
+              VM_INFO=$(cat <<EOF
+          
+          <b>VM 資訊</b>
+          • <b>虛擬機器名稱:</b> ${VM_NAME}
+          • <b>公網 IP:</b> ${PUBLIC_IP:-獲取失敗}
+          EOF
+              )
+            fi
+            
+            MSG=$(cat <<EOF
+          <b>OCI 虛擬機器建立結果</b>
+          • <b>觸發方式:</b> ${TRIGGER_TYPE}
+          • <b>執行時間:</b> ${EXEC_TIME}
+          • <b>狀態:</b> ${STATUS_STR}
+          • <b>嘗試次數:</b> ${ATTEMPT_COUNT:-1}
+          • <b>訊息:</b> ${MSG_STR}
+          • <b>區域:</b> ${{ env.OCI_REGION }}
+          • <b>詳情:</b> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">查看日誌</a>${VM_INFO}
+          EOF
+          )
+          fi
+          
+          # 使用 GitHub 推薦的隨機分隔符安全寫入多行輸出
+          EOF_DELIMITER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64 | tr -dc 'a-zA-Z0-9')
+          echo "telegram_message<<$EOF_DELIMITER" >> "$GITHUB_OUTPUT"
+          echo "$MSG" >> "$GITHUB_OUTPUT"
+          echo "$EOF_DELIMITER" >> "$GITHUB_OUTPUT"
+
       - name: 發送 Telegram 通知
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: html
-          message: |
-            ${{ needs.create-vm.outputs.vm_exists == 'true' && format('
-            <b>OCI 虛擬機器建立 - 操作取消</b>
-            • <b>觸發方式:</b> {0}
-            • <b>執行時間:</b> {1}
-            • <b>狀態:</b> 🟡 已跳過
-            • <b>原因:</b> 名為 "{2}" 的虛擬機器已存在或檢查時出錯。
-            • <b>區域:</b> {3}
-            • <b>詳情:</b> <a href="https://github.com/{4}/actions/runs/{5}">查看日誌</a>', github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務', needs.create-vm.outputs.time, needs.create-vm.outputs.checked_vm_name, env.OCI_REGION, github.repository, github.run_id) || format('
-            <b>OCI 虛擬機器建立結果</b>
-            • <b>觸發方式:</b> {0}
-            • <b>執行時間:</b> {1}
-            • <b>狀態:</b> {2}
-            • <b>嘗試次數:</b> {3}
-            • <b>訊息:</b> {4}
-            • <b>區域:</b> {5}
-            • <b>詳情:</b> <a href="https://github.com/{6}/actions/runs/{7}">查看日誌</a>
-            {8}', github.event_name == 'workflow_dispatch' && '手動觸發' || '定時任務', needs.create-vm.outputs.time, needs.create-vm.outputs.creation_status == 'true' && '✅ 成功' || '❌ 失敗', needs.create-vm.outputs.attempt_count, needs.create-vm.outputs.creation_status == 'true' && 'VM 創建成功' || needs.create-vm.outputs.error_message, env.OCI_REGION, github.repository, github.run_id, needs.create-vm.outputs.creation_status == 'true' && format('
-            <b>VM 資訊</b>
-            • <b>虛擬機器名稱:</b> {0}
-            • <b>公網 IP:</b> {1}', needs.create-vm.outputs.vm_name, needs.create-vm.outputs.public_ip) || '') }}
+          message: ${{ steps.prep-msg.outputs.telegram_message }}
