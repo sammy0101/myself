@@ -19,8 +19,8 @@ env:
   OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
   OCI_IMAGE_OCID: ${{ secrets.OCI_IMAGE_OCID }}
   VM_SHAPE: 'VM.Standard.A1.Flex'
-  OCPU_COUNT: 4
-  MEMORY_IN_GB: 24
+  OCPU_COUNT: 2
+  MEMORY_IN_GB: 12
 
 jobs:
   create-vm:
