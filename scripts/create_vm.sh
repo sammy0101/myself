@@ -6,6 +6,27 @@ log() {
   echo "$(date -u +'%Y-%m-%d %H:%M:%S UTC') - $1"
 }
 
+# 寫入 GitHub Actions 輸出的輔助函數（相容本地測試，防止重導向崩潰）
+write_output() {
+  local key="$1"
+  local value="$2"
+  if [ -n "$GITHUB_OUTPUT" ] && [ -f "$GITHUB_OUTPUT" ]; then
+    echo "$key=$value" >> "$GITHUB_OUTPUT"
+  else
+    log "[本地測試模式] 輸出變數 -> $key: $value"
+  fi
+}
+
+# 轉義 HTML 特殊字元，確保 Telegram HTML 模式解析不崩潰
+escape_html() {
+  local input="$1"
+  input="${input//&/&amp;}"
+  input="${input//</&lt;}"
+  input="${input//>/&gt;}"
+  input="${input//\"/&quot;}"
+  echo "$input"
+}
+
 log "腳本開始執行..."
 
 required_vars=(
@@ -28,7 +49,6 @@ log "將要創建的虛擬機器名稱: $VM_NAME"
 
 MAX_RETRIES=${MAX_RETRIES:-5}
 RETRY_DELAY=${RETRY_DELAY:-600}
-# <-- 變更點：統一使用全大寫的 JITTER_RANGE
 JITTER_RANGE=${JITTER_RANGE:-120}
 log "策略: 共 $MAX_RETRIES 次嘗試，基礎延遲 ${RETRY_DELAY}s，隨機延遲 ${JITTER_RANGE}s。"
 
@@ -57,17 +77,19 @@ while [ $attempt -le $MAX_RETRIES ]; do
   if [ $exit_code -eq 0 ] && [ -n "$output" ] && echo "$output" | jq -e '.data.id' > /dev/null; then
     INSTANCE_OCID=$(echo "$output" | jq -r '.data.id')
     log "✅ VM 建立請求成功！實例 OCID: $INSTANCE_OCID"
-    echo "success=true" >> "$GITHUB_OUTPUT"
-    echo "vm_name=$VM_NAME" >> "$GITHUB_OUTPUT"
-    echo "instance_ocid=$INSTANCE_OCID" >> "$GITHUB_OUTPUT"
-    echo "attempt_count=$attempt" >> "$GITHUB_OUTPUT"
-    echo "success_message=VM instance creation request accepted." >> "$GITHUB_OUTPUT"
+    
+    write_output "success" "true"
+    write_output "vm_name" "$VM_NAME"
+    write_output "instance_ocid" "$INSTANCE_OCID"
+    write_output "attempt_count" "$attempt"
+    write_output "success_message" "VM instance creation request accepted."
     exit 0
   fi
 
   log "❌ 第 $attempt 次嘗試失敗，退出碼: $exit_code"
   
-  json_body=$(echo "$output" | sed -n '/^{/,$p')
+  # 移除行首限制 ^，使 JSON 提取更具容錯性
+  json_body=$(echo "$output" | sed -n '/{/,$p')
   if [ -n "$json_body" ] && echo "$json_body" | jq . >/dev/null 2>&1; then
     ERROR_CODE=$(echo "$json_body" | jq -r '.code // "UNKNOWN"')
     ERROR_MESSAGE=$(echo "$json_body" | jq -r '.message // "No message in JSON."')
@@ -108,7 +130,6 @@ while [ $attempt -le $MAX_RETRIES ]; do
     break
   fi
 
-  # <-- 變更點：確保此處也使用全大寫的 JITTER_RANGE
   jitter=$(shuf -i 0-$JITTER_RANGE -n 1)
   total_delay=$((RETRY_DELAY + jitter))
   log "等待 $total_delay 秒後進行下一次重試..."
@@ -119,7 +140,11 @@ done
 
 # --- 最終失敗處理 ---
 log "❌ VM 建立失敗。"
-echo "success=false" >> "$GITHUB_OUTPUT"
-echo "attempt_count=$attempt" >> "$GITHUB_OUTPUT"
-echo "error_message=$LAST_ERROR_MESSAGE" >> "$GITHUB_OUTPUT"
+
+# 安全轉義 HTML 字元，避免 Telegram 發送失敗
+SAFE_ERROR_MESSAGE=$(escape_html "$LAST_ERROR_MESSAGE")
+
+write_output "success" "false"
+write_output "attempt_count" "$attempt"
+write_output "error_message" "$SAFE_ERROR_MESSAGE"
 exit 1
