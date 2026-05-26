@@ -78,7 +78,6 @@ jobs:
           VM_NAME_TO_CHECK="${{ steps.determine-vm-name.outputs.vm_name }}"
           echo "正在檢查 VM 名稱: $VM_NAME_TO_CHECK"
           set +e
-          # 使用 JMESPath 查詢排除 TERMINATED 與 TERMINATING 狀態的同名 VM
           EXISTING_VM_OCID=$(oci compute instance list \
             --compartment-id "${{ env.OCI_COMPARTMENT_ID }}" \
             --query "data[?\"display-name\"=='$VM_NAME_TO_CHECK' && !contains(['TERMINATED', 'TERMINATING'], \"lifecycle-state\")].id | [0]" \
@@ -129,11 +128,35 @@ jobs:
         run: |
           oci compute instance wait-for-state --instance-id "${{ steps.create-vm-script.outputs.instance_ocid }}" --wait-for-state "RUNNING" --wait-interval-seconds 15
 
-      - name: 獲取虛擬機器公網 IP
+      - name: 獲取虛擬機器公網 IP（含延遲重試機制）
         if: steps.check-vm-exists.outputs.exists == 'false' && steps.create-vm-script.outputs.success == 'true'
         id: get-ip
         run: |
-          PUBLIC_IP=$(oci compute instance list-vnics --instance-id "${{ steps.create-vm-script.outputs.instance_ocid }}" --query 'data[0]."public-ip"' --raw-output)
+          INSTANCE_ID="${{ steps.create-vm-script.outputs.instance_ocid }}"
+          PUBLIC_IP=""
+          MAX_IP_ATTEMPTS=18  # 最多嘗試 18 次（18 * 10秒 = 共 3 分鐘）
+          IP_ATTEMPT=1
+          
+          echo "開始輪詢公網 IP 分配狀態..."
+          while [ $IP_ATTEMPT -le $MAX_IP_ATTEMPTS ]; do
+            PUBLIC_IP=$(oci compute instance list-vnics --instance-id "$INSTANCE_ID" --query 'data[0]."public-ip"' --raw-output 2>/dev/null || echo "")
+            
+            # 確保 IP 存在且不為 "null" 或空字串
+            if [ -n "$PUBLIC_IP" ] && [ "$PUBLIC_IP" != "null" ]; then
+              echo "✅ 成功獲取公網 IP: $PUBLIC_IP"
+              break
+            fi
+            
+            echo "⌛ [第 $IP_ATTEMPT / $MAX_IP_ATTEMPTS 次嘗試] 公網 IP 尚未分配，10 秒後重試..."
+            sleep 10
+            ((IP_ATTEMPT++))
+          done
+          
+          if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "null" ]; then
+            echo "❌ 逾時：在 3 分鐘內未獲得公網 IP。"
+            PUBLIC_IP="獲取失敗/逾時"
+          fi
+          
           echo "public_ip=$PUBLIC_IP" >> "$GITHUB_OUTPUT"
 
   notify:
@@ -154,10 +177,10 @@ jobs:
           VM_NAME: ${{ needs.create-vm.outputs.vm_name }}
           PUBLIC_IP: ${{ needs.create-vm.outputs.public_ip }}
           EXEC_TIME: ${{ needs.create-vm.outputs.time }}
+          SSH_PASSWORD: ${{ secrets.ROOT_PASSWORD }} # 安全載入密碼變數
         run: |
           TRIGGER_TYPE=$([ "$EVENT_NAME" = "workflow_dispatch" ] && echo "手動觸發" || echo "定時任務")
           
-          # 優化後的訊息模版，無論何種情況都會清楚呈現「虛擬機器名稱」
           if [ "$VM_EXISTS" = "true" ] || [ -z "$VM_EXISTS" ]; then
             REASON="名為 \"${CHECKED_VM_NAME:-unknown}\" 的虛擬機器已存在或前置檢查失敗。"
             MSG="<b>OCI 虛擬機器建立 - 操作取消</b>
@@ -176,8 +199,10 @@ jobs:
             if [ "$CREATION_STATUS" = "true" ]; then
               VM_INFO="
           
-          <b>VM 資訊</b>
-          • <b>公網 IP:</b> ${PUBLIC_IP:-獲取失敗}"
+          <b>VM 連線資訊 (點擊可複製)</b>
+          • <b>公網 IP:</b> <code>${PUBLIC_IP}</code>
+          • <b>SSH 帳號:</b> <code>root</code>
+          • <b>SSH 密碼:</b> <code>${SSH_PASSWORD:-未設置}</code>"
             fi
             
             MSG="<b>OCI 虛擬機器建立結果</b>
