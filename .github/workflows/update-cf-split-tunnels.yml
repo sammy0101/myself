@@ -17,9 +17,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install Dependencies
-        run: pip install requests
-
       - name: Fetch, Parse and Update Cloudflare API
         env:
           CF_API_Zero_Trust_TOKEN: ${{ secrets.CF_API_Zero_Trust_TOKEN }}
@@ -28,7 +25,9 @@ jobs:
         run: |
           python - << 'EOF'
           import os
-          import requests
+          import urllib.request
+          import urllib.error
+          import json
           import ipaddress
           
           CF_API_Zero_Trust_TOKEN = os.environ.get("CF_API_Zero_Trust_TOKEN")
@@ -44,13 +43,38 @@ jobs:
               "Content-Type": "application/json"
           }
           
+          # 封裝 HTTP 請求方法以取代 requests
+          def make_request(url, data=None, method="GET"):
+              req_data = json.dumps(data).encode("utf-8") if data is not None else None
+              req = urllib.request.Request(url, data=req_data, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(req) as response:
+                      return response.status, json.loads(response.read().decode("utf-8"))
+              except urllib.error.HTTPError as e:
+                  err_body = e.read().decode("utf-8")
+                  try:
+                      err_json = json.loads(err_body)
+                      print(f"❌ HTTP 錯誤 ({e.code}):\n", json.dumps(err_json, indent=2, ensure_ascii=False))
+                  except Exception:
+                      print(f"❌ HTTP 錯誤 ({e.code}):\n", err_body)
+                  exit(1)
+              except Exception as e:
+                  print("❌ 網路請求異常:", str(e))
+                  exit(1)
+          
+          def fetch_raw_list(url):
+              req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+              try:
+                  with urllib.request.urlopen(req) as r:
+                      return r.read().decode("utf-8")
+              except Exception as e:
+                  print(f"❌ 下載 {url} 失敗: {e}")
+                  exit(1)
+          
           print(f"正在獲取帳戶 {CF_ACCOUNT_ID} 的裝置設定檔清單...")
-          resp = requests.get(f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policies", headers=headers)
-          if resp.status_code != 200:
-              print("取得 Policy 清單失敗:", resp.text)
-              exit(1)
-              
-          policies = resp.json().get("result",[])
+          status, resp_json = make_request(f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policies")
+          
+          policies = resp_json.get("result", [])
           policy_id = None
           for p in policies:
               if p.get("name") == POLICY_NAME:
@@ -67,15 +91,14 @@ jobs:
           ip_cn_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
           ip_private_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/private.list"
           
-          # 【新增】自訂要單獨加入的網域 (您可以在這裡隨意增加，例如 "*.qq.com")
-          CUSTOM_DOMAINS =[
+          CUSTOM_DOMAINS = [
               "*.cn",
               "cn"
           ]
           
           print("正在下載來源清單 (CN IPs & Private IPs)...")
-          ip_cn_resp = requests.get(ip_cn_url)
-          ip_private_resp = requests.get(ip_private_url)
+          ip_cn_data = fetch_raw_list(ip_cn_url)
+          ip_private_data = fetch_raw_list(ip_private_url)
           
           private_v4_nets = set()
           private_v6_nets = set()
@@ -85,7 +108,7 @@ jobs:
           # ==========================================
           # 1. 解析 私有 IP (精確保留，不壓縮)
           # ==========================================
-          for line in ip_private_resp.text.splitlines():
+          for line in ip_private_data.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
               try:
@@ -97,71 +120,107 @@ jobs:
               except ValueError: pass
 
           # ==========================================
-          # 2. 解析 中國 IP (強制暴力壓縮)
+          # 2. 解析 中國 IP
           # ==========================================
-          AGGRESSIVE_PREFIX_V4 = 16 
-          AGGRESSIVE_PREFIX_V6 = 48 
-          
-          for line in ip_cn_resp.text.splitlines():
+          for line in ip_cn_data.splitlines():
               line = line.strip()
               if not line or line.startswith("#"): continue
               try:
                   net = ipaddress.ip_network(line, strict=False)
                   if net.version == 4:
-                      if net.prefixlen > AGGRESSIVE_PREFIX_V4:
-                          net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V4)
                       cn_v4_nets.add(net)
                   else:
-                      if net.prefixlen > AGGRESSIVE_PREFIX_V6:
-                          net = net.supernet(new_prefix=AGGRESSIVE_PREFIX_V6)
                       cn_v6_nets.add(net)
               except ValueError: pass
           
-          split_tunnels =[]
+          private_v4_collapsed = list(ipaddress.collapse_addresses(private_v4_nets))
+          private_v6_collapsed = list(ipaddress.collapse_addresses(private_v6_nets))
+
+          # ==========================================
+          # 3. 動態壓縮演算法 (精準控制數量，兼顧精確度)
+          # ==========================================
+          MAX_TARGET = 950  # 設為 950 條作為安全上限目標（Cloudflare 物理限制 1,000 條）
           
-          print("正在合併與按照合理順序排序規則...")
+          def compress_networks(networks, prefix_limit):
+              adjusted = set()
+              for net in networks:
+                  if net.prefixlen > prefix_limit:
+                      adjusted.add(net.supernet(new_prefix=prefix_limit))
+                  else:
+                      adjusted.add(net)
+              return list(ipaddress.collapse_addresses(adjusted))
+          
+          v4_prefix = 24  # IPv4 最高精度設定
+          v6_prefix = 48  # IPv6 最高精度設定
+          
+          print("開始動態最佳化與壓縮 CIDR 網段...")
+          while True:
+              collapsed_cn_v4 = compress_networks(cn_v4_nets, v4_prefix)
+              collapsed_cn_v6 = compress_networks(cn_v6_nets, v6_prefix)
+              
+              total_rules = (
+                  len(private_v4_collapsed) + 
+                  len(private_v6_collapsed) + 
+                  len(CUSTOM_DOMAINS) + 
+                  len(collapsed_cn_v4) + 
+                  len(collapsed_cn_v6)
+              )
+              
+              # 若條數已落在安全區間，或已達到底線（v4 縮至 /12、v6 縮至 /32），則終止循環
+              if total_rules <= MAX_TARGET or (v4_prefix <= 12 and v6_prefix <= 32):
+                  print(f"ℹ️ 動態壓縮結束。IPv4 遮罩深度: /{v4_prefix}, IPv6: /{v6_prefix}")
+                  break
+                  
+              # 依規則比例降級精準度
+              if len(collapsed_cn_v4) > len(collapsed_cn_v6) and v4_prefix > 12:
+                  v4_prefix -= 1
+              elif v6_prefix > 32:
+                  v6_prefix -= 4
+              else:
+                  break
+          
+          split_tunnels = []
           
           # ==========================================
-          # 3. 組合清單：【第一順位】私有內網 IP
+          # 4. 組合清單：【第一順位】私有內網 IP
           # ==========================================
-          for net in ipaddress.collapse_addresses(list(private_v4_nets)):
+          for net in private_v4_collapsed:
               split_tunnels.append({"address": str(net), "description": "Private IPv4"})
               
-          for net in ipaddress.collapse_addresses(list(private_v6_nets)):
+          for net in private_v6_collapsed:
               split_tunnels.append({"address": str(net), "description": "Private IPv6"})
               
           # ==========================================
-          # 4. 組合清單：【第二順位】單獨指定之網域 (*.cn 等)
+          # 5. 組合清單：【第二順位】單獨指定之網域 (*.cn 等)
           # ==========================================
           for domain in CUSTOM_DOMAINS:
               split_tunnels.append({"host": domain, "description": f"Custom Domain ({domain})"})
               
           # ==========================================
-          # 5. 組合清單：【第三順位】中國 IP (保底防線)
+          # 6. 組合清單：【第三順位】中國 IP (保底防線)
           # ==========================================
-          for net in ipaddress.collapse_addresses(list(cn_v4_nets)):
+          for net in collapsed_cn_v4:
               split_tunnels.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
               
-          for net in ipaddress.collapse_addresses(list(cn_v6_nets)):
+          for net in collapsed_cn_v6:
               split_tunnels.append({"address": str(net), "description": "Auto CN IPv6 (Aggregated)"})
 
           # ==========================================
-          # 提交 API
+          # 提交 API (保底硬截斷)
           # ==========================================
-          MAX_RULES = 4000
-          if len(split_tunnels) > MAX_RULES:
-              print(f"⚠️ 警告: 總數 {len(split_tunnels)} 條，執行截斷 (保留最前面)...")
-              split_tunnels = split_tunnels[:MAX_RULES]
+          if len(split_tunnels) > MAX_TARGET:
+              print(f"⚠️ 警告: 即使經過動態壓縮總數仍有 {len(split_tunnels)} 條，執行硬性截斷至 {MAX_TARGET} 條...")
+              split_tunnels = split_tunnels[:MAX_TARGET]
               
-          print(f"📊 最終寫入數量: {len(split_tunnels)} 條")
+          print(f"📊 最終準備寫入數量: {len(split_tunnels)} 條")
           
           put_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/devices/policy/{policy_id}/exclude"
-          update_resp = requests.put(put_url, headers=headers, json=split_tunnels)
+          status, update_resp = make_request(put_url, data=split_tunnels, method="PUT")
           
-          if update_resp.status_code == 200 and update_resp.json().get("success"):
+          if status == 200 and update_resp.get("success"):
               print("✅ 成功更新 Cloudflare Split Tunnels (Exclude)！")
           else:
               print("❌ 更新失敗:")
-              print(update_resp.text)
+              print(json.dumps(update_resp, indent=2, ensure_ascii=False))
               exit(1)
           EOF
