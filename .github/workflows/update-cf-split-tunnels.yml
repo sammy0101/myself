@@ -65,42 +65,19 @@ jobs:
           # 來源定義與自訂網域
           # ==========================================
           ip_cn_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/cn.list"
-          ip_private_url = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/private.list"
           
-          # 自訂域名排除（配合 IP 繞過共同生效，最大化節省條數）
           CUSTOM_DOMAINS = [
               "*.cn",
               "cn"
           ]
           
-          print("正在下載來源清單 (CN IPs & Private IPs)...")
+          print("正在下載來源清單 (CN IPv4)...")
           ip_cn_resp = requests.get(ip_cn_url)
-          ip_private_resp = requests.get(ip_private_url)
           
-          private_v4_nets = set()
-          private_v6_nets = set()
           cn_v4_nets = set()
-          cn_v6_nets = set()
           
           # ==========================================
-          # 1. 解析 私有 IP (精確保留，不壓縮)
-          # ==========================================
-          for line in ip_private_resp.text.splitlines():
-              line = line.strip()
-              if not line or line.startswith("#"): continue
-              try:
-                  net = ipaddress.ip_network(line, strict=False)
-                  if net.version == 4:
-                      private_v4_nets.add(net)
-                  else:
-                      private_v6_nets.add(net)
-              except ValueError: pass
-          
-          private_v4_collapsed = list(ipaddress.collapse_addresses(private_v4_nets))
-          private_v6_collapsed = list(ipaddress.collapse_addresses(private_v6_nets))
-
-          # ==========================================
-          # 2. 解析 中國 IP (等待動態壓縮)
+          # 1. 解析 中國 IPv4 IP (過濾掉 IPv6)
           # ==========================================
           for line in ip_cn_resp.text.splitlines():
               line = line.strip()
@@ -109,14 +86,12 @@ jobs:
                   net = ipaddress.ip_network(line, strict=False)
                   if net.version == 4:
                       cn_v4_nets.add(net)
-                  else:
-                      cn_v6_nets.add(net)
               except ValueError: pass
 
           # ==========================================
-          # 3. 雙向保底動態壓縮演算法 (安全控制在 1,000 條限制內)
+          # 2. 僅針對 IPv4 的動態壓縮演算法 (精準卡在 950 條內)
           # ==========================================
-          MAX_TARGET = 950  # 目標條數安全上限（保留 50 條彈性空間）
+          MAX_TARGET = 950  # 目標條數安全上限
           
           def compress_networks(networks, prefix_limit):
               adjusted = set()
@@ -127,67 +102,40 @@ jobs:
                       adjusted.add(net)
               return list(ipaddress.collapse_addresses(adjusted))
           
-          v4_prefix = 24  # IPv4 最高精確度 (起點)
-          v6_prefix = 48  # IPv6 最高精確度 (起點)
+          v4_prefix = 24  # IPv4 最初最高精確度 (起點)
+          LIMIT_V4 = 8    # IPv4 最低可容忍之遮罩寬度 (終點)
           
-          print("正在執行精準度適配與動態壓縮...")
+          print("正在執行精準度適配與動態壓縮 (僅限 IPv4)...")
           while True:
               collapsed_cn_v4 = compress_networks(cn_v4_nets, v4_prefix)
-              collapsed_cn_v6 = compress_networks(cn_v6_nets, v6_prefix)
               
-              total_rules = (
-                  len(private_v4_collapsed) + 
-                  len(private_v6_collapsed) + 
-                  len(CUSTOM_DOMAINS) + 
-                  len(collapsed_cn_v4) + 
-                  len(collapsed_cn_v6)
-              )
+              total_rules = len(CUSTOM_DOMAINS) + len(collapsed_cn_v4)
               
               if total_rules <= MAX_TARGET:
-                  print(f"ℹ️ 動態適配成功。最終 IPv4 遮罩深度: /{v4_prefix}, IPv6: /{v6_prefix}")
+                  print(f"ℹ️ 動態適配成功。最終精確度：IPv4: /{v4_prefix}")
                   break
                   
-              # 哪邊規則數量多，且還沒到極限，就優先壓縮哪邊；若一邊到極限，就轉而壓縮另一邊
-              if len(collapsed_cn_v4) >= len(collapsed_cn_v6):
-                  if v4_prefix > 12:
-                      v4_prefix -= 1
-                  elif v6_prefix > 32:
-                      v6_prefix -= 1
-                  else:
-                      print("⚠️ 已達到最大壓縮極限 (IPv4: /12, IPv6: /32)，無法再進一步壓縮。")
-                      break
+              if v4_prefix > LIMIT_V4:
+                  v4_prefix -= 1
               else:
-                  if v6_prefix > 32:
-                      v6_prefix -= 1
-                  elif v4_prefix > 12:
-                      v4_prefix -= 1
-                  else:
-                      print("⚠️ 已達到最大壓縮極限 (IPv4: /12, IPv6: /32)，無法再進一步壓縮。")
-                      break
+                  print(f"⚠️ 已達到最大壓縮極限 (IPv4: /{LIMIT_V4})，無法再進一步壓縮。")
+                  break
 
           # ==========================================
-          # 4. 按優先順序組合最終寫入清單
+          # 3. 按優先順序組合最終寫入清單
           # ==========================================
           split_tunnels = []
           
-          # 1. 內網私有 IP
-          for net in private_v4_collapsed:
-              split_tunnels.append({"address": str(net), "description": "Private IPv4"})
-          for net in private_v6_collapsed:
-              split_tunnels.append({"address": str(net), "description": "Private IPv6"})
-              
-          # 2. 自訂排除域名
+          # 1. 自訂排除域名
           for domain in CUSTOM_DOMAINS:
               split_tunnels.append({"host": domain, "description": f"Custom Domain ({domain})"})
               
-          # 3. 自動動態壓縮的大陸 IP 網段
+          # 2. 自動動態壓縮的大陸 IPv4 網段
           for net in collapsed_cn_v4:
               split_tunnels.append({"address": str(net), "description": "Auto CN IPv4 (Aggregated)"})
-          for net in collapsed_cn_v6:
-              split_tunnels.append({"address": str(net), "description": "Auto CN IPv6 (Aggregated)"})
 
           # ==========================================
-          # 提交 API (硬截斷保底防線)
+          # 提交 API (保底硬截斷)
           # ==========================================
           if len(split_tunnels) > MAX_TARGET:
               print(f"⚠️ 警告: 即使經過動態壓縮總數仍有 {len(split_tunnels)} 條，執行截斷至 {MAX_TARGET} 條...")
