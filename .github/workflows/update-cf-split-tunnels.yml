@@ -43,7 +43,6 @@ jobs:
               "Content-Type": "application/json"
           }
           
-          # 封裝 HTTP 請求方法以取代 requests
           def make_request(url, data=None, method="GET"):
               req_data = json.dumps(data).encode("utf-8") if data is not None else None
               req = urllib.request.Request(url, data=req_data, headers=headers, method=method)
@@ -139,7 +138,7 @@ jobs:
           # ==========================================
           # 3. 動態壓縮演算法 (精準控制數量，兼顧精確度)
           # ==========================================
-          MAX_TARGET = 950  # 設為 950 條作為安全上限目標（Cloudflare 物理限制 1,000 條）
+          MAX_TARGET = 950  # 設為 950 條作為安全上限目標（Cloudflare 限制 1000 條）
           
           def compress_networks(networks, prefix_limit):
               adjusted = set()
@@ -166,18 +165,27 @@ jobs:
                   len(collapsed_cn_v6)
               )
               
-              # 若條數已落在安全區間，或已達到底線（v4 縮至 /12、v6 縮至 /32），則終止循環
-              if total_rules <= MAX_TARGET or (v4_prefix <= 12 and v6_prefix <= 32):
-                  print(f"ℹ️ 動態壓縮結束。IPv4 遮罩深度: /{v4_prefix}, IPv6: /{v6_prefix}")
+              if total_rules <= MAX_TARGET:
+                  print(f"ℹ️ 動態壓縮成功。最終 IPv4 遮罩深度: /{v4_prefix}, IPv6: /{v6_prefix}")
                   break
                   
-              # 依規則比例降級精準度
-              if len(collapsed_cn_v4) > len(collapsed_cn_v6) and v4_prefix > 12:
-                  v4_prefix -= 1
-              elif v6_prefix > 32:
-                  v6_prefix -= 4
+              # 哪邊規則數量多，且還沒到極限，就優先壓縮哪邊；若一邊到極限，就轉而壓縮另一邊
+              if len(collapsed_cn_v4) >= len(collapsed_cn_v6):
+                  if v4_prefix > 12:
+                      v4_prefix -= 1
+                  elif v6_prefix > 32:
+                      v6_prefix -= 1
+                  else:
+                      print("⚠️ 已達到最大壓縮極限 (IPv4: /12, IPv6: /32)，無法再進一步壓縮。")
+                      break
               else:
-                  break
+                  if v6_prefix > 32:
+                      v6_prefix -= 1
+                  elif v4_prefix > 12:
+                      v4_prefix -= 1
+                  else:
+                      print("⚠️ 已達到最大壓縮極限 (IPv4: /12, IPv6: /32)，無法再進一步壓縮。")
+                      break
           
           split_tunnels = []
           
@@ -209,7 +217,7 @@ jobs:
           # 提交 API (保底硬截斷)
           # ==========================================
           if len(split_tunnels) > MAX_TARGET:
-              print(f"⚠️ 警告: 即使經過動態壓縮總數仍有 {len(split_tunnels)} 條，執行硬性截斷至 {MAX_TARGET} 條...")
+              print(f"⚠️ 警告: 即使經過動態壓縮總數仍有 {len(split_tunnels)} 條，執行強行截斷至 {MAX_TARGET} 條...")
               split_tunnels = split_tunnels[:MAX_TARGET]
               
           print(f"📊 最終準備寫入數量: {len(split_tunnels)} 條")
