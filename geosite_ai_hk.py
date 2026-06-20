@@ -134,14 +134,17 @@ def main():
     smart_write("geosite_ai_hk_proxy.txt", txt_content)
 
     # ------------------------------------------------------------
-    # 5. 生成 .dae (給 dae/daed 路由規則用，使用乾淨列表加上 DAE 的 domain 語法)
+    # 5. 生成 .dae (給 dae/daed 路由規則用，使用分組格式，並將網域換行縮排)
     # ------------------------------------------------------------
-    dae_lines = [
-        "# DAE / DAED AI HK Proxy Rules",
-        "# 說明：請將以下內容貼上至 dae/daed 的 routing { ... } 區塊內。可將 'proxy' 替換成您的代理群組名稱。",
-        ""
-    ] + [f"domain(suffix: {dom}) -> proxy" for dom in list_for_singbox]
-    dae_content = "\n".join(dae_lines)
+    # 將所有網域使用 ",\\n    " 進行拼接，最後一個網域之後不加逗號
+    domains_formatted = ",\n    ".join(list_for_singbox)
+    
+    dae_content = f"""# DAE / DAED AI HK Proxy Rules
+# 說明：請將以下內容貼上至 dae/daed 的 routing {{ ... }} 區塊內。
+domain(
+    {domains_formatted}
+) -> proxy
+"""
     smart_write("geosite_ai_hk_proxy.dae", dae_content)
 
 if __name__ == "__main__":
