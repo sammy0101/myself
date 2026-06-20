@@ -88,7 +88,7 @@ jobs:
 
       - name: "[AI] 執行腳本 & 編譯規則"
         run: |
-          echo ">>> 1. 執行 Python 腳本 (生成 List/Json/Conf) <<<"
+          echo ">>> 1. 執行 Python 腳本 (生成 List/Json/Conf/Dae) <<<"
           python geosite_ai_hk.py || echo "Warning: geosite script failed"
           python Shadowrocket_rules.py || echo "Warning: shadowrocket script failed"
           
@@ -105,12 +105,12 @@ jobs:
 
       - name: "[AI] 檢查變更 & 提交"
         run: |
-          # 將所有變更加入暫存區
+          # 將所有變更（包含新生成的 .dae 檔案）加入暫存區
           git add .
           
           # Git 會自動比對 Hash 值
           if git diff --staged --quiet; then
-            echo "✅ AI 規則 (包含 .mrs/.srs) 內容完全一致，無需更新。"
+            echo "✅ AI 規則 (包含 .mrs/.srs/.dae) 內容完全一致，無需更新。"
           else
             current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
             git commit -m "🔄 自動同步 AI 規則 (📅 $current_time)"
