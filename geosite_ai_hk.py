@@ -7,7 +7,7 @@ import os
 SOURCE_URL = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.list"
 
 # 2. 香港直連白名單 (包含這些關鍵字的網域將被剔除，即不走代理)
-HK_DIRECT_KEYWORDS =[
+HK_DIRECT_KEYWORDS = [
     # 開源 & 模型
     "huggingface.co", "hf.space", "hf.co", "chutes.ai",
     # 搜尋 & 聚合
@@ -70,8 +70,8 @@ def main():
         return
 
     # 我們需要準備兩個列表
-    list_for_singbox =[] # 乾淨的域名 (openai.com)
-    list_for_clash =[]   # 帶通配符的域名 (+.openai.com)
+    list_for_singbox = [] # 乾淨的域名 (openai.com)
+    list_for_clash = []   # 帶通配符的域名 (+.openai.com)
     
     print("正在處理並過濾規則...")
     for line in lines:
@@ -118,7 +118,7 @@ def main():
     # ------------------------------------------------------------
     srs_payload = {
         "version": 1,
-        "rules":[
+        "rules": [
             {
                 "domain_suffix": list_for_singbox
             }
@@ -130,9 +130,19 @@ def main():
     # ------------------------------------------------------------
     # 4. 生成 .txt (單行，以逗號分隔，無 "+." 前綴)
     # ------------------------------------------------------------
-    # 改用 list_for_singbox (乾淨域名列表) 來進行串接
     txt_content = ",".join(list_for_singbox)
     smart_write("geosite_ai_hk_proxy.txt", txt_content)
+
+    # ------------------------------------------------------------
+    # 5. 生成 .dae (給 dae/daed 路由規則用，使用乾淨列表加上 DAE 的 domain 語法)
+    # ------------------------------------------------------------
+    dae_lines = [
+        "# DAE / DAED AI HK Proxy Rules",
+        "# 說明：請將以下內容貼上至 dae/daed 的 routing { ... } 區塊內。可將 'proxy' 替換成您的代理群組名稱。",
+        ""
+    ] + [f"domain(suffix: {dom}) -> proxy" for dom in list_for_singbox]
+    dae_content = "\n".join(dae_lines)
+    smart_write("geosite_ai_hk_proxy.dae", dae_content)
 
 if __name__ == "__main__":
     main()
