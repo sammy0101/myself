@@ -1,106 +1,107 @@
 # DAE / DAED AI HK Proxy Rules
-# 說明：請將以下內容貼上至 dae/daed 的 routing { ... } 區塊內。可將 'proxy' 替換成您的代理群組名稱。
-
-domain(suffix: copilot-proxy.githubusercontent.com) -> proxy
-domain(suffix: copilot-workspace.githubnext.com) -> proxy
-domain(suffix: copilotprodattachments.blob.core.windows.net) -> proxy
-domain(suffix: ai.google.dev) -> proxy
-domain(suffix: alkalicore-pa.clients6.google.com) -> proxy
-domain(suffix: alkalimakersuite-pa.clients6.google.com) -> proxy
-domain(suffix: webchannel-alkalimakersuite-pa.clients6.google.com) -> proxy
-domain(suffix: cloudaicompanion.googleapis.com) -> proxy
-domain(suffix: cloudcode-pa.googleapis.com) -> proxy
-domain(suffix: daily-cloudcode-pa.googleapis.com) -> proxy
-domain(suffix: notebooklm-pa.googleapis.com) -> proxy
-domain(suffix: notebooklm.googleapis.com) -> proxy
-domain(suffix: antigravity-pa.googleapis.com) -> proxy
-domain(suffix: antigravity.googleapis.com) -> proxy
-domain(suffix: openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net) -> proxy
-domain(suffix: openaicom.imgix.net) -> proxy
-domain(suffix: openaicomproductionae4b.blob.core.windows.net) -> proxy
-domain(suffix: ppl-ai-file-upload.s3.amazonaws.com) -> proxy
-domain(suffix: servd-anthropic-website.b-cdn.net) -> proxy
-domain(suffix: openclaw.ai) -> proxy
-domain(suffix: agentclientprotocol.com) -> proxy
-domain(suffix: anythingllm.com) -> proxy
-domain(suffix: arena.ai) -> proxy
-domain(suffix: clawhub.ai) -> proxy
-domain(suffix: crewai.com) -> proxy
-domain(suffix: diabrowser.engineering) -> proxy
-domain(suffix: duck.ai) -> proxy
-domain(suffix: h2o.ai) -> proxy
-domain(suffix: kiro.dev) -> proxy
-domain(suffix: langchain.com) -> proxy
-domain(suffix: lmstudio.ai) -> proxy
-domain(suffix: lovart.ai) -> proxy
-domain(suffix: meta.ai) -> proxy
-domain(suffix: midjourney.com) -> proxy
-domain(suffix: minimax.io) -> proxy
-domain(suffix: ollama.com) -> proxy
-domain(suffix: openspec.dev) -> proxy
-domain(suffix: plannotator.ai) -> proxy
-domain(suffix: qoder.com) -> proxy
-domain(suffix: sider.ai) -> proxy
-domain(suffix: spicywriter.com) -> proxy
-domain(suffix: tapnow.ai) -> proxy
-domain(suffix: githubcopilot.com) -> proxy
-domain(suffix: gemini.google) -> proxy
-domain(suffix: antigravity-unleash.goog) -> proxy
-domain(suffix: antigravity.google) -> proxy
-domain(suffix: opal.google) -> proxy
-domain(suffix: labs.google) -> proxy
-domain(suffix: generativeai.google) -> proxy
-domain(suffix: ai.studio) -> proxy
-domain(suffix: jules.google) -> proxy
-domain(suffix: notebooklm.google) -> proxy
-domain(suffix: claudeusercontent.com) -> proxy
-domain(suffix: claudemcpcontent.com) -> proxy
-domain(suffix: claudemcpclient.com) -> proxy
-domain(suffix: claude.com) -> proxy
-domain(suffix: claude.ai) -> proxy
-domain(suffix: clau.de) -> proxy
-domain(suffix: anthropic.com) -> proxy
-domain(suffix: mozilla.ai) -> proxy
-domain(suffix: sora.com) -> proxy
-domain(suffix: openai.com) -> proxy
-domain(suffix: oaiusercontent.com) -> proxy
-domain(suffix: oaistatsig.com) -> proxy
-domain(suffix: youmind.ai) -> proxy
-domain(suffix: youmind.com) -> proxy
-domain(suffix: youmind.site) -> proxy
-domain(suffix: codeium.com) -> proxy
-domain(suffix: codeiumdata.com) -> proxy
-domain(suffix: windsurf.build) -> proxy
-domain(suffix: windsurf.com) -> proxy
-domain(suffix: oaistatic.com) -> proxy
-domain(suffix: oystermercury.top) -> proxy
-domain(suffix: envato-static.com) -> proxy
-domain(suffix: envato.com) -> proxy
-domain(suffix: envatousercontent.com) -> proxy
-domain(suffix: themeforest.net) -> proxy
-domain(suffix: manus.im) -> proxy
-domain(suffix: manuscdn.com) -> proxy
-domain(suffix: liveperson.net) -> proxy
-domain(suffix: lpsnmedia.net) -> proxy
-domain(suffix: chat.com) -> proxy
-domain(suffix: chatgpt.com) -> proxy
-domain(suffix: crixet.com) -> proxy
-domain(suffix: stitch.withgoogle.com) -> proxy
-domain(suffix: opal.google.com) -> proxy
-domain(suffix: geller-pa.googleapis.com) -> proxy
-domain(suffix: chatgpt.livekit.cloud) -> proxy
-domain(suffix: host.livekit.cloud) -> proxy
-domain(suffix: jules.google.com) -> proxy
-domain(suffix: aicode.googleapis.com) -> proxy
-domain(suffix: gemini.gstatic.com) -> proxy
-domain(suffix: robinfrontend-pa.googleapis.com) -> proxy
-domain(suffix: labs.google.com) -> proxy
-domain(suffix: turn.livekit.cloud) -> proxy
-domain(suffix: aistudio.google.com) -> proxy
-domain(suffix: notebooklm.google.com) -> proxy
-domain(suffix: aida.googleapis.com) -> proxy
-domain(suffix: aisandbox-pa.googleapis.com) -> proxy
-domain(suffix: makersuite.google.com) -> proxy
-domain(suffix: openai.com.cdn.cloudflare.net) -> proxy
-domain(suffix: copilot-telemetry-service.githubusercontent.com) -> proxy
-domain(suffix: copilot-telemetry.githubusercontent.com) -> proxy
+# 說明：請將以下內容貼上至 dae/daed 的 routing { ... } 區塊內。
+domain(
+    copilot-proxy.githubusercontent.com,
+    copilot-workspace.githubnext.com,
+    copilotprodattachments.blob.core.windows.net,
+    ai.google.dev,
+    alkalicore-pa.clients6.google.com,
+    alkalimakersuite-pa.clients6.google.com,
+    webchannel-alkalimakersuite-pa.clients6.google.com,
+    cloudaicompanion.googleapis.com,
+    cloudcode-pa.googleapis.com,
+    daily-cloudcode-pa.googleapis.com,
+    notebooklm-pa.googleapis.com,
+    notebooklm.googleapis.com,
+    antigravity-pa.googleapis.com,
+    antigravity.googleapis.com,
+    openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net,
+    openaicom.imgix.net,
+    openaicomproductionae4b.blob.core.windows.net,
+    ppl-ai-file-upload.s3.amazonaws.com,
+    servd-anthropic-website.b-cdn.net,
+    openclaw.ai,
+    agentclientprotocol.com,
+    anythingllm.com,
+    arena.ai,
+    clawhub.ai,
+    crewai.com,
+    diabrowser.engineering,
+    duck.ai,
+    h2o.ai,
+    kiro.dev,
+    langchain.com,
+    lmstudio.ai,
+    lovart.ai,
+    meta.ai,
+    midjourney.com,
+    minimax.io,
+    ollama.com,
+    openspec.dev,
+    plannotator.ai,
+    qoder.com,
+    sider.ai,
+    spicywriter.com,
+    tapnow.ai,
+    githubcopilot.com,
+    gemini.google,
+    antigravity-unleash.goog,
+    antigravity.google,
+    opal.google,
+    labs.google,
+    generativeai.google,
+    ai.studio,
+    jules.google,
+    notebooklm.google,
+    claudeusercontent.com,
+    claudemcpcontent.com,
+    claudemcpclient.com,
+    claude.com,
+    claude.ai,
+    clau.de,
+    anthropic.com,
+    mozilla.ai,
+    sora.com,
+    openai.com,
+    oaiusercontent.com,
+    oaistatsig.com,
+    youmind.ai,
+    youmind.com,
+    youmind.site,
+    codeium.com,
+    codeiumdata.com,
+    windsurf.build,
+    windsurf.com,
+    oaistatic.com,
+    oystermercury.top,
+    envato-static.com,
+    envato.com,
+    envatousercontent.com,
+    themeforest.net,
+    manus.im,
+    manuscdn.com,
+    liveperson.net,
+    lpsnmedia.net,
+    chat.com,
+    chatgpt.com,
+    crixet.com,
+    stitch.withgoogle.com,
+    opal.google.com,
+    geller-pa.googleapis.com,
+    chatgpt.livekit.cloud,
+    host.livekit.cloud,
+    jules.google.com,
+    aicode.googleapis.com,
+    gemini.gstatic.com,
+    robinfrontend-pa.googleapis.com,
+    labs.google.com,
+    turn.livekit.cloud,
+    aistudio.google.com,
+    notebooklm.google.com,
+    aida.googleapis.com,
+    aisandbox-pa.googleapis.com,
+    makersuite.google.com,
+    openai.com.cdn.cloudflare.net,
+    copilot-telemetry-service.githubusercontent.com,
+    copilot-telemetry.githubusercontent.com
+) -> proxy
