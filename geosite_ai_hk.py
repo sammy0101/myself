@@ -8,40 +8,71 @@ SOURCE_URL = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/ge
 
 # 2. 香港直連白名單 (包含這些關鍵字的網域將被剔除，即不走代理)
 HK_DIRECT_KEYWORDS = [
-    # 開源 & 模型
-    "huggingface.co", "hf.space", "hf.co", "chutes.ai",
-    # 搜尋 & 聚合
-    "perplexity.ai", "perplexity.com", "poe.com", "poecdn.net",
-    "ciciai.com", "cici.com", "ciciaicdn.com", "diabrowser.com", "dola.com",
-    # 開發
-    "cursor.com", "cursor.sh", "cursorapi.com", "cursor-cdn.com",
-    "trae.ai", "marscode.com", "devin.ai", "coderabbit.ai", "coderabbit.gallery.vsassets.io",
-    # API & 推理
-    "mistral.ai", "cohere.ai", "cohere.com", "groq.com", "cerebras.ai",
-    "openrouter.ai", "deepmind.google", "deepmind.com",
-    # 媒體
-    "elevenlabs.io", "elevenlabs.com", "clipdrop.co",
-    "comfy.org", "comfyregistry.org", "comfyci.org", "openart.ai",
-    # 工作流
-    "dify.ai", "coze.com", "jasper.ai",
-    # 社交
-    "x.ai", "grok.com", "grok.x.com",
-    # 基礎設施
-    "gateway.ai.cloudflare.com", "pplx-res.cloudinary.com",
-    "browser-intake-datadoghq.com", "o33249.ingest.sentry.io",
-    # Azure/OpenAI CDN
-    "openaiapi-site.azureedge.net", "production-openaicom-storage.azureedge.net",
-    # Warning
-    "copilot.microsoft.com", 
+    # ========================================================
+    # 🌟 Google 服務 (香港已開放直連，但 AI Studio/API 仍需代理)
+    # ========================================================
+    "gemini.google",
+    "bard.google.com",
+    "notebooklm.google",
+    "labs.google",
+    "generativeai.google",
+    "jules.google",
+    "opal.google",
+    "gemini.gstatic.com",
+    "antigravity.google",
+    "antigravity-unleash.goog",
+    "stitch.withgoogle.com",
+    "proactivebackend-pa.googleapis.com",
 
     # ========================================================
-    # 🌟 Google Gemini 相關 (香港已開放直連)
-    # 註：aistudio 不在名單內，因此會繼續保留在代理清單中
+    # 🌟 Microsoft / GitHub Copilot (香港可直連)
     # ========================================================
-    "gemini.google.com",
-    "bard.google.com",
-    "generativelanguage.googleapis.com", 
-    "proactivebackend-pa.googleapis.com" 
+    "githubcopilot.com",
+    "copilot-proxy.githubusercontent.com",
+    "copilot-workspace.githubnext.com",
+    "copilotprodattachments.blob.core.windows.net",
+    "copilot-telemetry-service.githubusercontent.com",
+    "copilot-telemetry.githubusercontent.com",
+    "copilot.microsoft.com",
+
+    # ========================================================
+    # 🌟 搜尋、聚合 & 代理工具 (香港直連)
+    # ========================================================
+    "perplexity.ai", "perplexity.com", "ppl-ai-file-upload.s3.amazonaws.com",
+    "poe.com", "poecdn.net",
+    "ciciai.com", "cici.com", "ciciaicdn.com", "diabrowser.com", "dola.com",
+    "diabrowser.engineering", "sider.ai",
+
+    # ========================================================
+    # 🌟 開發、編譯 & 本地工具 (香港直連)
+    # ========================================================
+    "cursor.com", "cursor.sh", "cursorapi.com", "cursor-cdn.com",
+    "trae.ai", "marscode.com", "devin.ai", "coderabbit.ai", "coderabbit.gallery.vsassets.io",
+    "codeium.com", "codeiumdata.com", "windsurf.build", "windsurf.com",
+    "ollama.com", "lmstudio.ai", "anythingllm.com", "langchain.com",
+    "agentclientprotocol.com", "crewai.com", "arena.ai",
+
+    # ========================================================
+    # 🌟 API、推理平台與媒體 (香港直連)
+    # ========================================================
+    "mistral.ai", "cohere.ai", "cohere.com", "groq.com", "cerebras.ai",
+    "openrouter.ai", "deepmind.google", "deepmind.com",
+    "elevenlabs.io", "elevenlabs.com", "clipdrop.co",
+    "comfy.org", "comfyregistry.org", "comfyci.org", "openart.ai",
+    "midjourney.com", "mozilla.ai", "h2o.ai", "kiro.dev", "lovart.ai",
+    "minimax.io", "openspec.dev", "plannotator.ai", "qoder.com",
+    "spicywriter.com", "tapnow.ai", "duck.ai",
+
+    # ========================================================
+    # 🌟 工作流、助理與非 AI 誤判網域 (香港直連)
+    # ========================================================
+    "dify.ai", "coze.com", "jasper.ai",
+    "x.ai", "grok.com", "grok.x.com",
+    "gateway.ai.cloudflare.com", "pplx-res.cloudinary.com",
+    "browser-intake-datadoghq.com", "o33249.ingest.sentry.io",
+    "manus.im", "manuscdn.com",
+    "envato.com", "envato-static.com", "envatousercontent.com", "themeforest.net",
+    "liveperson.net", "lpsnmedia.net", "crixet.com"
 ]
 
 def smart_write(filename, new_content):
@@ -134,9 +165,8 @@ def main():
     smart_write("geosite_ai_hk_proxy.txt", txt_content)
 
     # ------------------------------------------------------------
-    # 5. 生成 .dae (給 dae/daed 路由規則用，使用分組格式，並將網域換行縮排)
+    # 5. 生成 .dae (給 dae/daed 路由規則用，使用多行分組格式)
     # ------------------------------------------------------------
-    # 將所有網域使用 ",\\n    " 進行拼接，最後一個網域之後不加逗號
     domains_formatted = ",\n    ".join(list_for_singbox)
     
     dae_content = f"""# DAE / DAED AI HK Proxy Rules
