@@ -9,6 +9,13 @@ SOURCE_URL = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/ge
 # 2. 香港直連白名單 (包含這些關鍵字的網域將被剔除，即不走代理)
 HK_DIRECT_KEYWORDS = [
     # ========================================================
+    # 🌟 Hugging Face 相關 (香港可直連)
+    # ========================================================
+    "huggingface.co",
+    "hf.space",
+    "hf.co",
+
+    # ========================================================
     # 🌟 Google 服務 (香港已開放直連，但 AI Studio/API 仍需代理)
     # ========================================================
     "gemini.google",
@@ -50,7 +57,8 @@ HK_DIRECT_KEYWORDS = [
     "trae.ai", "marscode.com", "devin.ai", "coderabbit.ai", "coderabbit.gallery.vsassets.io",
     "codeium.com", "codeiumdata.com", "windsurf.build", "windsurf.com",
     "ollama.com", "lmstudio.ai", "anythingllm.com", "langchain.com",
-    "agentclientprotocol.com", "crewai.com", "arena.ai",
+    "agentclientprotocol.com", "crewai.com", "arena.ai", "openclaw.ai", "clawhub.ai",
+    "chutes.ai",
 
     # ========================================================
     # 🌟 API、推理平台與媒體 (香港直連)
@@ -64,7 +72,7 @@ HK_DIRECT_KEYWORDS = [
     "spicywriter.com", "tapnow.ai", "duck.ai",
 
     # ========================================================
-    # 🌟 工作流、助理與非 AI 誤判網域 (香港直連)
+    # 🌟 工作流、助理與其它 (香港直連)
     # ========================================================
     "dify.ai", "coze.com", "jasper.ai",
     "x.ai", "grok.com", "grok.x.com",
