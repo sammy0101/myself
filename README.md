@@ -12,6 +12,7 @@
 | **[`geosite_ai_hk_proxy.srs`](./geosite_ai_hk_proxy.srs)** | Binary | Sing-Box 專用二進制規則 | Sing-Box, Nekobox |
 | **[`geosite_ai_hk_proxy.json`](./geosite_ai_hk_proxy.json)** | JSON | Sing-Box 規則源文件 | Sing-Box (Source) |
 | **[`geosite_ai_hk_proxy.list`](./geosite_ai_hk_proxy.list)** | List | 純域名列表 | Shadowrocket, Quantumult X |
+| **[`geosite_ai_hk_proxy.dae`](./geosite_ai_hk_proxy.dae)** | DAE | DAE / DAED 路由規則 (分組格式) | DAE, DAED |
 | **[`ai_ad.conf`](./ai_ad.conf)** | Conf | Shadowrocket 模組/配置 | Shadowrocket |
 | **[`CF-IPs.txt`](./CF-IPs.txt)** | Text | Cloudflare IP CIDR 列表 | 通用 |
 
@@ -51,9 +52,21 @@ rule-providers:
     ```
 *   **模組/配置:** 如果需要使用 `ai_ad.conf`，可直接導入或複製內容使用。
 
+### 4. DAE / DAED
+將 `geosite_ai_hk_proxy.dae` 中的多行分組規則，複製並貼上（或合併）至 DAE/DAED 控制台的 `routing` 區塊中：
+
+```dae
+routing {
+    # 請至以下網址複製完整的規則內容並貼於此處：
+    # https://raw.githubusercontent.com/sammy0101/myself/main/geosite_ai_hk_proxy.dae
+    
+    # 預設指向 -> proxy，您可根據需要將其中的 'proxy' 自行替換為您的代理群組名稱
+}
+```
+
 ## 🛠️ 自動化與腳本
 本倉庫利用 Python 腳本從上游數據源提取規則，並轉換為不同格式。
-*   `geosite_ai_hk.py`: 主要邏輯腳本，整合 AI 與 HK 地區規則。
+*   `geosite_ai_hk.py`: 主要邏輯腳本，整合 AI 與 HK 地區規則。**在處理中會自動剔除在香港可直接連線的服務（例如 Hugging Face、Google Gemini 網頁端、GitHub Copilot、Cursor、Windsurf、Manus AI 等）**。
 *   `Shadowrocket_rules.py`: 格式轉換工具。
 *   自動化工作流 (GitHub Actions) 會定期執行這些腳本，確保規則即時更新。
 
