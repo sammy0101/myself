@@ -18,61 +18,79 @@ urls = {
 
 # 設定要從 AI 代理列表中剔除的關鍵字 (香港可直連的網站)
 AI_EXCLUSIONS =[
-    # ----------------------------------------
-    # 1. 開源社群與模型託管
-    # ----------------------------------------
-    "huggingface.co", "hf.space", "hf.co", "chutes.ai",
-    # ----------------------------------------
-    # 2. AI 搜尋與聚合對話平台
-    # ----------------------------------------
-    "perplexity.ai", "perplexity.com", "poe.com", "poecdn.net",
+    # ========================================================
+    # 🌟 Hugging Face 相關 (香港可直連)
+    # ========================================================
+    "huggingface.co",
+    "hf.space",
+    "hf.co",
+
+    # ========================================================
+    # 🌟 Google 服務 (香港已開放直連，但 AI Studio/API 仍需代理)
+    # ========================================================
+    "gemini.google",
+    "bard.google.com",
+    "notebooklm.google",
+    "labs.google",
+    "generativeai.google",
+    "jules.google",
+    "opal.google",
+    "gemini.gstatic.com",
+    "antigravity.google",
+    "antigravity-unleash.goog",
+    "stitch.withgoogle.com",
+    "proactivebackend-pa.googleapis.com",
+
+    # ========================================================
+    # 🌟 Microsoft / GitHub Copilot (香港可直連)
+    # ========================================================
+    "githubcopilot.com",
+    "copilot-proxy.githubusercontent.com",
+    "copilot-workspace.githubnext.com",
+    "copilotprodattachments.blob.core.windows.net",
+    "copilot-telemetry-service.githubusercontent.com",
+    "copilot-telemetry.githubusercontent.com",
+    "copilot.microsoft.com",
+
+    # ========================================================
+    # 🌟 搜尋、聚合 & 代理工具 (香港直連)
+    # ========================================================
+    "perplexity.ai", "perplexity.com", "ppl-ai-file-upload.s3.amazonaws.com",
+    "poe.com", "poecdn.net",
     "ciciai.com", "cici.com", "ciciaicdn.com", "diabrowser.com", "dola.com",
-    # ----------------------------------------
-    # 3. 程式開發與 IDE
-    # ----------------------------------------
+    "diabrowser.engineering", "sider.ai",
+
+    # ========================================================
+    # 🌟 開發、編譯 & 本地工具 (香港直連)
+    # ========================================================
     "cursor.com", "cursor.sh", "cursorapi.com", "cursor-cdn.com",
     "trae.ai", "marscode.com", "devin.ai", "coderabbit.ai", "coderabbit.gallery.vsassets.io",
-    # ----------------------------------------
-    # 4. 模型 API 與推理加速
-    # ----------------------------------------
+    "codeium.com", "codeiumdata.com", "windsurf.build", "windsurf.com",
+    "ollama.com", "lmstudio.ai", "anythingllm.com", "langchain.com",
+    "agentclientprotocol.com", "crewai.com", "arena.ai", "openclaw.ai", "clawhub.ai",
+    "chutes.ai",
+
+    # ========================================================
+    # 🌟 API、推理平台與媒體 (香港直連)
+    # ========================================================
     "mistral.ai", "cohere.ai", "cohere.com", "groq.com", "cerebras.ai",
     "openrouter.ai", "deepmind.google", "deepmind.com",
-    # ----------------------------------------
-    # 5. 圖像、媒體與生成式內容
-    # ----------------------------------------
     "elevenlabs.io", "elevenlabs.com", "clipdrop.co",
     "comfy.org", "comfyregistry.org", "comfyci.org", "openart.ai",
-    # ----------------------------------------
-    # 6. 應用構建與工作流
-    # ----------------------------------------
+    "midjourney.com", "mozilla.ai", "h2o.ai", "kiro.dev", "lovart.ai",
+    "minimax.io", "openspec.dev", "plannotator.ai", "qoder.com",
+    "spicywriter.com", "tapnow.ai", "duck.ai",
+
+    # ========================================================
+    # 🌟 工作流、助理與其它 (香港直連)
+    # ========================================================
     "dify.ai", "coze.com", "jasper.ai",
-    # ----------------------------------------
-    # 7. 社交與馬斯克系列
-    # ----------------------------------------
     "x.ai", "grok.com", "grok.x.com",
-    # ----------------------------------------
-    # 8. 基礎設施與監控
-    # ----------------------------------------
     "gateway.ai.cloudflare.com", "pplx-res.cloudinary.com",
     "browser-intake-datadoghq.com", "o33249.ingest.sentry.io",
-    # ----------------------------------------
-    # 9. Azure/OpenAI CDN
-    # ----------------------------------------
-    "openaiapi-site.azureedge.net", "production-openaicom-storage.azureedge.net",
-    # ----------------------------------------
-    # Warning
-    # ----------------------------------------
-    "copilot.microsoft.com", 
-
-    # ----------------------------------------
-    # 🌟 Google Gemini 相關 (香港已開放直連)
-    # 註：aistudio 不在此名單，將繼續走代理
-    # ----------------------------------------
-    "gemini.google",
-    "gemini.google.com",
-    "bard.google.com",
-    "generativelanguage.googleapis.com", 
-    "proactivebackend-pa.googleapis.com"
+    "manus.im", "manuscdn.com",
+    "envato.com", "envato-static.com", "envatousercontent.com", "themeforest.net",
+    "liveperson.net", "lpsnmedia.net", "crixet.com"
 ]
 
 def fetch_and_parse(url, policy, exclusions=None):
