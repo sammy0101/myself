@@ -10,7 +10,7 @@ urls = {
         "policy": "Reject"
     },
     "AI": {
-        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ai-!cn.list",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.list",
         "policy": "Proxy"
     },
     "China": {
@@ -19,40 +19,27 @@ urls = {
     }
 }
 
-# 🌟 完全復原：你整理的最完整、最適合香港直連的 AI 排除名單
+# 🌟 香港直連的 AI 排除名單
 AI_EXCLUSIONS =[
     # ========================================================
     # 🌟 Hugging Face 相關 (香港可直連)
     # ========================================================
-    "huggingface.co",
-    "hf.space",
-    "hf.co",
+    "huggingface.co", "hf.space", "hf.co",
 
     # ========================================================
     # 🌟 Google 服務 (香港已開放直連，但 AI Studio/API 仍需代理)
     # ========================================================
-    "gemini.google",
-    "bard.google.com",
-    "notebooklm.google",
-    "labs.google",
-    "generativeai.google",
-    "jules.google",
-    "opal.google",
-    "gemini.gstatic.com",
-    "antigravity.google",
-    "antigravity-unleash.goog",
-    "stitch.withgoogle.com",
+    "gemini.google", "bard.google.com", "notebooklm.google", "labs.google",
+    "generativeai.google", "jules.google", "opal.google", "gemini.gstatic.com",
+    "antigravity.google", "antigravity-unleash.goog", "stitch.withgoogle.com",
     "proactivebackend-pa.googleapis.com",
 
     # ========================================================
     # 🌟 Microsoft / GitHub Copilot (香港可直連)
     # ========================================================
-    "githubcopilot.com",
-    "copilot-proxy.githubusercontent.com",
-    "copilot-workspace.githubnext.com",
-    "copilotprodattachments.blob.core.windows.net",
-    "copilot-telemetry-service.githubusercontent.com",
-    "copilot-telemetry.githubusercontent.com",
+    "githubcopilot.com", "copilot-proxy.githubusercontent.com",
+    "copilot-workspace.githubnext.com", "copilotprodattachments.blob.core.windows.net",
+    "copilot-telemetry-service.githubusercontent.com", "copilot-telemetry.githubusercontent.com",
     "copilot.microsoft.com",
 
     # ========================================================
@@ -163,13 +150,18 @@ def main():
     # ========================================================
     # 輸出 1: ai_ad.conf (原有的 AI 與去廣告規則 - 香港專用版)
     # ========================================================
-    # 保持原有的極簡頭部與 FINAL,DIRECT 策略
-    ai_ad_header = "[General]\nbypass-system = true\n"
+    # 🌟 升級：加入適合香港本地網路的高速安全 DoH 伺服器
+    ai_ad_header = """[General]
+bypass-system = true
+dns-server = https://cloudflare-dns.com/dns-query, https://dns.google/dns-query
+"""
     ai_ad_body = "[Rule]\n"
-    ai_ad_body += f"# --- Category: AI (Proxy) [{len(ai_rules)}] ---\n"
-    ai_ad_body += "\n".join(ai_rules) + "\n\n"
+    # 🌟 修改：去廣告（Reject）移至最上方，保障效能與隱私
     ai_ad_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
-    ai_ad_body += "\n".join(ads_rules) + "\n"
+    ai_ad_body += "\n".join(ads_rules) + "\n\n"
+    # AI 代理規則隨後
+    ai_ad_body += f"# --- Category: AI (Proxy) [{len(ai_rules)}] ---\n"
+    ai_ad_body += "\n".join(ai_rules) + "\n"
     ai_ad_body += "\n# Final Match\nFINAL,DIRECT\n"
     
     smart_write_file("ai_ad.conf", ai_ad_header, ai_ad_body)
@@ -197,7 +189,7 @@ skip-proxy = 127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.
     cn_ad_body += "IP-CIDR,192.168.0.0/16,DIRECT\n"
     cn_ad_body += "IP-CIDR,10.0.0.0/8,DIRECT\n\n"
     
-    # 廣告攔截
+    # 廣告攔截 (最優先)
     cn_ad_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
     cn_ad_body += "\n".join(ads_rules) + "\n\n"
     
