@@ -6,13 +6,17 @@ import re
 # 設定來源網址
 urls = {
     "Ads": {
-        # 使用你提供的正確 MetaCubeX 去廣告純文字列表連結
         "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ads-all.list",
         "policy": "Reject"
     },
     "AI": {
-        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ai-!cn.list",
+        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.list",
         "policy": "Proxy"
+    },
+    "China": {
+        # 修正：使用正確的 cn.list 網址
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/cn.list",
+        "policy": "DIRECT"
     }
 }
 
@@ -21,35 +25,22 @@ AI_EXCLUSIONS =[
     # ========================================================
     # 🌟 Hugging Face 相關 (香港可直連)
     # ========================================================
-    "huggingface.co",
-    "hf.space",
-    "hf.co",
+    "huggingface.co", "hf.space", "hf.co",
 
     # ========================================================
     # 🌟 Google 服務 (香港已開放直連，但 AI Studio/API 仍需代理)
     # ========================================================
-    "gemini.google",
-    "bard.google.com",
-    "notebooklm.google",
-    "labs.google",
-    "generativeai.google",
-    "jules.google",
-    "opal.google",
-    "gemini.gstatic.com",
-    "antigravity.google",
-    "antigravity-unleash.goog",
-    "stitch.withgoogle.com",
+    "gemini.google", "bard.google.com", "notebooklm.google", "labs.google",
+    "generativeai.google", "jules.google", "opal.google", "gemini.gstatic.com",
+    "antigravity.google", "antigravity-unleash.goog", "stitch.withgoogle.com",
     "proactivebackend-pa.googleapis.com",
 
     # ========================================================
     # 🌟 Microsoft / GitHub Copilot (香港可直連)
     # ========================================================
-    "githubcopilot.com",
-    "copilot-proxy.githubusercontent.com",
-    "copilot-workspace.githubnext.com",
-    "copilotprodattachments.blob.core.windows.net",
-    "copilot-telemetry-service.githubusercontent.com",
-    "copilot-telemetry.githubusercontent.com",
+    "githubcopilot.com", "copilot-proxy.githubusercontent.com",
+    "copilot-workspace.githubnext.com", "copilotprodattachments.blob.core.windows.net",
+    "copilot-telemetry-service.githubusercontent.com", "copilot-telemetry.githubusercontent.com",
     "copilot.microsoft.com",
 
     # ========================================================
@@ -94,8 +85,8 @@ AI_EXCLUSIONS =[
 ]
 
 def fetch_and_parse(url, policy, exclusions=None):
-    rules =[]
-    if exclusions is None: exclusions =[]
+    rules = []
+    if exclusions is None: exclusions = []
     try:
         print(f"Downloading {url}...")
         resp = requests.get(url, timeout=15)
@@ -109,7 +100,7 @@ def fetch_and_parse(url, policy, exclusions=None):
             domain = line.replace("+.", "").replace("'", "").strip()
             if not domain: continue
             
-            # 檢查是否命中直連白名單 (只針對 AI 規則進行白名單檢查)
+            # 檢查是否命中直連白名單 (只針對傳入名單的規則進行檢查)
             is_excluded = False
             for kw in exclusions:
                 if kw.lower() in domain.lower():
@@ -125,52 +116,88 @@ def get_content_without_timestamp(content):
     """移除內容中的 Updated 時間戳以便比對"""
     return re.sub(r'# Updated: .*\n', '', content)
 
-def main():
-    conf_file = "ai_ad.conf"
-    header_content = "[General]\nbypass-system = true\n"
+def smart_write_file(filename, header, body):
+    """智慧比對寫入檔案，避免無變更時頻繁觸發 git commit"""
+    new_content_no_time = header.strip() + "\n\n" + body.strip()
     
-    # 1. 嘗試保留舊檔案的 Header (如果有的話)
     old_content_raw = ""
-    if os.path.exists(conf_file):
+    if os.path.exists(filename):
         try:
-            with open(conf_file, "r", encoding="utf-8") as f:
+            with open(filename, "r", encoding="utf-8") as f:
                 old_content_raw = f.read()
-                if "[Rule]" in old_content_raw:
-                    raw_header = old_content_raw.split("[Rule]")[0]
-                    # 清理舊 Header 中的時間戳
-                    clean_lines =[line for line in raw_header.splitlines() if not line.strip().startswith("# Updated:")]
-                    header_content = "\n".join(clean_lines) + "\n"
         except Exception:
             pass
-
-    # 2. 下載新規則 (廣告規則不需要傳入排除名單)
-    ai_rules = fetch_and_parse(urls["AI"]["url"], urls["AI"]["policy"], exclusions=AI_EXCLUSIONS)
-    ads_rules = fetch_and_parse(urls["Ads"]["url"], urls["Ads"]["policy"], exclusions=[])
-
-    # 3. 組合新內容 (主體)
-    new_body = "[Rule]\n"
-    new_body += f"# --- Category: AI (Proxy) [{len(ai_rules)}] ---\n"
-    new_body += "\n".join(ai_rules) + "\n\n"
-    new_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
-    new_body += "\n".join(ads_rules) + "\n"
-    new_body += "\n# Final Match\nFINAL,DIRECT\n"
-
-    # 4. 用於比對的內容 (不含時間戳)
-    new_content_no_time = header_content.strip() + "\n\n" + new_body
+            
     old_content_no_time = get_content_without_timestamp(old_content_raw)
-
-    # 5. 比對並寫入
+    
     if new_content_no_time.strip() == old_content_no_time.strip():
-        print(f"[{conf_file}] 規則內容未變更，跳過更新。")
+        print(f"[{filename}] 內容未變更，跳過更新。")
     else:
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        final_content = header_content.strip() + "\n\n"
+        final_content = header.strip() + "\n\n"
         final_content += f"# Updated: {current_time}\n"
-        final_content += new_body
+        final_content += body.strip() + "\n"
         
-        with open(conf_file, "w", encoding="utf-8") as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(final_content)
-        print(f"[{conf_file}] 規則已有更新，已寫入。")
+        print(f"[{filename}] 規則已有更新，已寫入。")
+
+def main():
+    # 1. 下載並解析各項規則
+    ai_rules = fetch_and_parse(urls["AI"]["url"], urls["AI"]["policy"], exclusions=AI_EXCLUSIONS)
+    ads_rules = fetch_and_parse(urls["Ads"]["url"], urls["Ads"]["policy"], exclusions=[])
+    china_rules = fetch_and_parse(urls["China"]["url"], urls["China"]["policy"], exclusions=[])
+
+    # ========================================================
+    # 輸出 1: ai_ad.conf (原有的 AI 與去廣告規則)
+    # ========================================================
+    ai_ad_header = "[General]\nbypass-system = true\n"
+    ai_ad_body = "[Rule]\n"
+    ai_ad_body += f"# --- Category: AI (Proxy) [{len(ai_rules)}] ---\n"
+    ai_ad_body += "\n".join(ai_rules) + "\n\n"
+    ai_ad_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
+    ai_ad_body += "\n".join(ads_rules) + "\n"
+    ai_ad_body += "\n# Final Match\nFINAL,DIRECT\n"
+    
+    smart_write_file("ai_ad.conf", ai_ad_header, ai_ad_body)
+
+    # ========================================================
+    # 輸出 2: cn_ad.conf (中國用戶專用：分流 + 去廣告 + DoH 防洩漏)
+    # ========================================================
+    # 升級為 DoH 伺服器配置以防止 DNS 污染與洩漏
+    cn_ad_header = """[General]
+bypass-system = true
+dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query
+fallback-dns-server = https://dns.google/dns-query, https://cloudflare-dns.com/dns-query
+ipv6 = false
+prefer-ipv6 = false
+dns-direct-system = false
+skip-proxy = 127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.local, elinks.loc
+"""
+    
+    cn_ad_body = "[Rule]\n"
+    # 本地內網優先直連
+    cn_ad_body += "# --- Private & Local Networks (DIRECT) ---\n"
+    cn_ad_body += "DOMAIN-SUFFIX,local,DIRECT\n"
+    cn_ad_body += "IP-CIDR,127.0.0.0/8,DIRECT\n"
+    cn_ad_body += "IP-CIDR,172.16.0.0/12,DIRECT\n"
+    cn_ad_body += "IP-CIDR,192.168.0.0/16,DIRECT\n"
+    cn_ad_body += "IP-CIDR,10.0.0.0/8,DIRECT\n\n"
+    
+    # 廣告攔截
+    cn_ad_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
+    cn_ad_body += "\n".join(ads_rules) + "\n\n"
+    
+    # 國內域名直連
+    cn_ad_body += f"# --- China Domains (DIRECT) [{len(china_rules)}] ---\n"
+    cn_ad_body += "\n".join(china_rules) + "\n\n"
+    
+    # 國內 IP 兜底直連，其餘國外流量走 PROXY
+    cn_ad_body += "# --- China IPs & Match (Proxy) ---\n"
+    cn_ad_body += "GEOIP,CN,DIRECT\n"
+    cn_ad_body += "FINAL,PROXY\n"
+    
+    smart_write_file("cn_ad.conf", cn_ad_header, cn_ad_body)
 
 if __name__ == "__main__":
     main()
