@@ -3,44 +3,56 @@ import datetime
 import os
 import re
 
-# 設定來源網址
+# 設定來源網址 (統一使用最穩定的 raw.githubusercontent 格式)
 urls = {
     "Ads": {
         "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ads-all.list",
         "policy": "Reject"
     },
     "AI": {
-        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.list",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ai-!cn.list",
         "policy": "Proxy"
     },
     "China": {
-        # 修正：使用正確的 cn.list 網址
         "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/cn.list",
         "policy": "DIRECT"
     }
 }
 
-# 設定要從 AI 代理列表中剔除的關鍵字 (香港可直連的網站)
+# 🌟 完全復原：你整理的最完整、最適合香港直連的 AI 排除名單
 AI_EXCLUSIONS =[
     # ========================================================
     # 🌟 Hugging Face 相關 (香港可直連)
     # ========================================================
-    "huggingface.co", "hf.space", "hf.co",
+    "huggingface.co",
+    "hf.space",
+    "hf.co",
 
     # ========================================================
     # 🌟 Google 服務 (香港已開放直連，但 AI Studio/API 仍需代理)
     # ========================================================
-    "gemini.google", "bard.google.com", "notebooklm.google", "labs.google",
-    "generativeai.google", "jules.google", "opal.google", "gemini.gstatic.com",
-    "antigravity.google", "antigravity-unleash.goog", "stitch.withgoogle.com",
+    "gemini.google",
+    "bard.google.com",
+    "notebooklm.google",
+    "labs.google",
+    "generativeai.google",
+    "jules.google",
+    "opal.google",
+    "gemini.gstatic.com",
+    "antigravity.google",
+    "antigravity-unleash.goog",
+    "stitch.withgoogle.com",
     "proactivebackend-pa.googleapis.com",
 
     # ========================================================
     # 🌟 Microsoft / GitHub Copilot (香港可直連)
     # ========================================================
-    "githubcopilot.com", "copilot-proxy.githubusercontent.com",
-    "copilot-workspace.githubnext.com", "copilotprodattachments.blob.core.windows.net",
-    "copilot-telemetry-service.githubusercontent.com", "copilot-telemetry.githubusercontent.com",
+    "githubcopilot.com",
+    "copilot-proxy.githubusercontent.com",
+    "copilot-workspace.githubnext.com",
+    "copilotprodattachments.blob.core.windows.net",
+    "copilot-telemetry-service.githubusercontent.com",
+    "copilot-telemetry.githubusercontent.com",
     "copilot.microsoft.com",
 
     # ========================================================
@@ -149,8 +161,9 @@ def main():
     china_rules = fetch_and_parse(urls["China"]["url"], urls["China"]["policy"], exclusions=[])
 
     # ========================================================
-    # 輸出 1: ai_ad.conf (原有的 AI 與去廣告規則)
+    # 輸出 1: ai_ad.conf (原有的 AI 與去廣告規則 - 香港專用版)
     # ========================================================
+    # 保持原有的極簡頭部與 FINAL,DIRECT 策略
     ai_ad_header = "[General]\nbypass-system = true\n"
     ai_ad_body = "[Rule]\n"
     ai_ad_body += f"# --- Category: AI (Proxy) [{len(ai_rules)}] ---\n"
@@ -164,7 +177,7 @@ def main():
     # ========================================================
     # 輸出 2: cn_ad.conf (中國用戶專用：分流 + 去廣告 + DoH 防洩漏)
     # ========================================================
-    # 升級為 DoH 伺服器配置以防止 DNS 污染與洩漏
+    # 升級為 DoH 伺服器配置以防止 DNS 污染與洩漏，配合 FINAL,PROXY
     cn_ad_header = """[General]
 bypass-system = true
 dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query
