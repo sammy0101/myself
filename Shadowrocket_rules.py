@@ -19,7 +19,7 @@ urls = {
     }
 }
 
-# 🌟 香港直連的 AI 排除名單
+# 🌟 香港直連的 AI 排除名單 (完全復原你的完整名單)
 AI_EXCLUSIONS =[
     # ========================================================
     # 🌟 Hugging Face 相關 (香港可直連)
@@ -82,6 +82,10 @@ AI_EXCLUSIONS =[
     "envato.com", "envato-static.com", "envatousercontent.com", "themeforest.net",
     "liveperson.net", "lpsnmedia.net", "crixet.com"
 ]
+
+# 通用的 TUN 繞過與本地跳過參數 (確保最優效能、防止 Apple 服務出 Bug)
+COMMON_SKIP_PROXY = "192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, fe80::/10, fc00::/7, localhost, *.local, *.lan, *.internal, e.crashlytics.com, captive.apple.com, sequoia.apple.com, seed-sequoia.siri.apple.com, *.ls.apple.com"
+COMMON_BYPASS_TUN = "10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.18.0.0/15,198.51.100.0/24,203.0.113.0/24,233.252.0.0/24,224.0.0.0/4,255.255.255.255/32,::1/128,::ffff:0:0/96,::ffff:0:0:0/96,64:ff9b::/96,64:ff9b:1::/48,100::/64,2001::/32,2001:20::/28,2001:db8::/32,2002::/16,3fff::/20,5f00::/16,fc00::/7,fe80::/10,ff00::/8"
 
 def fetch_and_parse(url, policy, exclusions=None):
     rules = []
@@ -150,13 +154,18 @@ def main():
     # ========================================================
     # 輸出 1: ai_ad.conf (原有的 AI 與去廣告規則 - 香港專用版)
     # ========================================================
-    # 🌟 升級：加入適合香港本地網路的高速安全 DoH 伺服器
-    ai_ad_header = """[General]
+    # 🌟 升級：加入完整極致優化參數與國際高速 DoH 服務
+    ai_ad_header = f"""[General]
 bypass-system = true
+ipv6 = false
+prefer-ipv6 = false
+dns-direct-system = false
+skip-proxy = {COMMON_SKIP_PROXY}
+bypass-tun = {COMMON_BYPASS_TUN}
 dns-server = https://cloudflare-dns.com/dns-query, https://dns.google/dns-query
 """
     ai_ad_body = "[Rule]\n"
-    # 🌟 修改：去廣告（Reject）移至最上方，保障效能與隱私
+    # 去廣告（Reject）移至最上方，保障效能與隱私
     ai_ad_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
     ai_ad_body += "\n".join(ads_rules) + "\n\n"
     # AI 代理規則隨後
@@ -169,15 +178,16 @@ dns-server = https://cloudflare-dns.com/dns-query, https://dns.google/dns-query
     # ========================================================
     # 輸出 2: cn_ad.conf (中國用戶專用：分流 + 去廣告 + DoH 防洩漏)
     # ========================================================
-    # 升級為 DoH 伺服器配置以防止 DNS 污染與洩漏，配合 FINAL,PROXY
-    cn_ad_header = """[General]
+    # 🌟 升級：加入完整極致優化參數與中國大陸高速 DoH 服務
+    cn_ad_header = f"""[General]
 bypass-system = true
-dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query
-fallback-dns-server = https://dns.google/dns-query, https://cloudflare-dns.com/dns-query
 ipv6 = false
 prefer-ipv6 = false
 dns-direct-system = false
-skip-proxy = 127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.local, elinks.loc
+skip-proxy = {COMMON_SKIP_PROXY}
+bypass-tun = {COMMON_BYPASS_TUN}
+dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query
+fallback-dns-server = https://dns.google/dns-query, https://cloudflare-dns.com/dns-query
 """
     
     cn_ad_body = "[Rule]\n"
