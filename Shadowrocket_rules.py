@@ -10,7 +10,7 @@ urls = {
         "policy": "Reject"
     },
     "AI": {
-        "url": "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.list",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ai-!cn.list",
         "policy": "Proxy"
     },
     "China": {
