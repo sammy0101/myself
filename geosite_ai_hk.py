@@ -21,6 +21,8 @@ HK_DIRECT_KEYWORDS = [
     "gemini.google",
     "bard.google.com",
     "notebooklm.google",
+    "notebook.google.com",
+    "flow.google",
     "labs.google",
     "generativeai.google",
     "jules.google",
@@ -32,8 +34,11 @@ HK_DIRECT_KEYWORDS = [
     "proactivebackend-pa.googleapis.com",
 
     # ========================================================
-    # 🌟 Microsoft / GitHub Copilot (香港可直連)
+    # 🌟 Microsoft / GitHub Copilot (香港可直連，含最新獨立網域)
     # ========================================================
+    "copilot.com",
+    "copilot-stg.com",
+    "copilot.cloud.microsoft",
     "githubcopilot.com",
     "copilot-proxy.githubusercontent.com",
     "copilot-workspace.githubnext.com",
@@ -45,14 +50,15 @@ HK_DIRECT_KEYWORDS = [
     # ========================================================
     # 🌟 搜尋、聚合 & 代理工具 (香港直連)
     # ========================================================
-    "perplexity.ai", "perplexity.com", "ppl-ai-file-upload.s3.amazonaws.com",
+    "pplx.ai", "perplexity.ai", "perplexity.com", "ppl-ai-file-upload.s3.amazonaws.com",
     "poe.com", "poecdn.net",
     "ciciai.com", "cici.com", "ciciaicdn.com", "diabrowser.com", "dola.com",
-    "diabrowser.engineering", "sider.ai",
+    "diabrowser.engineering", "sider.ai", "talkai.info",
 
     # ========================================================
     # 🌟 開發、編譯 & 本地工具 (香港直連)
     # ========================================================
+    "jetbrains.ai", "grazie.ai", "grazie.aws.intellij.net",
     "cursor.com", "cursor.sh", "cursorapi.com", "cursor-cdn.com",
     "trae.ai", "marscode.com", "devin.ai", "coderabbit.ai", "coderabbit.gallery.vsassets.io",
     "codeium.com", "codeiumdata.com", "windsurf.build", "windsurf.com",
@@ -69,13 +75,19 @@ HK_DIRECT_KEYWORDS = [
     "comfy.org", "comfyregistry.org", "comfyci.org", "openart.ai",
     "midjourney.com", "mozilla.ai", "h2o.ai", "kiro.dev", "lovart.ai",
     "minimax.io", "openspec.dev", "plannotator.ai", "qoder.com",
-    "spicywriter.com", "tapnow.ai", "duck.ai",
+    "spicywriter.com", "tapnow.ai", "duck.ai", "novelai.net", "dreamgen.com",
+    "tripo3d.ai", "notegpt.io", "deepwiki.com", "deepwiki.org",
+
+    # ========================================================
+    # 🌟 主流華人 AI / 助理 (香港直連)
+    # ========================================================
+    "kimi.ai", "moonshot.ai",
 
     # ========================================================
     # 🌟 工作流、助理與其它 (香港直連)
     # ========================================================
     "dify.ai", "coze.com", "jasper.ai",
-    "x.ai", "grok.com", "grok.x.com",
+    "x.ai", "grok.com", "grok.x.com", "grokipedia.com",
     "gateway.ai.cloudflare.com", "pplx-res.cloudinary.com",
     "browser-intake-datadoghq.com", "o33249.ingest.sentry.io",
     "manus.im", "manuscdn.com",
