@@ -19,8 +19,8 @@ urls = {
     }
 }
 
-# 🌟 香港直連的 AI 排除名單 (完全復原你的完整名單)
-AI_EXCLUSIONS =[
+# 🌟 香港直連的 AI 排除名單 (同步最新發現的直連網域)
+AI_EXCLUSIONS = [
     # ========================================================
     # 🌟 Hugging Face 相關 (香港可直連)
     # ========================================================
@@ -29,14 +29,15 @@ AI_EXCLUSIONS =[
     # ========================================================
     # 🌟 Google 服務 (香港已開放直連，但 AI Studio/API 仍需代理)
     # ========================================================
-    "gemini.google", "bard.google.com", "notebooklm.google", "labs.google",
-    "generativeai.google", "jules.google", "opal.google", "gemini.gstatic.com",
-    "antigravity.google", "antigravity-unleash.goog", "stitch.withgoogle.com",
-    "proactivebackend-pa.googleapis.com",
+    "gemini.google", "bard.google.com", "notebooklm.google", "notebook.google.com",
+    "flow.google", "labs.google", "generativeai.google", "jules.google", "opal.google",
+    "gemini.gstatic.com", "antigravity.google", "antigravity-unleash.goog",
+    "stitch.withgoogle.com", "proactivebackend-pa.googleapis.com",
 
     # ========================================================
-    # 🌟 Microsoft / GitHub Copilot (香港可直連)
+    # 🌟 Microsoft / GitHub Copilot (香港可直連，含最新獨立網域)
     # ========================================================
+    "copilot.com", "copilot-stg.com", "copilot.cloud.microsoft",
     "githubcopilot.com", "copilot-proxy.githubusercontent.com",
     "copilot-workspace.githubnext.com", "copilotprodattachments.blob.core.windows.net",
     "copilot-telemetry-service.githubusercontent.com", "copilot-telemetry.githubusercontent.com",
@@ -45,14 +46,15 @@ AI_EXCLUSIONS =[
     # ========================================================
     # 🌟 搜尋、聚合 & 代理工具 (香港直連)
     # ========================================================
-    "perplexity.ai", "perplexity.com", "ppl-ai-file-upload.s3.amazonaws.com",
+    "pplx.ai", "perplexity.ai", "perplexity.com", "ppl-ai-file-upload.s3.amazonaws.com",
     "poe.com", "poecdn.net",
     "ciciai.com", "cici.com", "ciciaicdn.com", "diabrowser.com", "dola.com",
-    "diabrowser.engineering", "sider.ai",
+    "diabrowser.engineering", "sider.ai", "talkai.info",
 
     # ========================================================
     # 🌟 開發、編譯 & 本地工具 (香港直連)
     # ========================================================
+    "jetbrains.ai", "grazie.ai", "grazie.aws.intellij.net",
     "cursor.com", "cursor.sh", "cursorapi.com", "cursor-cdn.com",
     "trae.ai", "marscode.com", "devin.ai", "coderabbit.ai", "coderabbit.gallery.vsassets.io",
     "codeium.com", "codeiumdata.com", "windsurf.build", "windsurf.com",
@@ -69,13 +71,19 @@ AI_EXCLUSIONS =[
     "comfy.org", "comfyregistry.org", "comfyci.org", "openart.ai",
     "midjourney.com", "mozilla.ai", "h2o.ai", "kiro.dev", "lovart.ai",
     "minimax.io", "openspec.dev", "plannotator.ai", "qoder.com",
-    "spicywriter.com", "tapnow.ai", "duck.ai",
+    "spicywriter.com", "tapnow.ai", "duck.ai", "novelai.net", "dreamgen.com",
+    "tripo3d.ai", "notegpt.io", "deepwiki.com", "deepwiki.org",
+
+    # ========================================================
+    # 🌟 主流華人 AI / 助理 (香港直連)
+    # ========================================================
+    "kimi.ai", "moonshot.ai",
 
     # ========================================================
     # 🌟 工作流、助理與其它 (香港直連)
     # ========================================================
     "dify.ai", "coze.com", "jasper.ai",
-    "x.ai", "grok.com", "grok.x.com",
+    "x.ai", "grok.com", "grok.x.com", "grokipedia.com",
     "gateway.ai.cloudflare.com", "pplx-res.cloudinary.com",
     "browser-intake-datadoghq.com", "o33249.ingest.sentry.io",
     "manus.im", "manuscdn.com",
@@ -154,7 +162,6 @@ def main():
     # ========================================================
     # 輸出 1: ai_ad.conf (原有的 AI 與去廣告規則 - 香港專用版)
     # ========================================================
-    # 🌟 升級：加入完整極致優化參數與國際高速 DoH 服務
     ai_ad_header = f"""[General]
 bypass-system = true
 ipv6 = false
@@ -165,10 +172,8 @@ bypass-tun = {COMMON_BYPASS_TUN}
 dns-server = https://cloudflare-dns.com/dns-query, https://dns.google/dns-query
 """
     ai_ad_body = "[Rule]\n"
-    # 去廣告（Reject）移至最上方，保障效能與隱私
     ai_ad_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
     ai_ad_body += "\n".join(ads_rules) + "\n\n"
-    # AI 代理規則隨後
     ai_ad_body += f"# --- Category: AI (Proxy) [{len(ai_rules)}] ---\n"
     ai_ad_body += "\n".join(ai_rules) + "\n"
     ai_ad_body += "\n# Final Match\nFINAL,DIRECT\n"
@@ -178,7 +183,6 @@ dns-server = https://cloudflare-dns.com/dns-query, https://dns.google/dns-query
     # ========================================================
     # 輸出 2: cn_ad.conf (中國用戶專用：分流 + 去廣告 + DoH 防洩漏)
     # ========================================================
-    # 🌟 升級：加入完整極致優化參數與中國大陸高速 DoH 服務
     cn_ad_header = f"""[General]
 bypass-system = true
 ipv6 = false
@@ -191,7 +195,6 @@ fallback-dns-server = https://dns.google/dns-query, https://cloudflare-dns.com/d
 """
     
     cn_ad_body = "[Rule]\n"
-    # 本地內網優先直連
     cn_ad_body += "# --- Private & Local Networks (DIRECT) ---\n"
     cn_ad_body += "DOMAIN-SUFFIX,local,DIRECT\n"
     cn_ad_body += "IP-CIDR,127.0.0.0/8,DIRECT\n"
@@ -199,15 +202,12 @@ fallback-dns-server = https://dns.google/dns-query, https://cloudflare-dns.com/d
     cn_ad_body += "IP-CIDR,192.168.0.0/16,DIRECT\n"
     cn_ad_body += "IP-CIDR,10.0.0.0/8,DIRECT\n\n"
     
-    # 廣告攔截 (最優先)
     cn_ad_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
     cn_ad_body += "\n".join(ads_rules) + "\n\n"
     
-    # 國內域名直連
     cn_ad_body += f"# --- China Domains (DIRECT) [{len(china_rules)}] ---\n"
     cn_ad_body += "\n".join(china_rules) + "\n\n"
     
-    # 國內 IP 兜底直連，其餘國外流量走 PROXY
     cn_ad_body += "# --- China IPs & Match (Proxy) ---\n"
     cn_ad_body += "GEOIP,CN,DIRECT\n"
     cn_ad_body += "FINAL,PROXY\n"
