@@ -19,6 +19,7 @@
 +.claudemcpclient.com
 +.meta.ai
 +.claude.com
++.claude.ai
 +.oaiusercontent.com
 +.chatgpt.com
 +.chatgpt.site
@@ -27,7 +28,6 @@
 +.chat.com
 +.openai.com
 +.sora.com
-+.claude.ai
 +.clau.de
 +.anthropic.com
 +.ai.studio
@@ -36,15 +36,15 @@
 +.youmind.ai
 +.oystermercury.top
 +.makersuite.google.com
-+.chatgpt.livekit.cloud
-+.geller-pa.googleapis.com
 +.generativelanguage.googleapis.com
 +.aida.googleapis.com
 +.aicode.googleapis.com
 +.aisandbox-pa.googleapis.com
 +.aistudio.google.com
++.geller-pa.googleapis.com
 +.robinfrontend-pa.googleapis.com
-+.host.livekit.cloud
 +.turn.livekit.cloud
++.host.livekit.cloud
++.chatgpt.livekit.cloud
 +.openai.com.cdn.cloudflare.net
 +.openai.qualtrics.com
