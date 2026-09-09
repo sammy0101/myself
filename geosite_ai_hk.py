@@ -6,45 +6,28 @@ import os
 # 1. 上游位址
 SOURCE_URL = "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.list"
 
-# 2. 香港直連白名單 (包含這些關鍵字的網域將被剔除，即不走代理)
+# 2. 香港直連白名單 (已移除誤傷 AI Studio 的 generativeai.google)
 HK_DIRECT_KEYWORDS = [
     # ========================================================
     # 🌟 Hugging Face 相關 (香港可直連)
     # ========================================================
-    "huggingface.co",
-    "hf.space",
-    "hf.co",
+    "huggingface.co", "hf.space", "hf.co",
 
     # ========================================================
-    # 🌟 Google 服務 (香港已開放直連，但 AI Studio/API 仍需代理)
+    # 🌟 Google 服務 (僅保留香港直連，移除 generativeai)
     # ========================================================
-    "gemini.google",
-    "bard.google.com",
-    "notebooklm.google",
-    "notebook.google.com",
-    "flow.google",
-    "labs.google",
-    "generativeai.google",
-    "jules.google",
-    "opal.google",
-    "gemini.gstatic.com",
-    "antigravity.google",
-    "antigravity-unleash.goog",
-    "stitch.withgoogle.com",
-    "proactivebackend-pa.googleapis.com",
+    "gemini.google", "bard.google.com", "notebooklm.google", "notebook.google.com",
+    "flow.google", "labs.google", "jules.google", "opal.google",
+    "gemini.gstatic.com", "antigravity.google", "antigravity-unleash.goog",
+    "stitch.withgoogle.com", "proactivebackend-pa.googleapis.com",
 
     # ========================================================
     # 🌟 Microsoft / GitHub Copilot (香港可直連，含最新獨立網域)
     # ========================================================
-    "copilot.com",
-    "copilot-stg.com",
-    "copilot.cloud.microsoft",
-    "githubcopilot.com",
-    "copilot-proxy.githubusercontent.com",
-    "copilot-workspace.githubnext.com",
-    "copilotprodattachments.blob.core.windows.net",
-    "copilot-telemetry-service.githubusercontent.com",
-    "copilot-telemetry.githubusercontent.com",
+    "copilot.com", "copilot-stg.com", "copilot.cloud.microsoft",
+    "githubcopilot.com", "copilot-proxy.githubusercontent.com",
+    "copilot-workspace.githubnext.com", "copilotprodattachments.blob.core.windows.net",
+    "copilot-telemetry-service.githubusercontent.com", "copilot-telemetry.githubusercontent.com",
     "copilot.microsoft.com",
 
     # ========================================================
@@ -95,6 +78,23 @@ HK_DIRECT_KEYWORDS = [
     "liveperson.net", "lpsnmedia.net", "crixet.com"
 ]
 
+# 🌟 強制注入代理的名單 (包含 AI Studio 核心依賴)
+FORCE_PROXY_DOMAINS = [
+    # Google AI Studio 核心通道
+    "aistudio.google.com",
+    "makersuite.google.com",
+    "generativelanguage.googleapis.com",
+    "alkalimakersuite-pa.clients6.google.com",
+    "generativeai.google",
+    # ChatGPT App 輔助
+    "statsig.com",
+    "statsigapi.net",
+    "featuregates.org",
+    "featureassets.org",
+    "livekit.cloud",
+    "chatgpt.livekit.cloud"
+]
+
 def smart_write(filename, new_content):
     if os.path.exists(filename):
         try:
@@ -120,9 +120,8 @@ def main():
         print(f"下載失敗: {e}")
         return
 
-    # 我們需要準備兩個列表
-    list_for_singbox = [] # 乾淨的域名 (openai.com)
-    list_for_clash = []   # 帶通配符的域名 (+.openai.com)
+    list_for_singbox = []
+    list_for_clash = []
     
     print("正在處理並過濾規則...")
     for line in lines:
@@ -132,41 +131,36 @@ def main():
 
         is_direct = False
         for keyword in HK_DIRECT_KEYWORDS:
-            # 檢查上游來源是否命中我們的直連白名單
             if keyword in line:
                 is_direct = True
                 break
         
-        # 如果不是直連域名，則保留 (代表需要代理)
         if not is_direct:
-            # 1. 取得乾淨的域名 (移除可能存在的修飾符)
             clean_domain = line.replace("'", "").replace("+.", "")
-            
-            # 2. 構建 Clash / txt 用的通配符域名
             clash_domain = f"+.{clean_domain}"
 
             if clean_domain and clean_domain not in list_for_singbox:
                 list_for_singbox.append(clean_domain)
                 list_for_clash.append(clash_domain)
 
+    # 🌟 強制注入 AI Studio & ChatGPT 必備網域
+    for domain in FORCE_PROXY_DOMAINS:
+        if domain not in list_for_singbox:
+            list_for_singbox.append(domain)
+            list_for_clash.append(f"+.{domain}")
+
     print(f"過濾後剩餘代理網域數量: {len(list_for_singbox)}")
 
-    # ------------------------------------------------------------
-    # 1. 生成 .list (給 Mihomo/OpenClash 用) -> 使用帶 "+." 的列表
-    # ------------------------------------------------------------
+    # 1. 生成 .list
     list_content = "\n".join(list_for_clash)
     smart_write("geosite_ai_hk_proxy.list", list_content)
 
-    # ------------------------------------------------------------
-    # 2. 生成 .yaml (給 Clash Meta 參考用) -> 使用帶 "+." 的列表
-    # ------------------------------------------------------------
+    # 2. 生成 .yaml
     mihomo_payload = {"payload": list_for_clash}
     yaml_content = yaml.dump(mihomo_payload, default_flow_style=False)
     smart_write("geosite_ai_hk_proxy.yaml", yaml_content)
 
-    # ------------------------------------------------------------
-    # 3. 生成 .json (給 Sing-box 編譯用) -> 使用乾淨列表
-    # ------------------------------------------------------------
+    # 3. 生成 .json
     srs_payload = {
         "version": 1,
         "rules": [
@@ -178,19 +172,13 @@ def main():
     json_content = json.dumps(srs_payload, indent=2)
     smart_write("geosite_ai_hk_proxy.json", json_content)
 
-    # ------------------------------------------------------------
-    # 4. 生成 .txt (單行，以逗號分隔，無 "+." 前綴)
-    # ------------------------------------------------------------
+    # 4. 生成 .txt
     txt_content = ",".join(list_for_singbox)
     smart_write("geosite_ai_hk_proxy.txt", txt_content)
 
-    # ------------------------------------------------------------
-    # 5. 生成 .dae (給 dae/daed 路由規則用，使用多行分組格式)
-    # ------------------------------------------------------------
+    # 5. 生成 .dae
     domains_formatted = ",\n    ".join(list_for_singbox)
-    
     dae_content = f"""# DAE / DAED AI HK Proxy Rules
-# 說明：請將以下內容貼上至 dae/daed 的 routing {{ ... }} 區塊內。
 domain(
     {domains_formatted}
 ) -> proxy
