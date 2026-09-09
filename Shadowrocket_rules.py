@@ -19,7 +19,7 @@ urls = {
     }
 }
 
-# 🌟 香港直連的 AI 排除名單 (同步最新發現的直連網域)
+# 🌟 香港直連的 AI 排除名單 (已移除誤傷 AI Studio 的 generativeai.google)
 AI_EXCLUSIONS = [
     # ========================================================
     # 🌟 Hugging Face 相關 (香港可直連)
@@ -27,10 +27,10 @@ AI_EXCLUSIONS = [
     "huggingface.co", "hf.space", "hf.co",
 
     # ========================================================
-    # 🌟 Google 服務 (香港已開放直連，但 AI Studio/API 仍需代理)
+    # 🌟 Google 服務 (僅保留香港真正可直連的 Consumer 端服務，移除 generativeai)
     # ========================================================
     "gemini.google", "bard.google.com", "notebooklm.google", "notebook.google.com",
-    "flow.google", "labs.google", "generativeai.google", "jules.google", "opal.google",
+    "flow.google", "labs.google", "jules.google", "opal.google",
     "gemini.gstatic.com", "antigravity.google", "antigravity-unleash.goog",
     "stitch.withgoogle.com", "proactivebackend-pa.googleapis.com",
 
@@ -91,7 +91,24 @@ AI_EXCLUSIONS = [
     "liveperson.net", "lpsnmedia.net", "crixet.com"
 ]
 
-# 通用的 TUN 繞過與本地跳過參數 (確保最優效能、防止 Apple 服務出 Bug)
+# 🌟 強制走代理的名單 (補足上游遺漏的 AI Studio 核心依賴與 ChatGPT 語音)
+FORCE_PROXY_DOMAINS = [
+    # Google AI Studio 核心通道
+    "aistudio.google.com",
+    "makersuite.google.com",
+    "generativelanguage.googleapis.com",
+    "alkalimakersuite-pa.clients6.google.com",
+    "generativeai.google",
+    # ChatGPT App 輔助
+    "statsig.com",
+    "statsigapi.net",
+    "featuregates.org",
+    "featureassets.org",
+    "livekit.cloud",
+    "chatgpt.livekit.cloud"
+]
+
+# 通用的 TUN 繞過與本地跳過參數
 COMMON_SKIP_PROXY = "192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, fe80::/10, fc00::/7, localhost, *.local, *.lan, *.internal, e.crashlytics.com, captive.apple.com, sequoia.apple.com, seed-sequoia.siri.apple.com, *.ls.apple.com"
 COMMON_BYPASS_TUN = "10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.18.0.0/15,198.51.100.0/24,203.0.113.0/24,233.252.0.0/24,224.0.0.0/4,255.255.255.255/32,::1/128,::ffff:0:0/96,::ffff:0:0:0/96,64:ff9b::/96,64:ff9b:1::/48,100::/64,2001::/32,2001:20::/28,2001:db8::/32,2002::/16,3fff::/20,5f00::/16,fc00::/7,fe80::/10,ff00::/8"
 
@@ -107,11 +124,9 @@ def fetch_and_parse(url, policy, exclusions=None):
             line = line.strip()
             if not line or line.startswith("#"): continue
             
-            # 清理網域：移除 "+." 和單引號 "'"
             domain = line.replace("+.", "").replace("'", "").strip()
             if not domain: continue
             
-            # 檢查是否命中直連白名單 (只針對傳入名單的規則進行檢查)
             is_excluded = False
             for kw in exclusions:
                 if kw.lower() in domain.lower():
@@ -124,11 +139,9 @@ def fetch_and_parse(url, policy, exclusions=None):
     return rules
 
 def get_content_without_timestamp(content):
-    """移除內容中的 Updated 時間戳以便比對"""
     return re.sub(r'# Updated: .*\n', '', content)
 
 def smart_write_file(filename, header, body):
-    """智慧比對寫入檔案，避免無變更時頻繁觸發 git commit"""
     new_content_no_time = header.strip() + "\n\n" + body.strip()
     
     old_content_raw = ""
@@ -154,14 +167,17 @@ def smart_write_file(filename, header, body):
         print(f"[{filename}] 規則已有更新，已寫入。")
 
 def main():
-    # 1. 下載並解析各項規則
     ai_rules = fetch_and_parse(urls["AI"]["url"], urls["AI"]["policy"], exclusions=AI_EXCLUSIONS)
     ads_rules = fetch_and_parse(urls["Ads"]["url"], urls["Ads"]["policy"], exclusions=[])
     china_rules = fetch_and_parse(urls["China"]["url"], urls["China"]["policy"], exclusions=[])
 
-    # ========================================================
-    # 輸出 1: ai_ad.conf (原有的 AI 與去廣告規則 - 香港專用版)
-    # ========================================================
+    # 🌟 強制注入 AI Studio & ChatGPT 必備代理規則
+    for domain in FORCE_PROXY_DOMAINS:
+        rule_entry = f"DOMAIN-SUFFIX,{domain},{urls['AI']['policy']}"
+        if rule_entry not in ai_rules:
+            ai_rules.append(rule_entry)
+
+    # 輸出 1: ai_ad.conf (香港專用)
     ai_ad_header = f"""[General]
 bypass-system = true
 ipv6 = false
@@ -180,9 +196,7 @@ dns-server = https://cloudflare-dns.com/dns-query, https://dns.google/dns-query
     
     smart_write_file("ai_ad.conf", ai_ad_header, ai_ad_body)
 
-    # ========================================================
-    # 輸出 2: cn_ad.conf (中國用戶專用：分流 + 去廣告 + DoH 防洩漏)
-    # ========================================================
+    # 輸出 2: cn_ad.conf (中國專用)
     cn_ad_header = f"""[General]
 bypass-system = true
 ipv6 = false
@@ -193,7 +207,6 @@ bypass-tun = {COMMON_BYPASS_TUN}
 dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query
 fallback-dns-server = https://dns.google/dns-query, https://cloudflare-dns.com/dns-query
 """
-    
     cn_ad_body = "[Rule]\n"
     cn_ad_body += "# --- Private & Local Networks (DIRECT) ---\n"
     cn_ad_body += "DOMAIN-SUFFIX,local,DIRECT\n"
@@ -201,13 +214,10 @@ fallback-dns-server = https://dns.google/dns-query, https://cloudflare-dns.com/d
     cn_ad_body += "IP-CIDR,172.16.0.0/12,DIRECT\n"
     cn_ad_body += "IP-CIDR,192.168.0.0/16,DIRECT\n"
     cn_ad_body += "IP-CIDR,10.0.0.0/8,DIRECT\n\n"
-    
     cn_ad_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
     cn_ad_body += "\n".join(ads_rules) + "\n\n"
-    
     cn_ad_body += f"# --- China Domains (DIRECT) [{len(china_rules)}] ---\n"
     cn_ad_body += "\n".join(china_rules) + "\n\n"
-    
     cn_ad_body += "# --- China IPs & Match (Proxy) ---\n"
     cn_ad_body += "GEOIP,CN,DIRECT\n"
     cn_ad_body += "FINAL,PROXY\n"
