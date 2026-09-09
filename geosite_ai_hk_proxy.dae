@@ -1,5 +1,4 @@
 # DAE / DAED AI HK Proxy Rules
-# 說明：請將以下內容貼上至 dae/daed 的 routing { ... } 區塊內。
 domain(
     ai.google.dev,
     alkalicore-pa.clients6.google.com,
@@ -22,6 +21,7 @@ domain(
     claudemcpcontent.com,
     oystermercury.top,
     ai.studio,
+    generativeai.google,
     claudemcpclient.com,
     claude.com,
     claude.ai,
@@ -50,5 +50,10 @@ domain(
     robinfrontend-pa.googleapis.com,
     turn.livekit.cloud,
     openai.com.cdn.cloudflare.net,
-    openai.qualtrics.com
+    openai.qualtrics.com,
+    statsig.com,
+    statsigapi.net,
+    featuregates.org,
+    featureassets.org,
+    livekit.cloud
 ) -> proxy
