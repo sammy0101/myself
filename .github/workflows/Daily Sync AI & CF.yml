@@ -36,29 +36,26 @@ jobs:
       # 任務 1: CF-IPs 更新 (獨立檢查)
       # ========================================================
       - name: "[CF] 下載 CF-IPs.txt"
-        # 將 GitHub Secret 賦值給環境變數 CF_URL
         env:
           CF_URL: ${{ secrets.CF_IP_URL }}
         run: |
-          # 檢查 Secret 是否有正確載入
           if [ -z "$CF_URL" ]; then
             echo "錯誤：找不到 CF_IP_URL Secret，請先在 GitHub Settings 中設定！"
             exit 1
           fi
           
-          # 下載並直接覆蓋舊檔案 (使用環境變數)
-          wget -q -O CF-IPs.txt "$CF_URL"
+          echo "開始嘗試下載 CF-IPs..."
+          curl -sSL --retry 3 -o CF-IPs.txt "$CF_URL" || echo "curl 執行失敗！"
           
           if [ ! -f CF-IPs.txt ] || [ ! -s CF-IPs.txt ]; then
-            echo "Download failed or file is empty!"
+            echo "❌ 下載失敗或檔案為空！"
             exit 1
           fi
+          echo "✅ 下載成功！"
 
       - name: "[CF] 檢查變更 & 提交"
         run: |
           git add CF-IPs.txt
-          
-          # 只有當內容真的變了，才提交
           if git diff --staged --quiet; then
             echo "✅ CF-IPs.txt 內容無變化，跳過提交。"
           else
@@ -68,7 +65,7 @@ jobs:
           fi
 
       # ========================================================
-      # 任務 2: AI 規則更新 & 編譯 (獨立檢查)
+      # 任務 2: AI & 規則更新 & 編譯 (獨立檢查)
       # ========================================================
       - name: "[AI] 安裝依賴 & 編譯工具"
         run: |
@@ -86,13 +83,12 @@ jobs:
           sudo mv sing-box-*/sing-box /usr/local/bin/ && sudo chmod +x /usr/local/bin/sing-box
           rm -rf sing-box.tar.gz sing-box-*
 
-      - name: "[AI] 執行腳本 & 編譯規則"
+      - name: "[AI] 執行單一整合腳本 & 編譯規則"
         run: |
-          echo ">>> 1. 執行 Python 腳本 (生成 List/Json/Conf/Dae) <<<"
-          python geosite_ai_hk.py || echo "Warning: geosite script failed"
-          python Shadowrocket_rules.py || echo "Warning: shadowrocket script failed"
-          
-          echo ">>> 2. 執行編譯指令 (覆蓋模式) <<<"
+          echo ">>> 1. 執行單一整合腳本 (生成 List/Json/Conf/Dae/Txt) <<<"
+          python sync_rules.py
+
+          echo ">>> 2. 執行二進位編譯指令 (覆蓋模式) <<<"
           # Mihomo: List -> MRS
           if [ -f "geosite_ai_hk_proxy.list" ]; then
             mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
@@ -105,20 +101,19 @@ jobs:
 
       - name: "[AI] 檢查變更 & 提交"
         run: |
-          # 將所有變更加入暫存區
+          # 將所有變更加入暫存區 (包含 .conf, .list, .json, .mrs, .srs, .dae, .txt)
           git add .
           
-          # Git 會自動比對 Hash 值
           if git diff --staged --quiet; then
-            echo "✅ AI 規則 (包含 .mrs/.srs/.dae) 內容完全一致，無需更新。"
+            echo "✅ 規則庫內容完全一致，無需更新。"
           else
             current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
-            git commit -m "🔄 自動同步 AI 規則 (📅 $current_time)"
-            echo "🚀 AI 規則已更新並提交。"
+            git commit -m "🔄 自動同步全套規則庫 (📅 $current_time)"
+            echo "🚀 規則庫已更新並提交。"
           fi
 
       # ========================================================
-      # 最終推送 (如果上面有任何一個任務產生了 Commit)
+      # 最終推送
       # ========================================================
       - name: Push All Changes
         run: |
