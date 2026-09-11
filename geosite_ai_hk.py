@@ -3,10 +3,10 @@ import json
 import yaml
 import os
 
-# 1. 上游位址
+# 1. 上游位址 (改為直連 raw.githubusercontent 避免 302 重定向)
 SOURCE_URL = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ai-!cn.list"
 
-# 2. 香港直連白名單 (已移除誤傷 AI Studio 的 generativeai.google)
+# 2. 香港直連白名單 (精確排除，不碰 AI Studio / API 相關網域)
 HK_DIRECT_KEYWORDS = [
     # ========================================================
     # 🌟 Hugging Face 相關 (香港可直連)
@@ -14,7 +14,7 @@ HK_DIRECT_KEYWORDS = [
     "huggingface.co", "hf.space", "hf.co",
 
     # ========================================================
-    # 🌟 Google 服務 (僅保留香港直連，移除 generativeai)
+    # 🌟 Google 消費端服務 (香港已開放直連；AI Studio/API 絕不加入此處)
     # ========================================================
     "gemini.google", "bard.google.com", "notebooklm.google", "notebook.google.com",
     "flow.google", "labs.google", "jules.google", "opal.google",
@@ -22,7 +22,7 @@ HK_DIRECT_KEYWORDS = [
     "stitch.withgoogle.com", "proactivebackend-pa.googleapis.com",
 
     # ========================================================
-    # 🌟 Microsoft / GitHub Copilot (香港可直連，含最新獨立網域)
+    # 🌟 Microsoft / GitHub Copilot (香港可直連)
     # ========================================================
     "copilot.com", "copilot-stg.com", "copilot.cloud.microsoft",
     "githubcopilot.com", "copilot-proxy.githubusercontent.com",
@@ -78,23 +78,6 @@ HK_DIRECT_KEYWORDS = [
     "liveperson.net", "lpsnmedia.net", "crixet.com"
 ]
 
-# 🌟 強制注入代理的名單 (包含 AI Studio 核心依賴)
-FORCE_PROXY_DOMAINS = [
-    # Google AI Studio 核心通道
-    "aistudio.google.com",
-    "makersuite.google.com",
-    "generativelanguage.googleapis.com",
-    "alkalimakersuite-pa.clients6.google.com",
-    "generativeai.google",
-    # ChatGPT App 輔助
-    "statsig.com",
-    "statsigapi.net",
-    "featuregates.org",
-    "featureassets.org",
-    "livekit.cloud",
-    "chatgpt.livekit.cloud"
-]
-
 def smart_write(filename, new_content):
     if os.path.exists(filename):
         try:
@@ -143,12 +126,6 @@ def main():
                 list_for_singbox.append(clean_domain)
                 list_for_clash.append(clash_domain)
 
-    # 🌟 強制注入 AI Studio & ChatGPT 必備網域
-    for domain in FORCE_PROXY_DOMAINS:
-        if domain not in list_for_singbox:
-            list_for_singbox.append(domain)
-            list_for_clash.append(f"+.{domain}")
-
     print(f"過濾後剩餘代理網域數量: {len(list_for_singbox)}")
 
     # 1. 生成 .list
@@ -176,14 +153,9 @@ def main():
     txt_content = ",".join(list_for_singbox)
     smart_write("geosite_ai_hk_proxy.txt", txt_content)
 
-    # 5. 生成 .dae
-    domains_formatted = ",\n    ".join(list_for_singbox)
-    dae_content = f"""# DAE / DAED AI HK Proxy Rules
-domain(
-    {domains_formatted}
-) -> proxy
-"""
-    smart_write("geosite_ai_hk_proxy.dae", dae_content)
+    # 5. 生成 .dae (一行一個網域，相容 dae 引用)
+    dae_domains_content = "\n".join(list_for_singbox)
+    smart_write("geosite_ai_hk_proxy.dae", dae_domains_content)
 
 if __name__ == "__main__":
     main()
