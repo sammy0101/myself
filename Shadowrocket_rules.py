@@ -19,7 +19,7 @@ urls = {
     }
 }
 
-# 🌟 香港直連的 AI 排除名單 (已移除誤傷 AI Studio 的 generativeai.google)
+# 🌟 香港直連的 AI 白名單 (精確排除，不碰 AI Studio / API 相關網域)
 AI_EXCLUSIONS = [
     # ========================================================
     # 🌟 Hugging Face 相關 (香港可直連)
@@ -27,7 +27,7 @@ AI_EXCLUSIONS = [
     "huggingface.co", "hf.space", "hf.co",
 
     # ========================================================
-    # 🌟 Google 服務 (僅保留香港真正可直連的 Consumer 端服務，移除 generativeai)
+    # 🌟 Google 消費端服務 (香港已開放直連；AI Studio/API 絕不加入此處)
     # ========================================================
     "gemini.google", "bard.google.com", "notebooklm.google", "notebook.google.com",
     "flow.google", "labs.google", "jules.google", "opal.google",
@@ -35,7 +35,7 @@ AI_EXCLUSIONS = [
     "stitch.withgoogle.com", "proactivebackend-pa.googleapis.com",
 
     # ========================================================
-    # 🌟 Microsoft / GitHub Copilot (香港可直連，含最新獨立網域)
+    # 🌟 Microsoft / GitHub Copilot (香港可直連)
     # ========================================================
     "copilot.com", "copilot-stg.com", "copilot.cloud.microsoft",
     "githubcopilot.com", "copilot-proxy.githubusercontent.com",
@@ -91,23 +91,6 @@ AI_EXCLUSIONS = [
     "liveperson.net", "lpsnmedia.net", "crixet.com"
 ]
 
-# 🌟 強制走代理的名單 (補足上游遺漏的 AI Studio 核心依賴與 ChatGPT 語音)
-FORCE_PROXY_DOMAINS = [
-    # Google AI Studio 核心通道
-    "aistudio.google.com",
-    "makersuite.google.com",
-    "generativelanguage.googleapis.com",
-    "alkalimakersuite-pa.clients6.google.com",
-    "generativeai.google",
-    # ChatGPT App 輔助
-    "statsig.com",
-    "statsigapi.net",
-    "featuregates.org",
-    "featureassets.org",
-    "livekit.cloud",
-    "chatgpt.livekit.cloud"
-]
-
 # 通用的 TUN 繞過與本地跳過參數
 COMMON_SKIP_PROXY = "192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, fe80::/10, fc00::/7, localhost, *.local, *.lan, *.internal, e.crashlytics.com, captive.apple.com, sequoia.apple.com, seed-sequoia.siri.apple.com, *.ls.apple.com"
 COMMON_BYPASS_TUN = "10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.18.0.0/15,198.51.100.0/24,203.0.113.0/24,233.252.0.0/24,224.0.0.0/4,255.255.255.255/32,::1/128,::ffff:0:0/96,::ffff:0:0:0/96,64:ff9b::/96,64:ff9b:1::/48,100::/64,2001::/32,2001:20::/28,2001:db8::/32,2002::/16,3fff::/20,5f00::/16,fc00::/7,fe80::/10,ff00::/8"
@@ -127,6 +110,7 @@ def fetch_and_parse(url, policy, exclusions=None):
             domain = line.replace("+.", "").replace("'", "").strip()
             if not domain: continue
             
+            # 檢查是否命中直連白名單
             is_excluded = False
             for kw in exclusions:
                 if kw.lower() in domain.lower():
@@ -171,12 +155,6 @@ def main():
     ads_rules = fetch_and_parse(urls["Ads"]["url"], urls["Ads"]["policy"], exclusions=[])
     china_rules = fetch_and_parse(urls["China"]["url"], urls["China"]["policy"], exclusions=[])
 
-    # 🌟 強制注入 AI Studio & ChatGPT 必備代理規則
-    for domain in FORCE_PROXY_DOMAINS:
-        rule_entry = f"DOMAIN-SUFFIX,{domain},{urls['AI']['policy']}"
-        if rule_entry not in ai_rules:
-            ai_rules.append(rule_entry)
-
     # 輸出 1: ai_ad.conf (香港專用)
     ai_ad_header = f"""[General]
 bypass-system = true
@@ -214,10 +192,13 @@ fallback-dns-server = https://dns.google/dns-query, https://cloudflare-dns.com/d
     cn_ad_body += "IP-CIDR,172.16.0.0/12,DIRECT\n"
     cn_ad_body += "IP-CIDR,192.168.0.0/16,DIRECT\n"
     cn_ad_body += "IP-CIDR,10.0.0.0/8,DIRECT\n\n"
+    
     cn_ad_body += f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
     cn_ad_body += "\n".join(ads_rules) + "\n\n"
+    
     cn_ad_body += f"# --- China Domains (DIRECT) [{len(china_rules)}] ---\n"
     cn_ad_body += "\n".join(china_rules) + "\n\n"
+    
     cn_ad_body += "# --- China IPs & Match (Proxy) ---\n"
     cn_ad_body += "GEOIP,CN,DIRECT\n"
     cn_ad_body += "FINAL,PROXY\n"
