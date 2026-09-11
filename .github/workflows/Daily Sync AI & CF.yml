@@ -33,51 +33,50 @@ jobs:
           git config --local user.name "github-actions[bot]"
 
       # ========================================================
-      # 任務 1: CF-IPs 更新 (獨立檢查)
+      # 任務 1: CF-IPs 更新 (帶降級容錯保護)
       # ========================================================
       - name: "[CF] 下載 CF-IPs.txt"
         env:
           CF_URL: ${{ secrets.CF_IP_URL }}
         run: |
           if [ -z "$CF_URL" ]; then
-            echo "錯誤：找不到 CF_IP_URL Secret，請先在 GitHub Settings 中設定！"
-            exit 1
+            echo "⚠️ 找不到 CF_IP_URL Secret，跳過 CF-IPs 更新。"
+            exit 0
           fi
           
           echo "開始嘗試下載 CF-IPs..."
-          curl -sSL --retry 3 -o CF-IPs.txt "$CF_URL" || echo "curl 執行失敗！"
-          
-          if [ ! -f CF-IPs.txt ] || [ ! -s CF-IPs.txt ]; then
-            echo "❌ 下載失敗或檔案為空！"
-            exit 1
+          if curl -sSL --retry 3 --connect-timeout 10 -o CF-IPs_temp.txt "$CF_URL" && [ -s CF-IPs_temp.txt ]; then
+            mv CF-IPs_temp.txt CF-IPs.txt
+            echo "✅ CF-IPs 下載成功！"
+          else
+            echo "⚠️ 外部 IP 伺服器無回應或檔案為空，跳過本次 CF-IPs 更新以保護工作流。"
+            rm -f CF-IPs_temp.txt
           fi
-          echo "✅ 下載成功！"
 
       - name: "[CF] 檢查變更 & 提交"
         run: |
-          git add CF-IPs.txt
-          if git diff --staged --quiet; then
-            echo "✅ CF-IPs.txt 內容無變化，跳過提交。"
-          else
-            current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
-            git commit -m "🔄 自動同步 CF-IPs.txt (📅 $current_time)"
-            echo "🚀 CF-IPs 已更新並提交。"
+          if [ -f CF-IPs.txt ]; then
+            git add CF-IPs.txt
+            if git diff --staged --quiet; then
+              echo "✅ CF-IPs.txt 內容無變化，跳過提交。"
+            else
+              current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
+              git commit -m "🔄 自動同步 CF-IPs.txt (📅 $current_time)"
+              echo "🚀 CF-IPs 已更新並提交。"
+            fi
           fi
 
       # ========================================================
-      # 任務 2: AI & 規則更新 & 編譯 (獨立檢查)
+      # 任務 2: AI & 規則更新 & 編譯
       # ========================================================
       - name: "[AI] 安裝依賴 & 編譯工具"
         run: |
-          # 1. Python 依賴
           pip install requests PyYAML
           
-          # 2. 下載 Mihomo
           MIHOMO_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | jq -r '.assets[] | select(.name | contains("linux-amd64") and (contains("compatible")|not) and contains(".gz")) | .browser_download_url' | head -n 1)
           wget -q -O mihomo.gz "$MIHOMO_URL" && gzip -d mihomo.gz
           sudo mv mihomo /usr/local/bin/ && sudo chmod +x /usr/local/bin/mihomo
           
-          # 3. 下載 Sing-box
           SINGBOX_URL=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | jq -r '.assets[] | select(.name | contains("linux-amd64") and contains("tar.gz")) | .browser_download_url' | head -n 1)
           wget -q -O sing-box.tar.gz "$SINGBOX_URL" && tar -zxf sing-box.tar.gz
           sudo mv sing-box-*/sing-box /usr/local/bin/ && sudo chmod +x /usr/local/bin/sing-box
@@ -89,21 +88,17 @@ jobs:
           python sync_rules.py
 
           echo ">>> 2. 執行二進位編譯指令 (覆蓋模式) <<<"
-          # Mihomo: List -> MRS
           if [ -f "geosite_ai_hk_proxy.list" ]; then
             mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
           fi
 
-          # Sing-box: Json -> SRS
           if [ -f "geosite_ai_hk_proxy.json" ]; then
              sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
           fi
 
       - name: "[AI] 檢查變更 & 提交"
         run: |
-          # 將所有變更加入暫存區 (包含 .conf, .list, .json, .mrs, .srs, .dae, .txt)
           git add .
-          
           if git diff --staged --quiet; then
             echo "✅ 規則庫內容完全一致，無需更新。"
           else
@@ -117,4 +112,5 @@ jobs:
       # ========================================================
       - name: Push All Changes
         run: |
+          git pull --rebase origin main || true
           git push
