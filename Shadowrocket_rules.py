@@ -3,7 +3,7 @@ import datetime
 import os
 import re
 
-# 設定來源網址 (統一使用最穩定的 raw.githubusercontent 格式)
+# 設定來源網址
 urls = {
     "Ads": {
         "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ads-all.list",
