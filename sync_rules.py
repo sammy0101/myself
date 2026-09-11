@@ -105,7 +105,7 @@ def smart_write_conf(filename, header, body):
     old_no_time = re.sub(r'# Updated: .*\n', '', old_raw).strip()
 
     if new_no_time == old_no_time:
-        print(f"[{filename}] 內容未變更，跳過寫入。")
+        print(f"[{filename}] 內容未變更，跳過更新。")
     else:
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         final_content = f"{header.strip()}\n\n# Updated: {current_time}\n{body.strip()}\n"
@@ -132,7 +132,7 @@ def fetch_list(url):
 # 4. 主執行流程
 # ========================================================
 def main():
-    # --- A. 下載並過濾 AI 名單 (單次下載，全域共用) ---
+    # --- A. 下載並過濾 AI 名單 ---
     raw_ai_domains = fetch_list(URL_AI)
     ai_domains_clean = []
     ai_domains_clash = []
@@ -159,8 +159,14 @@ def main():
     # 4. .txt (純網域單行逗號格式)
     smart_write("geosite_ai_hk_proxy.txt", ",".join(ai_domains_clean))
 
-    # 5. .dae (dae/daed 外部引用格式，一行一個網域)
-    smart_write("geosite_ai_hk_proxy.dae", "\n".join(ai_domains_clean))
+    # 5. .dae (標準 dae / daed 路由語法格式)
+    dae_domains_block = ",\n    ".join(ai_domains_clean)
+    dae_content = f"""# DAE / DAED AI HK Proxy Rules
+domain(
+    {dae_domains_block}
+) -> proxy
+"""
+    smart_write("geosite_ai_hk_proxy.dae", dae_content)
 
     # --- C. 下載廣告與中國大陸網域 (Shadowrocket 專用) ---
     ads_domains = fetch_list(URL_ADS)
@@ -208,8 +214,12 @@ fallback-dns-server = https://dns.google/dns-query, https://cloudflare-dns.com/d
         "IP-CIDR,172.16.0.0/12,DIRECT\n"
         "IP-CIDR,192.168.0.0/16,DIRECT\n"
         "IP-CIDR,10.0.0.0/8,DIRECT\n\n"
-        f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n" + "\n".join(ads_rules) + "\n\n"
-        f"# --- China Domains (DIRECT) [{len(china_rules)}] ---\n" + "\n".join(china_rules) + "\n\n"
+        f"# --- Category: Ads (Reject) [{len(ads_rules)}] ---\n"
+        + "\n".join(ads_rules)
+        + "\n\n"
+        f"# --- China Domains (DIRECT) [{len(china_rules)}] ---\n"
+        + "\n".join(china_rules)
+        + "\n\n"
         "# --- China IPs & Match (Proxy) ---\n"
         "GEOIP,CN,DIRECT\n"
         "FINAL,PROXY\n"
