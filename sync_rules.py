@@ -13,7 +13,7 @@ URL_ADS = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads
 URL_CN = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/cn.list"
 
 # ========================================================
-# 2. 香港直連 AI 白名單 (全域共用單一維護來源)
+# 2. 香港直連 AI 白名單
 # ========================================================
 HK_DIRECT_KEYWORDS = [
     # 🌟 Hugging Face 相關 (香港可直連)
@@ -70,15 +70,14 @@ HK_DIRECT_KEYWORDS = [
     "liveperson.net", "lpsnmedia.net", "crixet.com"
 ]
 
-# 通用的 TUN 繞過與本地跳過參數 (Shadowrocket 共用)
+# 通用的 TUN 繞過與本地跳過參數 (補齊 192.0.0.0/24)
 COMMON_SKIP_PROXY = "192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, fe80::/10, fc00::/7, localhost, *.local, *.lan, *.internal, e.crashlytics.com, captive.apple.com, sequoia.apple.com, seed-sequoia.siri.apple.com, *.ls.apple.com"
-COMMON_BYPASS_TUN = "10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.18.0.0/15,198.51.100.0/24,203.0.113.0/24,233.252.0.0/24,224.0.0.0/4,255.255.255.255/32,::1/128,::ffff:0:0/96,::ffff:0:0:0/96,64:ff9b::/96,64:ff9b:1::/48,100::/64,2001::/32,2001:20::/28,2001:db8::/32,2002::/16,3fff::/20,5f00::/16,fc00::/7,fe80::/10,ff00::/8"
+COMMON_BYPASS_TUN = "10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.18.0.0/15,198.51.100.0/24,203.0.113.0/24,233.252.0.0/24,224.0.0.0/4,255.255.255.255/32,::1/128,::ffff:0:0/96,::ffff:0:0:0/96,64:ff9b::/96,64:ff9b:1::/48,100::/64,2001::/32,2001:20::/28,2001:db8::/32,2002::/16,3fff::/20,5f00::/16,fc00::/7,fe80::/10,ff00::/8"
 
 # ========================================================
 # 3. 輔助函式：檔案比對與安全寫入
 # ========================================================
 def smart_write(filename, new_content):
-    """一般檔案智慧比對：完全相同則不觸發磁碟寫入，避免產生無效 Git Commit"""
     if os.path.exists(filename):
         try:
             with open(filename, "r", encoding="utf-8") as f:
@@ -93,8 +92,7 @@ def smart_write(filename, new_content):
     print(f"[{filename}] 已更新。")
 
 def smart_write_conf(filename, header, body):
-    """Shadowrocket 配置比對：剔除時間戳後比對，僅在規則變更時更新時間戳並寫入"""
-    new_no_time = header.strip() + "\n\n" + body.strip()
+    new_no_time = (header.strip() + "\n\n" + body.strip()).replace('\r\n', '\n')
     old_raw = ""
     if os.path.exists(filename):
         try:
@@ -102,7 +100,7 @@ def smart_write_conf(filename, header, body):
                 old_raw = f.read()
         except Exception:
             pass
-    old_no_time = re.sub(r'# Updated: .*\n', '', old_raw).strip()
+    old_no_time = re.sub(r'# Updated: .*\r?\n', '', old_raw).replace('\r\n', '\n').strip()
 
     if new_no_time == old_no_time:
         print(f"[{filename}] 內容未變更，跳過更新。")
@@ -114,17 +112,20 @@ def smart_write_conf(filename, header, body):
         print(f"[{filename}] 規則已有更新，已寫入。")
 
 def fetch_list(url):
-    """下載純文字清單並進行清理"""
+    """下載純文字清單並進行 O(1) 高速去重清理"""
     print(f"Downloading {url}...")
     resp = requests.get(url, timeout=15)
     resp.raise_for_status()
     domains = []
+    seen = set()
     for line in resp.text.splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue
+        line = line.split("#")[0].split("@")[0].strip()
         domain = line.replace("+.", "").replace("'", "").strip()
-        if domain and domain not in domains:
+        if domain and domain not in seen:
+            seen.add(domain)
             domains.append(domain)
     return domains
 
@@ -146,20 +147,13 @@ def main():
     print(f"過濾後剩餘代理網域數量: {len(ai_domains_clean)}")
 
     # --- B. 生成 Sing-box / Mihomo / dae / txt 格式檔案 ---
-    # 1. .list (Mihomo/OpenClash 用，帶 +.)
     smart_write("geosite_ai_hk_proxy.list", "\n".join(ai_domains_clash))
-
-    # 2. .yaml (Clash Meta Payload 格式)
     smart_write("geosite_ai_hk_proxy.yaml", yaml.dump({"payload": ai_domains_clash}, default_flow_style=False))
 
-    # 3. .json (Sing-box 編譯 SRS 來源格式)
     srs_payload = {"version": 1, "rules": [{"domain_suffix": ai_domains_clean}]}
     smart_write("geosite_ai_hk_proxy.json", json.dumps(srs_payload, indent=2))
-
-    # 4. .txt (純網域單行逗號格式)
     smart_write("geosite_ai_hk_proxy.txt", ",".join(ai_domains_clean))
 
-    # 5. .dae (標準 dae / daed 路由語法格式)
     dae_domains_block = ",\n    ".join(ai_domains_clean)
     dae_content = f"""# DAE / DAED AI HK Proxy Rules
 domain(
@@ -177,7 +171,6 @@ domain(
     china_rules = [f"DOMAIN-SUFFIX,{d},DIRECT" for d in cn_domains]
 
     # --- D. 生成 Shadowrocket 配置檔 ---
-    # 輸出 1: ai_ad.conf (香港專用版)
     ai_ad_header = f"""[General]
 bypass-system = true
 ipv6 = false
@@ -195,7 +188,6 @@ dns-server = https://cloudflare-dns.com/dns-query, https://dns.google/dns-query
     )
     smart_write_conf("ai_ad.conf", ai_ad_header, ai_ad_body)
 
-    # 輸出 2: cn_ad.conf (中國專用版)
     cn_ad_header = f"""[General]
 bypass-system = true
 ipv6 = false
