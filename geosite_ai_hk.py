@@ -3,7 +3,7 @@ import json
 import yaml
 import os
 
-# 1. 上游位址 (改為直連 raw.githubusercontent 避免 302 重定向)
+# 1. 上游位址
 SOURCE_URL = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-ai-!cn.list"
 
 # 2. 香港直連白名單 (精確排除，不碰 AI Studio / API 相關網域)
