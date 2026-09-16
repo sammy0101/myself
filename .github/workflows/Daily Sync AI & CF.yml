@@ -70,17 +70,40 @@ jobs:
       # 任務 2: AI & 規則更新 & 編譯
       # ========================================================
       - name: "[AI] 安裝依賴 & 編譯工具"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pip install requests PyYAML
-          
-          MIHOMO_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | jq -r '.assets[] | select(.name | contains("linux-amd64") and (contains("compatible")|not) and contains(".gz")) | .browser_download_url' | head -n 1)
-          wget -q -O mihomo.gz "$MIHOMO_URL" && gzip -d mihomo.gz
-          sudo mv mihomo /usr/local/bin/ && sudo chmod +x /usr/local/bin/mihomo
-          
-          SINGBOX_URL=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | jq -r '.assets[] | select(.name | contains("linux-amd64") and contains("tar.gz")) | .browser_download_url' | head -n 1)
-          wget -q -O sing-box.tar.gz "$SINGBOX_URL" && tar -zxf sing-box.tar.gz
-          sudo mv sing-box-*/sing-box /usr/local/bin/ && sudo chmod +x /usr/local/bin/sing-box
+
+          echo "=== 下載並安裝 Mihomo ==="
+          # 帶 Token 呼叫 GitHub API，防止被 60 次/小時 限制阻擋
+          MIHOMO_URL=$(curl -s -H "Authorization: token ${GH_TOKEN}" https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | \
+            jq -r '.assets[] | select(.name | test("linux-amd64-v") and (test("compatible")|not) and endswith(".gz")) | .browser_download_url' | head -n 1)
+
+          if [ -z "$MIHOMO_URL" ] || [ "$MIHOMO_URL" = "null" ]; then
+            # 後備方案：如果 API 依然無法取得，直接指定 stable release
+            MIHOMO_URL="https://github.com/MetaCubeX/mihomo/releases/latest/download/mihomo-linux-amd64.gz"
+          fi
+
+          echo "Mihomo 下載網址: $MIHOMO_URL"
+          curl -sSL --retry 3 -o mihomo.gz "$MIHOMO_URL"
+          gzip -f -d mihomo.gz
+          sudo install -m 755 mihomo /usr/local/bin/mihomo
+          rm -f mihomo.gz mihomo
+
+          echo "=== 下載並安裝 Sing-box ==="
+          SINGBOX_URL=$(curl -s -H "Authorization: token ${GH_TOKEN}" https://api.github.com/repos/SagerNet/sing-box/releases/latest | \
+            jq -r '.assets[] | select(.name | contains("linux-amd64") and contains("tar.gz")) | .browser_download_url' | head -n 1)
+
+          echo "Sing-box 下載網址: $SINGBOX_URL"
+          curl -sSL --retry 3 -o sing-box.tar.gz "$SINGBOX_URL"
+          tar -zxf sing-box.tar.gz
+          sudo install -m 755 sing-box-*/sing-box /usr/local/bin/sing-box
           rm -rf sing-box.tar.gz sing-box-*
+
+          echo "=== 驗證安裝狀態 ==="
+          mihomo -v
+          sing-box version
 
       - name: "[AI] 執行單一整合腳本 & 編譯規則"
         run: |
@@ -88,12 +111,16 @@ jobs:
           python sync_rules.py
 
           echo ">>> 2. 執行二進位編譯指令 (覆蓋模式) <<<"
+          # Mihomo: List -> MRS
           if [ -f "geosite_ai_hk_proxy.list" ]; then
+            echo "編譯 MRS..."
             mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
           fi
 
+          # Sing-box: Json -> SRS
           if [ -f "geosite_ai_hk_proxy.json" ]; then
-             sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
+            echo "編譯 SRS..."
+            sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
           fi
 
       - name: "[AI] 檢查變更 & 提交"
