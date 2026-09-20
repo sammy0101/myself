@@ -33,14 +33,14 @@ jobs:
           git config --local user.name "github-actions[bot]"
 
       # ========================================================
-      # 任務 1: CF-IPs 更新 (帶降級容錯保護)
+      # 步驟 1: 下載 CF-IPs.txt (帶降級容錯保護，不單獨提交)
       # ========================================================
-      - name: "[CF] 下載 CF-IPs.txt"
+      - name: 下載 CF-IPs.txt
         env:
           CF_URL: ${{ secrets.CF_IP_URL }}
         run: |
           if [ -z "$CF_URL" ]; then
-            echo "⚠️ 找不到 CF_IP_URL Secret，跳過 CF-IPs 更新。"
+            echo "⚠️ 找不到 CF_IP_URL Secret，跳過 CF-IPs 下載。"
             exit 0
           fi
           
@@ -49,43 +49,27 @@ jobs:
             mv CF-IPs_temp.txt CF-IPs.txt
             echo "✅ CF-IPs 下載成功！"
           else
-            echo "⚠️ 外部 IP 伺服器無回應或檔案為空，跳過本次 CF-IPs 更新以保護工作流。"
+            echo "⚠️ 外部 IP 伺服器無回應或檔案為空，跳過本次 CF-IPs 更新。"
             rm -f CF-IPs_temp.txt
           fi
 
-      - name: "[CF] 檢查變更 & 提交"
-        run: |
-          if [ -f CF-IPs.txt ]; then
-            git add CF-IPs.txt
-            if git diff --staged --quiet; then
-              echo "✅ CF-IPs.txt 內容無變化，跳過提交。"
-            else
-              current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
-              git commit -m "🔄 自動同步 CF-IPs.txt (📅 $current_time)"
-              echo "🚀 CF-IPs 已更新並提交。"
-            fi
-          fi
-
       # ========================================================
-      # 任務 2: AI & 規則更新 & 編譯
+      # 步驟 2: 安裝依賴 & 編譯工具 (Mihomo + Sing-box)
       # ========================================================
-      - name: "[AI] 安裝依賴 & 編譯工具"
+      - name: 安裝依賴 & 編譯工具
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pip install requests PyYAML
 
           echo "=== 下載並安裝 Mihomo ==="
-          # 帶 Token 呼叫 GitHub API，防止被 60 次/小時 限制阻擋
           MIHOMO_URL=$(curl -s -H "Authorization: token ${GH_TOKEN}" https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | \
             jq -r '.assets[] | select(.name | test("linux-amd64-v") and (test("compatible")|not) and endswith(".gz")) | .browser_download_url' | head -n 1)
 
           if [ -z "$MIHOMO_URL" ] || [ "$MIHOMO_URL" = "null" ]; then
-            # 後備方案：如果 API 依然無法取得，直接指定 stable release
             MIHOMO_URL="https://github.com/MetaCubeX/mihomo/releases/latest/download/mihomo-linux-amd64.gz"
           fi
 
-          echo "Mihomo 下載網址: $MIHOMO_URL"
           curl -sSL --retry 3 -o mihomo.gz "$MIHOMO_URL"
           gzip -f -d mihomo.gz
           sudo install -m 755 mihomo /usr/local/bin/mihomo
@@ -95,7 +79,6 @@ jobs:
           SINGBOX_URL=$(curl -s -H "Authorization: token ${GH_TOKEN}" https://api.github.com/repos/SagerNet/sing-box/releases/latest | \
             jq -r '.assets[] | select(.name | contains("linux-amd64") and contains("tar.gz")) | .browser_download_url' | head -n 1)
 
-          echo "Sing-box 下載網址: $SINGBOX_URL"
           curl -sSL --retry 3 -o sing-box.tar.gz "$SINGBOX_URL"
           tar -zxf sing-box.tar.gz
           sudo install -m 755 sing-box-*/sing-box /usr/local/bin/sing-box
@@ -105,39 +88,39 @@ jobs:
           mihomo -v
           sing-box version
 
-      - name: "[AI] 執行單一整合腳本 & 編譯規則"
+      # ========================================================
+      # 步驟 3: 執行腳本生成全套規則 & 編譯二進位
+      # ========================================================
+      - name: 執行整合腳本 & 編譯二進位規則
         run: |
-          echo ">>> 1. 執行單一整合腳本 (生成 List/Json/Conf/Dae/Txt) <<<"
+          echo ">>> 1. 執行 sync_rules.py (生成 List/Json/Conf/Dae/Txt) <<<"
           python sync_rules.py
 
-          echo ">>> 2. 執行二進位編譯指令 (覆蓋模式) <<<"
-          # Mihomo: List -> MRS
+          echo ">>> 2. 執行二進位編譯 <<<"
           if [ -f "geosite_ai_hk_proxy.list" ]; then
             echo "編譯 MRS..."
             mihomo convert-ruleset domain text geosite_ai_hk_proxy.list geosite_ai_hk_proxy.mrs
           fi
 
-          # Sing-box: Json -> SRS
           if [ -f "geosite_ai_hk_proxy.json" ]; then
             echo "編譯 SRS..."
             sing-box rule-set compile --output geosite_ai_hk_proxy.srs geosite_ai_hk_proxy.json
           fi
 
-      - name: "[AI] 檢查變更 & 提交"
+      # ========================================================
+      # 步驟 4: 統一檢查變更、提交與推送 (全部檔案統一處理)
+      # ========================================================
+      - name: 統一提交與推送變更
         run: |
           git add .
+          
           if git diff --staged --quiet; then
-            echo "✅ 規則庫內容完全一致，無需更新。"
+            echo "✅ 所有檔案內容完全一致，無需更新。"
           else
             current_time=$(TZ='Asia/Hong_Kong' date +'%Y-%m-%d %H:%M')
-            git commit -m "🔄 自動同步全套規則庫 (📅 $current_time)"
-            echo "🚀 規則庫已更新並提交。"
+            git commit -m "🔄 自動更新 (📅 $current_time)"
+            echo "🚀 檔案已更新並提交：🔄 自動更新 (📅 $current_time)"
+            
+            git pull --rebase origin main || true
+            git push
           fi
-
-      # ========================================================
-      # 最終推送
-      # ========================================================
-      - name: Push All Changes
-        run: |
-          git pull --rebase origin main || true
-          git push
