@@ -1,0 +1,80 @@
+name: Deduplicate CloudFlare IPs
+
+on:
+  schedule:
+    # 每天 UTC 00:00 (香港/台北時間 08:00) 自動檢查
+    - cron: '0 0 * * *'
+  # 支援在 GitHub Actions 頁面手動點擊觸發
+  workflow_dispatch:
+
+# 嚴格宣告最小權限：允許對倉庫內容進行寫入以完成 commit 與 push
+permissions:
+  contents: write
+
+jobs:
+  deduplicate:
+    name: Check & Remove Duplicate IPs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Deduplicate CloudFlare優選IP.txt
+        run: |
+          python3 - << 'EOF'
+          from pathlib import Path
+
+          target_file = Path("CloudFlare優選IP.txt")
+
+          if not target_file.exists():
+              print(f"[ERROR] Target file not found: {target_file}")
+              exit(1)
+
+          seen = set()
+          deduped_lines = []
+          duplicate_count = 0
+
+          # 讀取檔案並過濾重複項目（保留原始出現順序）
+          with open(target_file, "r", encoding="utf-8") as f:
+              for line_number, raw_line in enumerate(f, 1):
+                  clean_ip = raw_line.strip()
+                  
+                  # 略過空行
+                  if not clean_ip:
+                      continue
+
+                  if clean_ip in seen:
+                      duplicate_count += 1
+                      print(f"[DUP] Line {line_number}: Removed duplicate IP -> {clean_ip}")
+                  else:
+                      seen.add(clean_ip)
+                      deduped_lines.append(clean_ip)
+
+          # 只有在發現重複 IP 時才覆寫檔案，避免不必要的磁碟寫入
+          if duplicate_count > 0:
+              with open(target_file, "w", encoding="utf-8", newline="\n") as f:
+                  for ip in deduped_lines:
+                      f.write(f"{ip}\n")
+              print(f"[SUCCESS] Deduplication completed. Removed {duplicate_count} duplicate item(s).")
+          else:
+              print("[INFO] No duplicate IPs found. File is already clean.")
+          EOF
+
+      - name: Commit and push changes if updated
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 檢查是否有檔案異動
+          if ! git diff --quiet "CloudFlare優選IP.txt"; then
+            echo "[INFO] Changes detected in CloudFlare優選IP.txt. Committing..."
+            git add "CloudFlare優選IP.txt"
+            git commit -m "chore(auto): 移除 CloudFlare優選IP.txt 重複 IP"
+            git push
+            echo "[INFO] Successfully pushed cleaned file to repository."
+          else
+            echo "[INFO] No changes detected. Skipping commit."
+          fi
