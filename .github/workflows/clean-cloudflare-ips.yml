@@ -1,13 +1,16 @@
 name: Deduplicate CloudFlare IPs
 
 on:
-  schedule:
-    # 每天 UTC 00:00 (香港/台北時間 08:00) 自動檢查
-    - cron: '0 0 * * *'
-  # 支援在 GitHub Actions 頁面手動點擊觸發
+  push:
+    branches:
+      - main
+    paths:
+      # 僅在修改 CloudFlare優選IP.txt 時觸發
+      - 'CloudFlare優選IP.txt'
+  # 保留手動觸發按鈕，便於隨時測試
   workflow_dispatch:
 
-# 嚴格宣告最小權限：允許對倉庫內容進行寫入以完成 commit 與 push
+# 權限宣告：允許 Action 寫入倉庫以提交去重後的變更
 permissions:
   contents: write
 
@@ -37,12 +40,11 @@ jobs:
           deduped_lines = []
           duplicate_count = 0
 
-          # 讀取檔案並過濾重複項目（保留原始出現順序）
+          # 讀取並去重，嚴格保持原始順序並去除頭尾空格
           with open(target_file, "r", encoding="utf-8") as f:
               for line_number, raw_line in enumerate(f, 1):
                   clean_ip = raw_line.strip()
                   
-                  # 略過空行
                   if not clean_ip:
                       continue
 
@@ -53,7 +55,7 @@ jobs:
                       seen.add(clean_ip)
                       deduped_lines.append(clean_ip)
 
-          # 只有在發現重複 IP 時才覆寫檔案，避免不必要的磁碟寫入
+          # 只有在實際發現重複項時才覆寫檔案
           if duplicate_count > 0:
               with open(target_file, "w", encoding="utf-8", newline="\n") as f:
                   for ip in deduped_lines:
@@ -68,11 +70,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 檢查是否有檔案異動
+          # 檢測是否有內容變更（避免空提交）
           if ! git diff --quiet "CloudFlare優選IP.txt"; then
             echo "[INFO] Changes detected in CloudFlare優選IP.txt. Committing..."
             git add "CloudFlare優選IP.txt"
-            git commit -m "chore(auto): 移除 CloudFlare優選IP.txt 重複 IP"
+            # 加入 [skip ci] 防止 Action 自己推回檔案時形成無窮迴圈
+            git commit -m "chore(auto): 移除 CloudFlare優選IP.txt 重複 IP [skip ci]"
             git push
             echo "[INFO] Successfully pushed cleaned file to repository."
           else
